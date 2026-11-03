@@ -1,0 +1,292 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Kies je Easee-laadpaal",
+        "description": "Kies de laadpaal uit de Easee-integratie. Je hoeft niets handmatig in te voeren.",
+        "data": {
+          "charger_device": "Laadpaal",
+          "equalizer_device": "Easee Equalizer (optioneel)",
+          "enable_source_entities": "Benodigde Easee-sensoren automatisch inschakelen"
+        },
+        "data_description": {
+          "enable_source_entities": "Sommige Easee-sensoren (stroom, spanning, limieten) staan standaard uit. Door ze aan te zetten zijn alle waarden beschikbaar."
+        }
+      },
+      "charger": {
+        "title": "{name}",
+        "description": "Herkend model: **{detected}**. Controleer de instellingen hieronder.",
+        "data": {
+          "model": "Laadpaalmodel",
+          "phases": "Aansluiting",
+          "max_current": "Maximale laadstroom"
+        }
+      },
+      "energy": {
+        "title": "Prijzen, zon en kosten",
+        "description": "Alles optioneel. Zonder prijssensor laadt slim laden gewoon direct.",
+        "data": {
+          "price_entity": "Prijssensor (dynamisch tarief)",
+          "fixed_price": "Vaste prijs (als er geen prijssensor is)",
+          "grid_power_entity": "Netvermogen-sensor (voor zonne-overschot)",
+          "grid_power_inverted": "Sensor is positief bij teruglevering",
+          "soc_entity": "Accuniveau-sensor van de auto (optioneel)",
+          "battery_capacity": "Accucapaciteit auto",
+          "reimbursement_per_kwh": "Vergoedingstarief (lease/werkgever)"
+        },
+        "data_description": {
+          "price_entity": "Nordpool, Tibber, Frank Energie, Zonneplan, ENTSO-e… De prijzen voor vandaag/morgen worden automatisch gelezen.",
+          "grid_power_entity": "Alleen nodig zonder Easee Equalizer. Normaal positief = afname.",
+          "reimbursement_per_kwh": "Wordt gebruikt voor het maandrapport van thuisladen."
+        }
+      }
+    },
+    "abort": {
+      "easee_missing": "Installeer en configureer eerst de Easee-integratie (HACS: nordicopen/easee_hass).",
+      "no_chargers": "Geen Easee-laadpalen gevonden in de Easee-integratie.",
+      "already_configured": "Deze laadpaal is al ingesteld."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Easee Smart-instellingen",
+        "data": {
+          "model": "Laadpaalmodel",
+          "phases": "Aansluiting",
+          "max_current": "Maximale laadstroom",
+          "price_entity": "Prijssensor (dynamisch tarief)",
+          "fixed_price": "Vaste prijs (als er geen prijssensor is)",
+          "grid_power_entity": "Netvermogen-sensor (voor zonne-overschot)",
+          "grid_power_inverted": "Sensor is positief bij teruglevering",
+          "soc_entity": "Accuniveau-sensor van de auto (optioneel)",
+          "battery_capacity": "Accucapaciteit auto",
+          "reimbursement_per_kwh": "Vergoedingstarief (lease/werkgever)"
+        },
+        "data_description": {
+          "price_entity": "Nordpool, Tibber, Frank Energie, Zonneplan, ENTSO-e… De prijzen voor vandaag/morgen worden automatisch gelezen.",
+          "grid_power_entity": "Alleen nodig zonder Easee Equalizer. Normaal positief = afname.",
+          "reimbursement_per_kwh": "Wordt gebruikt voor het maandrapport van thuisladen."
+        }
+      }
+    }
+  },
+  "selector": {
+    "phases": {
+      "options": {
+        "1": "1 fase",
+        "3": "3 fasen"
+      }
+    },
+    "charge_mode": {
+      "options": {
+        "normal": "Normaal",
+        "smart": "Slim (goedkoopste uren)",
+        "solar": "Zonne-overschot",
+        "solar_smart": "Zon + slim"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "charger_status": {
+        "name": "Status",
+        "state": {
+          "disconnected": "Niet verbonden",
+          "awaiting_start": "Wacht op start",
+          "charging": "Laden",
+          "completed": "Voltooid",
+          "error": "Fout",
+          "ready_to_charge": "Klaar om te laden",
+          "awaiting_authorization": "Wacht op autorisatie",
+          "de_authorizing": "Autorisatie beëindigen",
+          "start_charging": "Start laden",
+          "stop_charging": "Stopt laden",
+          "offline": "Offline",
+          "awaiting_load_balancing": "Wacht op load balancing",
+          "awaiting_smart_start": "Wacht op slimme start",
+          "awaiting_scheduled_start": "Wacht op geplande start",
+          "authenticating": "Authenticeren",
+          "paused_due_to_equalizer": "Gepauzeerd door Equalizer",
+          "searching_for_master": "Zoekt master",
+          "erratic_ev": "Auto reageert onregelmatig",
+          "error_temperature_too_high": "Temperatuur te hoog",
+          "error_dead_powerboard": "Powerboard defect",
+          "error_overcurrent": "Overstroom",
+          "error_pen_fault": "PEN-fout",
+          "unknown": "Onbekend"
+        }
+      },
+      "smart_status": {
+        "name": "Slim laden",
+        "state": {
+          "idle": "Uit (normaal laden)",
+          "not_connected": "Geen auto aangesloten",
+          "waiting_cheap": "Wacht op goedkope uren",
+          "charging_cheap": "Laden op goedkoop moment",
+          "charging_solar": "Laden op zonne-overschot",
+          "waiting_solar": "Wacht op zonne-overschot",
+          "charging_boost": "Boost: nu laden",
+          "charging_fallback": "Laden (te weinig prijsdata)",
+          "target_reached": "Doel bereikt",
+          "no_prices": "Laden (geen prijssensor)"
+        }
+      },
+      "target_current": {
+        "name": "Doelstroom"
+      },
+      "energy_needed": {
+        "name": "Nog benodigde energie"
+      },
+      "planned_start": {
+        "name": "Geplande start"
+      },
+      "planned_end": {
+        "name": "Gepland klaar"
+      },
+      "planned_cost": {
+        "name": "Geplande kosten"
+      },
+      "current_price": {
+        "name": "Huidige prijs"
+      },
+      "session_cost": {
+        "name": "Kosten sessie"
+      },
+      "cost_today": {
+        "name": "Kosten vandaag"
+      },
+      "cost_month": {
+        "name": "Kosten deze maand"
+      },
+      "cost_total": {
+        "name": "Kosten totaal"
+      },
+      "energy_today": {
+        "name": "Geladen vandaag"
+      },
+      "energy_month": {
+        "name": "Geladen deze maand"
+      },
+      "average_price_month": {
+        "name": "Gemiddelde prijs deze maand"
+      },
+      "reimbursement_month": {
+        "name": "Vergoeding deze maand"
+      },
+      "last_session_energy": {
+        "name": "Energie laatste sessie"
+      },
+      "last_session_cost": {
+        "name": "Kosten laatste sessie"
+      },
+      "grid_power": {
+        "name": "Netvermogen"
+      },
+      "surplus_power": {
+        "name": "Zonne-overschot"
+      },
+      "phase_l1_current": {
+        "name": "Stroom fase L1"
+      },
+      "phase_l2_current": {
+        "name": "Stroom fase L2"
+      },
+      "phase_l3_current": {
+        "name": "Stroom fase L3"
+      },
+      "phase_headroom": {
+        "name": "Ruimte op hoofdzekering"
+      },
+      "phase_load": {
+        "name": "Belasting hoofdzekering"
+      }
+    },
+    "binary_sensor": {
+      "car_connected": {
+        "name": "Auto aangesloten"
+      },
+      "smart_active": {
+        "name": "Slimme sturing actief"
+      }
+    },
+    "select": {
+      "charge_mode": {
+        "name": "Laadmodus",
+        "state": {
+          "normal": "Normaal",
+          "smart": "Slim (goedkoopste uren)",
+          "solar": "Zonne-overschot",
+          "solar_smart": "Zon + slim"
+        }
+      }
+    },
+    "number": {
+      "target_energy": {
+        "name": "Te laden energie"
+      },
+      "target_soc": {
+        "name": "Doel accuniveau"
+      },
+      "price_threshold": {
+        "name": "Altijd laden onder prijs"
+      }
+    },
+    "time": {
+      "departure_time": {
+        "name": "Vertrektijd"
+      }
+    },
+    "switch": {
+      "boost": {
+        "name": "Boost (nu laden)"
+      }
+    },
+    "button": {
+      "export_report": {
+        "name": "Maandrapport vorige maand exporteren"
+      }
+    }
+  },
+  "services": {
+    "export_report": {
+      "name": "Laadrapport exporteren",
+      "description": "Schrijft een CSV met alle sessies van een maand naar /config/www/easee_smart.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Laadpaal",
+          "description": "Leeg laten bij één laadpaal."
+        },
+        "month": {
+          "name": "Maand",
+          "description": "JJJJ-MM, standaard: vorige maand."
+        }
+      }
+    },
+    "set_mode": {
+      "name": "Laadmodus instellen",
+      "description": "Wissel tussen normaal, slim, zon en zon + slim.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Laadpaal",
+          "description": "Leeg laten bij één laadpaal."
+        },
+        "mode": {
+          "name": "Modus",
+          "description": "De nieuwe laadmodus."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_charger": {
+      "message": "Er is geen Easee Smart-laadpaal ingesteld."
+    },
+    "easee_not_loaded": {
+      "message": "De Easee-integratie is nog niet geladen."
+    },
+    "charger_not_found": {
+      "message": "De laadpaal is niet gevonden in de Easee-integratie."
+    }
+  }
+}

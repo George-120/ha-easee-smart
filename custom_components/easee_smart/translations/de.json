@@ -1,0 +1,292 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Wähle deine Easee-Wallbox",
+        "description": "Wähle die Wallbox aus der Easee-Integration. Nichts muss manuell eingegeben werden.",
+        "data": {
+          "charger_device": "Wallbox",
+          "equalizer_device": "Easee Equalizer (optional)",
+          "enable_source_entities": "Benötigte Easee-Sensoren automatisch aktivieren"
+        },
+        "data_description": {
+          "enable_source_entities": "Einige Easee-Sensoren (Strom, Spannung, Grenzen) sind standardmäßig deaktiviert."
+        }
+      },
+      "charger": {
+        "title": "{name}",
+        "description": "Erkanntes Modell: **{detected}**. Prüfe die Einstellungen.",
+        "data": {
+          "model": "Wallbox-Modell",
+          "phases": "Anschluss",
+          "max_current": "Maximaler Ladestrom"
+        }
+      },
+      "energy": {
+        "title": "Preise, Solar und Kosten",
+        "description": "Alles optional. Ohne Preissensor lädt Smart-Laden sofort.",
+        "data": {
+          "price_entity": "Preissensor (dynamischer Tarif)",
+          "fixed_price": "Festpreis (ohne Preissensor)",
+          "grid_power_entity": "Netzleistungssensor (für Solarüberschuss)",
+          "grid_power_inverted": "Sensor ist positiv bei Einspeisung",
+          "soc_entity": "Akkustand-Sensor des Autos (optional)",
+          "battery_capacity": "Akkukapazität Auto",
+          "reimbursement_per_kwh": "Erstattungssatz (Leasing/Arbeitgeber)"
+        },
+        "data_description": {
+          "price_entity": "Nordpool, Tibber, ENTSO-e… Preise für heute/morgen werden automatisch gelesen.",
+          "grid_power_entity": "Nur ohne Easee Equalizer nötig. Normalerweise positiv = Bezug.",
+          "reimbursement_per_kwh": "Wird für den Monatsbericht des Heimladens genutzt."
+        }
+      }
+    },
+    "abort": {
+      "easee_missing": "Installiere und richte zuerst die Easee-Integration ein (HACS: nordicopen/easee_hass).",
+      "no_chargers": "Keine Easee-Wallboxen in der Easee-Integration gefunden.",
+      "already_configured": "Diese Wallbox ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Easee Smart-Einstellungen",
+        "data": {
+          "model": "Wallbox-Modell",
+          "phases": "Anschluss",
+          "max_current": "Maximaler Ladestrom",
+          "price_entity": "Preissensor (dynamischer Tarif)",
+          "fixed_price": "Festpreis (ohne Preissensor)",
+          "grid_power_entity": "Netzleistungssensor (für Solarüberschuss)",
+          "grid_power_inverted": "Sensor ist positiv bei Einspeisung",
+          "soc_entity": "Akkustand-Sensor des Autos (optional)",
+          "battery_capacity": "Akkukapazität Auto",
+          "reimbursement_per_kwh": "Erstattungssatz (Leasing/Arbeitgeber)"
+        },
+        "data_description": {
+          "price_entity": "Nordpool, Tibber, ENTSO-e… Preise für heute/morgen werden automatisch gelesen.",
+          "grid_power_entity": "Nur ohne Easee Equalizer nötig. Normalerweise positiv = Bezug.",
+          "reimbursement_per_kwh": "Wird für den Monatsbericht des Heimladens genutzt."
+        }
+      }
+    }
+  },
+  "selector": {
+    "phases": {
+      "options": {
+        "1": "1 Phase",
+        "3": "3 Phasen"
+      }
+    },
+    "charge_mode": {
+      "options": {
+        "normal": "Normal",
+        "smart": "Smart (günstigste Stunden)",
+        "solar": "Solarüberschuss",
+        "solar_smart": "Solar + Smart"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "charger_status": {
+        "name": "Status",
+        "state": {
+          "disconnected": "Nicht verbunden",
+          "awaiting_start": "Wartet auf Start",
+          "charging": "Lädt",
+          "completed": "Abgeschlossen",
+          "error": "Fehler",
+          "ready_to_charge": "Ladebereit",
+          "awaiting_authorization": "Wartet auf Autorisierung",
+          "de_authorizing": "Deautorisierung",
+          "start_charging": "Startet",
+          "stop_charging": "Stoppt",
+          "offline": "Offline",
+          "awaiting_load_balancing": "Wartet auf Lastmanagement",
+          "awaiting_smart_start": "Wartet auf Smart-Start",
+          "awaiting_scheduled_start": "Wartet auf geplanten Start",
+          "authenticating": "Authentifizierung",
+          "paused_due_to_equalizer": "Pausiert durch Equalizer",
+          "searching_for_master": "Sucht Master",
+          "erratic_ev": "Fahrzeug unregelmäßig",
+          "error_temperature_too_high": "Temperatur zu hoch",
+          "error_dead_powerboard": "Leistungsplatine defekt",
+          "error_overcurrent": "Überstrom",
+          "error_pen_fault": "PEN-Fehler",
+          "unknown": "Unbekannt"
+        }
+      },
+      "smart_status": {
+        "name": "Smart-Laden",
+        "state": {
+          "idle": "Aus (normales Laden)",
+          "not_connected": "Kein Fahrzeug verbunden",
+          "waiting_cheap": "Wartet auf günstige Stunden",
+          "charging_cheap": "Lädt zum günstigen Zeitpunkt",
+          "charging_solar": "Lädt mit Solarüberschuss",
+          "waiting_solar": "Wartet auf Solarüberschuss",
+          "charging_boost": "Boost: lädt jetzt",
+          "charging_fallback": "Lädt (zu wenig Preisdaten)",
+          "target_reached": "Ziel erreicht",
+          "no_prices": "Lädt (kein Preissensor)"
+        }
+      },
+      "target_current": {
+        "name": "Zielstrom"
+      },
+      "energy_needed": {
+        "name": "Noch benötigte Energie"
+      },
+      "planned_start": {
+        "name": "Geplanter Start"
+      },
+      "planned_end": {
+        "name": "Geplantes Ende"
+      },
+      "planned_cost": {
+        "name": "Geplante Kosten"
+      },
+      "current_price": {
+        "name": "Aktueller Preis"
+      },
+      "session_cost": {
+        "name": "Kosten Ladevorgang"
+      },
+      "cost_today": {
+        "name": "Kosten heute"
+      },
+      "cost_month": {
+        "name": "Kosten diesen Monat"
+      },
+      "cost_total": {
+        "name": "Kosten gesamt"
+      },
+      "energy_today": {
+        "name": "Heute geladen"
+      },
+      "energy_month": {
+        "name": "Diesen Monat geladen"
+      },
+      "average_price_month": {
+        "name": "Durchschnittspreis diesen Monat"
+      },
+      "reimbursement_month": {
+        "name": "Erstattung diesen Monat"
+      },
+      "last_session_energy": {
+        "name": "Energie letzter Ladevorgang"
+      },
+      "last_session_cost": {
+        "name": "Kosten letzter Ladevorgang"
+      },
+      "grid_power": {
+        "name": "Netzleistung"
+      },
+      "surplus_power": {
+        "name": "Solarüberschuss"
+      },
+      "phase_l1_current": {
+        "name": "Strom Phase L1"
+      },
+      "phase_l2_current": {
+        "name": "Strom Phase L2"
+      },
+      "phase_l3_current": {
+        "name": "Strom Phase L3"
+      },
+      "phase_headroom": {
+        "name": "Reserve Hauptsicherung"
+      },
+      "phase_load": {
+        "name": "Auslastung Hauptsicherung"
+      }
+    },
+    "binary_sensor": {
+      "car_connected": {
+        "name": "Fahrzeug verbunden"
+      },
+      "smart_active": {
+        "name": "Smarte Steuerung aktiv"
+      }
+    },
+    "select": {
+      "charge_mode": {
+        "name": "Lademodus",
+        "state": {
+          "normal": "Normal",
+          "smart": "Smart (günstigste Stunden)",
+          "solar": "Solarüberschuss",
+          "solar_smart": "Solar + Smart"
+        }
+      }
+    },
+    "number": {
+      "target_energy": {
+        "name": "Zu ladende Energie"
+      },
+      "target_soc": {
+        "name": "Ziel-Akkustand"
+      },
+      "price_threshold": {
+        "name": "Immer laden unter Preis"
+      }
+    },
+    "time": {
+      "departure_time": {
+        "name": "Abfahrtszeit"
+      }
+    },
+    "switch": {
+      "boost": {
+        "name": "Boost (jetzt laden)"
+      }
+    },
+    "button": {
+      "export_report": {
+        "name": "Bericht letzter Monat exportieren"
+      }
+    }
+  },
+  "services": {
+    "export_report": {
+      "name": "Ladebericht exportieren",
+      "description": "Schreibt eine CSV mit allen Ladevorgängen eines Monats nach /config/www/easee_smart.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Wallbox",
+          "description": "Leer lassen bei einer Wallbox."
+        },
+        "month": {
+          "name": "Monat",
+          "description": "JJJJ-MM, Standard: Vormonat."
+        }
+      }
+    },
+    "set_mode": {
+      "name": "Lademodus setzen",
+      "description": "Wechsel zwischen Normal, Smart, Solar und Solar + Smart.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Wallbox",
+          "description": "Leer lassen bei einer Wallbox."
+        },
+        "mode": {
+          "name": "Modus",
+          "description": "Der neue Lademodus."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_charger": {
+      "message": "Keine Easee Smart-Wallbox eingerichtet."
+    },
+    "easee_not_loaded": {
+      "message": "Die Easee-Integration ist noch nicht geladen."
+    },
+    "charger_not_found": {
+      "message": "Die Wallbox wurde in der Easee-Integration nicht gefunden."
+    }
+  }
+}

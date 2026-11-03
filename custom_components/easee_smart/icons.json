@@ -1,0 +1,85 @@
+{
+  "entity": {
+    "sensor": {
+      "charger_status": {
+        "default": "mdi:ev-station",
+        "state": {
+          "charging": "mdi:battery-charging-high",
+          "disconnected": "mdi:power-plug-off-outline",
+          "completed": "mdi:battery-check",
+          "awaiting_start": "mdi:timer-sand",
+          "ready_to_charge": "mdi:power-plug-outline",
+          "error": "mdi:alert-circle-outline",
+          "offline": "mdi:cloud-off-outline"
+        }
+      },
+      "smart_status": {
+        "default": "mdi:brain",
+        "state": {
+          "charging_cheap": "mdi:cash-check",
+          "waiting_cheap": "mdi:clock-outline",
+          "charging_solar": "mdi:solar-power",
+          "waiting_solar": "mdi:weather-partly-cloudy",
+          "charging_boost": "mdi:lightning-bolt",
+          "target_reached": "mdi:check-circle-outline",
+          "not_connected": "mdi:power-plug-off-outline"
+        }
+      },
+      "target_current": { "default": "mdi:current-ac" },
+      "energy_needed": { "default": "mdi:battery-arrow-up-outline" },
+      "planned_start": { "default": "mdi:clock-start" },
+      "planned_end": { "default": "mdi:clock-end" },
+      "planned_cost": { "default": "mdi:cash-clock" },
+      "current_price": { "default": "mdi:currency-eur" },
+      "session_cost": { "default": "mdi:cash" },
+      "cost_today": { "default": "mdi:cash" },
+      "cost_month": { "default": "mdi:cash-multiple" },
+      "cost_total": { "default": "mdi:cash-multiple" },
+      "energy_today": { "default": "mdi:ev-plug-type2" },
+      "energy_month": { "default": "mdi:ev-plug-type2" },
+      "average_price_month": { "default": "mdi:chart-line" },
+      "reimbursement_month": { "default": "mdi:cash-refund" },
+      "last_session_energy": { "default": "mdi:history" },
+      "last_session_cost": { "default": "mdi:history" },
+      "grid_power": { "default": "mdi:transmission-tower" },
+      "surplus_power": { "default": "mdi:solar-power-variant" },
+      "phase_l1_current": { "default": "mdi:sine-wave" },
+      "phase_l2_current": { "default": "mdi:sine-wave" },
+      "phase_l3_current": { "default": "mdi:sine-wave" },
+      "phase_headroom": { "default": "mdi:gauge-low" },
+      "phase_load": { "default": "mdi:gauge" }
+    },
+    "binary_sensor": {
+      "smart_active": { "default": "mdi:brain" }
+    },
+    "select": {
+      "charge_mode": {
+        "default": "mdi:tune-variant",
+        "state": {
+          "normal": "mdi:ev-station",
+          "smart": "mdi:cash-clock",
+          "solar": "mdi:solar-power",
+          "solar_smart": "mdi:solar-power-variant"
+        }
+      }
+    },
+    "number": {
+      "target_energy": { "default": "mdi:battery-plus-outline" },
+      "target_soc": { "default": "mdi:battery-80" },
+      "price_threshold": { "default": "mdi:cash-lock-open" }
+    },
+    "time": {
+      "departure_time": { "default": "mdi:car-clock" }
+    },
+    "switch": {
+      "boost": { "default": "mdi:lightning-bolt" }
+    },
+    "button": {
+      "export_report": { "default": "mdi:file-delimited-outline" }
+    }
+  },
+  "services": {
+    "export_report": { "service": "mdi:file-delimited-outline" },
+    "set_mode": { "service": "mdi:tune-variant" }
+  }
+}

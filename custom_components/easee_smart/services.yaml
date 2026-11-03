@@ -1,0 +1,26 @@
+export_report:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: easee_smart
+    month:
+      example: "2026-10"
+      selector:
+        text:
+set_mode:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: easee_smart
+    mode:
+      required: true
+      selector:
+        select:
+          translation_key: charge_mode
+          options:
+            - normal
+            - smart
+            - solar
+            - solar_smart

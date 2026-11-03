@@ -1,0 +1,292 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Choose your Easee charger",
+        "description": "Pick the charger from the Easee integration. Nothing has to be entered by hand.",
+        "data": {
+          "charger_device": "Charger",
+          "equalizer_device": "Easee Equalizer (optional)",
+          "enable_source_entities": "Enable the Easee sensors this integration needs"
+        },
+        "data_description": {
+          "enable_source_entities": "Some Easee sensors (current, voltage, limits) are disabled by default. Enabling them makes all values available."
+        }
+      },
+      "charger": {
+        "title": "{name}",
+        "description": "Detected model: **{detected}**. Check the settings below.",
+        "data": {
+          "model": "Charger model",
+          "phases": "Connection",
+          "max_current": "Maximum charge current"
+        }
+      },
+      "energy": {
+        "title": "Prices, solar and costs",
+        "description": "All optional. Without a price sensor smart charging just charges right away.",
+        "data": {
+          "price_entity": "Price sensor (dynamic tariff)",
+          "fixed_price": "Fixed price (if no price sensor)",
+          "grid_power_entity": "Grid power sensor (for solar surplus)",
+          "grid_power_inverted": "Sensor is positive when exporting",
+          "soc_entity": "Car battery level sensor (optional)",
+          "battery_capacity": "Car battery capacity",
+          "reimbursement_per_kwh": "Reimbursement rate (lease/employer)"
+        },
+        "data_description": {
+          "price_entity": "Nordpool, Tibber, Frank Energie, Zonneplan, ENTSO-e… Prices for today/tomorrow are read automatically.",
+          "grid_power_entity": "Only needed without an Easee Equalizer. Normally positive = import.",
+          "reimbursement_per_kwh": "Used for the monthly report of home charging."
+        }
+      }
+    },
+    "abort": {
+      "easee_missing": "Install and set up the Easee integration first (HACS: nordicopen/easee_hass).",
+      "no_chargers": "No Easee chargers found in the Easee integration.",
+      "already_configured": "This charger is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Easee Smart settings",
+        "data": {
+          "model": "Charger model",
+          "phases": "Connection",
+          "max_current": "Maximum charge current",
+          "price_entity": "Price sensor (dynamic tariff)",
+          "fixed_price": "Fixed price (if no price sensor)",
+          "grid_power_entity": "Grid power sensor (for solar surplus)",
+          "grid_power_inverted": "Sensor is positive when exporting",
+          "soc_entity": "Car battery level sensor (optional)",
+          "battery_capacity": "Car battery capacity",
+          "reimbursement_per_kwh": "Reimbursement rate (lease/employer)"
+        },
+        "data_description": {
+          "price_entity": "Nordpool, Tibber, Frank Energie, Zonneplan, ENTSO-e… Prices for today/tomorrow are read automatically.",
+          "grid_power_entity": "Only needed without an Easee Equalizer. Normally positive = import.",
+          "reimbursement_per_kwh": "Used for the monthly report of home charging."
+        }
+      }
+    }
+  },
+  "selector": {
+    "phases": {
+      "options": {
+        "1": "1 phase",
+        "3": "3 phases"
+      }
+    },
+    "charge_mode": {
+      "options": {
+        "normal": "Normal",
+        "smart": "Smart (cheapest hours)",
+        "solar": "Solar surplus",
+        "solar_smart": "Solar + smart"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "charger_status": {
+        "name": "Status",
+        "state": {
+          "disconnected": "Disconnected",
+          "awaiting_start": "Waiting to start",
+          "charging": "Charging",
+          "completed": "Completed",
+          "error": "Error",
+          "ready_to_charge": "Ready to charge",
+          "awaiting_authorization": "Awaiting authorization",
+          "de_authorizing": "De-authorizing",
+          "start_charging": "Starting",
+          "stop_charging": "Stopping",
+          "offline": "Offline",
+          "awaiting_load_balancing": "Awaiting load balancing",
+          "awaiting_smart_start": "Awaiting smart start",
+          "awaiting_scheduled_start": "Awaiting scheduled start",
+          "authenticating": "Authenticating",
+          "paused_due_to_equalizer": "Paused by Equalizer",
+          "searching_for_master": "Searching for master",
+          "erratic_ev": "Erratic EV",
+          "error_temperature_too_high": "Temperature too high",
+          "error_dead_powerboard": "Power board failure",
+          "error_overcurrent": "Overcurrent",
+          "error_pen_fault": "PEN fault",
+          "unknown": "Unknown"
+        }
+      },
+      "smart_status": {
+        "name": "Smart charging",
+        "state": {
+          "idle": "Off (normal charging)",
+          "not_connected": "No car connected",
+          "waiting_cheap": "Waiting for cheap hours",
+          "charging_cheap": "Charging at a cheap moment",
+          "charging_solar": "Charging on solar surplus",
+          "waiting_solar": "Waiting for solar surplus",
+          "charging_boost": "Boost: charging now",
+          "charging_fallback": "Charging (not enough price data)",
+          "target_reached": "Target reached",
+          "no_prices": "Charging (no price sensor)"
+        }
+      },
+      "target_current": {
+        "name": "Target current"
+      },
+      "energy_needed": {
+        "name": "Energy still needed"
+      },
+      "planned_start": {
+        "name": "Planned start"
+      },
+      "planned_end": {
+        "name": "Planned finish"
+      },
+      "planned_cost": {
+        "name": "Planned cost"
+      },
+      "current_price": {
+        "name": "Current price"
+      },
+      "session_cost": {
+        "name": "Session cost"
+      },
+      "cost_today": {
+        "name": "Cost today"
+      },
+      "cost_month": {
+        "name": "Cost this month"
+      },
+      "cost_total": {
+        "name": "Cost total"
+      },
+      "energy_today": {
+        "name": "Charged today"
+      },
+      "energy_month": {
+        "name": "Charged this month"
+      },
+      "average_price_month": {
+        "name": "Average price this month"
+      },
+      "reimbursement_month": {
+        "name": "Reimbursement this month"
+      },
+      "last_session_energy": {
+        "name": "Last session energy"
+      },
+      "last_session_cost": {
+        "name": "Last session cost"
+      },
+      "grid_power": {
+        "name": "Grid power"
+      },
+      "surplus_power": {
+        "name": "Solar surplus"
+      },
+      "phase_l1_current": {
+        "name": "Phase L1 current"
+      },
+      "phase_l2_current": {
+        "name": "Phase L2 current"
+      },
+      "phase_l3_current": {
+        "name": "Phase L3 current"
+      },
+      "phase_headroom": {
+        "name": "Phase headroom"
+      },
+      "phase_load": {
+        "name": "Main fuse load"
+      }
+    },
+    "binary_sensor": {
+      "car_connected": {
+        "name": "Car connected"
+      },
+      "smart_active": {
+        "name": "Smart control active"
+      }
+    },
+    "select": {
+      "charge_mode": {
+        "name": "Charge mode",
+        "state": {
+          "normal": "Normal",
+          "smart": "Smart (cheapest hours)",
+          "solar": "Solar surplus",
+          "solar_smart": "Solar + smart"
+        }
+      }
+    },
+    "number": {
+      "target_energy": {
+        "name": "Energy to add"
+      },
+      "target_soc": {
+        "name": "Target battery level"
+      },
+      "price_threshold": {
+        "name": "Always charge below price"
+      }
+    },
+    "time": {
+      "departure_time": {
+        "name": "Departure time"
+      }
+    },
+    "switch": {
+      "boost": {
+        "name": "Boost (charge now)"
+      }
+    },
+    "button": {
+      "export_report": {
+        "name": "Export last month report"
+      }
+    }
+  },
+  "services": {
+    "export_report": {
+      "name": "Export charging report",
+      "description": "Writes a CSV with all sessions of a month to /config/www/easee_smart.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Charger",
+          "description": "Leave empty when you have one charger."
+        },
+        "month": {
+          "name": "Month",
+          "description": "YYYY-MM, default: previous month."
+        }
+      }
+    },
+    "set_mode": {
+      "name": "Set charge mode",
+      "description": "Switch between normal, smart, solar and solar + smart.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Charger",
+          "description": "Leave empty when you have one charger."
+        },
+        "mode": {
+          "name": "Mode",
+          "description": "The new charge mode."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_charger": {
+      "message": "No Easee Smart charger is set up."
+    },
+    "easee_not_loaded": {
+      "message": "The Easee integration is not loaded yet."
+    },
+    "charger_not_found": {
+      "message": "The charger was not found in the Easee integration."
+    }
+  }
+}

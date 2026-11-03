@@ -1,0 +1,14 @@
+{
+  "domain": "easee_smart",
+  "name": "Easee Smart",
+  "after_dependencies": ["easee"],
+  "codeowners": ["@George-120"],
+  "config_flow": true,
+  "dependencies": ["frontend", "http"],
+  "documentation": "https://github.com/George-120/ha-easee-smart",
+  "integration_type": "device",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/George-120/ha-easee-smart/issues",
+  "requirements": [],
+  "version": "1.0.0"
+}

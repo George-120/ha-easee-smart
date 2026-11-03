@@ -1,0 +1,681 @@
+/* Easee Smart card — app-style view of an Easee charger, served by the easee_smart integration. */
+(() => {
+  const VERSION = "1.0.0";
+
+  const I18N = {
+    en: {
+      tabs: { charge: "Charging", plan: "Planning", grid: "Equalizer", history: "History" },
+      modes: { normal: "Normal", smart: "Smart", solar: "Solar", solar_smart: "Solar + smart" },
+      status: {
+        disconnected: "No car connected", awaiting_start: "Waiting to start", charging: "Charging",
+        completed: "Charging complete", error: "Error", ready_to_charge: "Ready to charge",
+        awaiting_authorization: "Waiting for authorization", offline: "Charger offline",
+        awaiting_load_balancing: "Waiting for load balancing", awaiting_smart_start: "Waiting for smart start",
+        awaiting_scheduled_start: "Waiting for schedule", paused_due_to_equalizer: "Paused by Equalizer",
+        unknown: "Unknown",
+      },
+      smart: {
+        idle: "Charges as soon as the car is connected", not_connected: "Connect the car to start",
+        waiting_cheap: "Waiting for the cheapest moment", charging_cheap: "Charging at a cheap moment",
+        charging_solar: "Charging on solar surplus", waiting_solar: "Waiting for solar surplus",
+        charging_boost: "Boost: charging at full power", charging_fallback: "Charging now, not enough price data",
+        target_reached: "Target reached", no_prices: "No price sensor, charging now",
+      },
+      pause: "Pause", resume: "Resume", start: "Start", boost: "Boost", lock: "Lock cable", unlock: "Cable unlocked",
+      session: "this session", cost: "cost", duration: "time",
+      departure: "Ready at", target: "Add", targetSoc: "Charge to", needed: "still needed",
+      planStart: "Starts", planEnd: "Ready", planCost: "Estimated", noPlan: "No plan needed right now.",
+      noPrices: "No price forecast available. Choose a price sensor in the integration settings.",
+      now: "now", grid: "Grid", importing: "Importing", exporting: "Exporting", fuse: "Main fuse",
+      headroom: "headroom", surplus: "Solar surplus", phase: "Phase", noGrid: "No Equalizer or grid sensor configured.",
+      month: "This month", prev: "Previous months", reimb: "Reimbursement", sessions: "Recent sessions",
+      export: "Export last month (CSV)", exported: "Report written", today: "Today", none: "No sessions yet.",
+      kwh: "kWh", avg: "avg.", amps: "Charge current", planned: "Planned charging",
+    },
+    nl: {
+      tabs: { charge: "Laden", plan: "Planning", grid: "Equalizer", history: "Historie" },
+      modes: { normal: "Normaal", smart: "Slim", solar: "Zon", solar_smart: "Zon + slim" },
+      status: {
+        disconnected: "Geen auto aangesloten", awaiting_start: "Wacht op start", charging: "Laden",
+        completed: "Laden voltooid", error: "Fout", ready_to_charge: "Klaar om te laden",
+        awaiting_authorization: "Wacht op autorisatie", offline: "Laadpaal offline",
+        awaiting_load_balancing: "Wacht op load balancing", awaiting_smart_start: "Wacht op slimme start",
+        awaiting_scheduled_start: "Wacht op planning", paused_due_to_equalizer: "Gepauzeerd door Equalizer",
+        unknown: "Onbekend",
+      },
+      smart: {
+        idle: "Laadt zodra de auto is aangesloten", not_connected: "Sluit de auto aan om te starten",
+        waiting_cheap: "Wacht op het goedkoopste moment", charging_cheap: "Laden op een goedkoop moment",
+        charging_solar: "Laden op zonne-overschot", waiting_solar: "Wacht op zonne-overschot",
+        charging_boost: "Boost: laden op vol vermogen", charging_fallback: "Nu laden, te weinig prijsdata",
+        target_reached: "Doel bereikt", no_prices: "Geen prijssensor, nu laden",
+      },
+      pause: "Pauzeren", resume: "Hervatten", start: "Starten", boost: "Boost", lock: "Kabel vast", unlock: "Kabel los",
+      session: "deze sessie", cost: "kosten", duration: "tijd",
+      departure: "Klaar om", target: "Laden", targetSoc: "Laden tot", needed: "nog nodig",
+      planStart: "Start", planEnd: "Klaar", planCost: "Verwacht", noPlan: "Er is nu geen planning nodig.",
+      noPrices: "Geen prijsverwachting beschikbaar. Kies een prijssensor in de instellingen van de integratie.",
+      now: "nu", grid: "Net", importing: "Afname", exporting: "Teruglevering", fuse: "Hoofdzekering",
+      headroom: "ruimte", surplus: "Zonne-overschot", phase: "Fase", noGrid: "Geen Equalizer of netsensor ingesteld.",
+      month: "Deze maand", prev: "Vorige maanden", reimb: "Vergoeding", sessions: "Recente sessies",
+      export: "Vorige maand exporteren (CSV)", exported: "Rapport opgeslagen", today: "Vandaag", none: "Nog geen sessies.",
+      kwh: "kWh", avg: "gem.", amps: "Laadstroom", planned: "Gepland laden",
+    },
+    de: {
+      tabs: { charge: "Laden", plan: "Planung", grid: "Equalizer", history: "Verlauf" },
+      modes: { normal: "Normal", smart: "Smart", solar: "Solar", solar_smart: "Solar + Smart" },
+      status: {
+        disconnected: "Kein Fahrzeug verbunden", awaiting_start: "Wartet auf Start", charging: "Lädt",
+        completed: "Laden abgeschlossen", error: "Fehler", ready_to_charge: "Ladebereit",
+        awaiting_authorization: "Wartet auf Autorisierung", offline: "Wallbox offline",
+        awaiting_load_balancing: "Wartet auf Lastmanagement", awaiting_smart_start: "Wartet auf Smart-Start",
+        awaiting_scheduled_start: "Wartet auf Zeitplan", paused_due_to_equalizer: "Pausiert durch Equalizer",
+        unknown: "Unbekannt",
+      },
+      smart: {
+        idle: "Lädt, sobald das Auto verbunden ist", not_connected: "Auto verbinden, um zu starten",
+        waiting_cheap: "Wartet auf den günstigsten Zeitpunkt", charging_cheap: "Lädt zum günstigen Zeitpunkt",
+        charging_solar: "Lädt mit Solarüberschuss", waiting_solar: "Wartet auf Solarüberschuss",
+        charging_boost: "Boost: lädt mit voller Leistung", charging_fallback: "Lädt jetzt, zu wenig Preisdaten",
+        target_reached: "Ziel erreicht", no_prices: "Kein Preissensor, lädt jetzt",
+      },
+      pause: "Pausieren", resume: "Fortsetzen", start: "Starten", boost: "Boost", lock: "Kabel verriegelt", unlock: "Kabel frei",
+      session: "dieser Ladevorgang", cost: "Kosten", duration: "Dauer",
+      departure: "Fertig um", target: "Laden", targetSoc: "Laden bis", needed: "noch nötig",
+      planStart: "Start", planEnd: "Fertig", planCost: "Erwartet", noPlan: "Derzeit ist keine Planung nötig.",
+      noPrices: "Keine Preisprognose verfügbar. Wähle einen Preissensor in den Einstellungen der Integration.",
+      now: "jetzt", grid: "Netz", importing: "Bezug", exporting: "Einspeisung", fuse: "Hauptsicherung",
+      headroom: "Reserve", surplus: "Solarüberschuss", phase: "Phase", noGrid: "Kein Equalizer oder Netzsensor eingerichtet.",
+      month: "Dieser Monat", prev: "Vormonate", reimb: "Erstattung", sessions: "Letzte Ladevorgänge",
+      export: "Letzten Monat exportieren (CSV)", exported: "Bericht gespeichert", today: "Heute", none: "Noch keine Ladevorgänge.",
+      kwh: "kWh", avg: "Ø", amps: "Ladestrom", planned: "Geplantes Laden",
+    },
+  };
+
+  const LED = {
+    standby: "#E6EBF1",
+    connected: "#5AA9FF",
+    charging: "#45D69A",
+    waiting: "#F4B740",
+    solar: "#FFD54F",
+    error: "#FF5C61",
+    offline: "#59616D",
+  };
+
+  const CONNECTED = new Set([
+    "awaiting_start", "charging", "completed", "ready_to_charge", "awaiting_authorization",
+    "awaiting_load_balancing", "awaiting_smart_start", "awaiting_scheduled_start",
+    "paused_due_to_equalizer", "start_charging", "stop_charging", "authenticating",
+  ]);
+
+  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  class EaseeSmartCard extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement("easee-smart-card-editor");
+    }
+
+    static getStubConfig(hass) {
+      const entity = Object.keys(hass.states).find((id) => id.startsWith("sensor.") && hass.states[id].attributes.charger_id && hass.states[id].attributes.sources);
+      return { entity: entity || "" };
+    }
+
+    setConfig(config) {
+      this._config = { tab: "charge", ...config };
+      this._tab = this._tab || this._config.tab;
+      this._sig = null;
+      if (!this.shadowRoot) {
+        this.attachShadow({ mode: "open" });
+        this.shadowRoot.addEventListener("click", (e) => this._onClick(e));
+        this.shadowRoot.addEventListener("change", (e) => this._onChange(e));
+      }
+    }
+
+    getCardSize() {
+      return 7;
+    }
+
+    getGridOptions() {
+      return { columns: 12, min_columns: 6, rows: "auto" };
+    }
+
+    set hass(hass) {
+      this._hass = hass;
+      const entityId = this._entityId();
+      const st = entityId && hass.states[entityId];
+      const a = st ? st.attributes : null;
+      const ids = a ? [...Object.values(a.sources || {}), ...Object.values(a.equalizer || {}), ...Object.values(a.entities || {})] : [];
+      const sig = JSON.stringify([this._tab, st && st.last_updated, a, ids.map((id) => hass.states[id] && hass.states[id].state), hass.locale && hass.locale.language]);
+      if (sig === this._sig) return;
+      this._sig = sig;
+      this._render();
+    }
+
+    _entityId() {
+      if (this._config && this._config.entity) return this._config.entity;
+      if (!this._hass) return null;
+      return Object.keys(this._hass.states).find((id) => id.startsWith("sensor.") && this._hass.states[id].attributes.charger_id && this._hass.states[id].attributes.sources);
+    }
+
+    get _t() {
+      const lang = ((this._hass && (this._hass.locale?.language || this._hass.language)) || "en").slice(0, 2);
+      return I18N[lang] || I18N.en;
+    }
+
+    get _lang() {
+      return (this._hass && (this._hass.locale?.language || this._hass.language)) || "en";
+    }
+
+    _num(v, digits = 1) {
+      if (v === null || v === undefined || v === "" || isNaN(Number(v))) return "–";
+      return Number(v).toLocaleString(this._lang, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    }
+
+    _money(v, currency) {
+      if (v === null || v === undefined || isNaN(Number(v))) return "–";
+      try {
+        return Number(v).toLocaleString(this._lang, { style: "currency", currency: currency || "EUR" });
+      } catch (e) {
+        return this._num(v, 2);
+      }
+    }
+
+    _time(iso) {
+      if (!iso) return "–";
+      return new Date(iso).toLocaleTimeString(this._lang, { hour: "2-digit", minute: "2-digit" });
+    }
+
+    _day(iso) {
+      if (!iso) return "";
+      return new Date(iso).toLocaleDateString(this._lang, { weekday: "short", day: "numeric", month: "short" });
+    }
+
+    _state(id) {
+      const s = id && this._hass.states[id];
+      return s && !["unavailable", "unknown"].includes(s.state) ? s : null;
+    }
+
+    _val(id) {
+      const s = this._state(id);
+      return s ? Number(s.state) : null;
+    }
+
+    _ledFor(status, smart) {
+      if (status === "offline" || status === "unknown") return { color: LED.offline, anim: "none" };
+      if (String(status).startsWith("error") || status === "erratic_ev") return { color: LED.error, anim: "blink" };
+      if (status === "charging") return { color: smart === "charging_solar" ? LED.solar : LED.charging, anim: "flow" };
+      if (smart === "waiting_cheap") return { color: LED.waiting, anim: "breathe" };
+      if (smart === "waiting_solar") return { color: LED.solar, anim: "breathe" };
+      if (CONNECTED.has(status)) return { color: LED.connected, anim: status === "completed" ? "none" : "breathe" };
+      return { color: LED.standby, anim: "none" };
+    }
+
+    // ------------------------------------------------------------------ render
+    _render() {
+      if (!this.shadowRoot || !this._hass) return;
+      const entityId = this._entityId();
+      const st = entityId && this._hass.states[entityId];
+      if (!st) {
+        this.shadowRoot.innerHTML = `<style>${CSS}</style><ha-card><div class="empty">Easee Smart: ${esc(entityId || "no charger found")}</div></ha-card>`;
+        return;
+      }
+      const a = st.attributes;
+      const t = this._t;
+      const src = a.sources || {};
+      const status = st.state;
+      const smart = a.smart_state;
+      const led = this._ledFor(status, smart);
+      const power = this._val(src.power);
+      const online = this._state(src.online);
+      const isOnline = online ? online.state === "on" : status !== "offline";
+      const name = this._config.name || a.name || "Easee";
+      const tabs = ["charge", "plan", "grid", "history"];
+      const body = { charge: () => this._tabCharge(a, t, status), plan: () => this._tabPlan(a, t), grid: () => this._tabGrid(a, t), history: () => this._tabHistory(a, t) }[this._tab] || (() => "");
+
+      const sessionStart = a.session && a.session.start ? new Date(a.session.start) : null;
+      let duration = "–";
+      if (sessionStart && CONNECTED.has(status)) {
+        const mins = Math.max(0, Math.round((Date.now() - sessionStart.getTime()) / 60000));
+        duration = `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, "0")}`;
+      }
+
+      this.shadowRoot.innerHTML = `
+        <style>${CSS}</style>
+        <ha-card style="--led:${led.color}">
+          <header>
+            <div class="title">
+              <span class="name">${esc(name)}</span>
+              <span class="model">${esc(a.model || "")}</span>
+            </div>
+            <span class="online ${isOnline ? "on" : "off"}" title="${isOnline ? "online" : "offline"}"></span>
+          </header>
+
+          <section class="hero">
+            <div class="post" aria-hidden="true">
+              <div class="strip ${led.anim}"><i></i></div>
+              <div class="socket"></div>
+            </div>
+            <div class="readout">
+              <div class="status">${esc(t.status[status] || status)}</div>
+              <div class="power"><span class="big">${power !== null && status === "charging" ? this._num(power, 1) : "0"}</span><span class="unit">kW</span></div>
+              <div class="smartline">${esc(t.smart[smart] || "")}</div>
+              <dl class="facts">
+                <div><dt>${t.session}</dt><dd>${this._num(a.session && a.session.energy, 1)} ${t.kwh}</dd></div>
+                <div><dt>${t.cost}</dt><dd>${this._money(a.session && a.session.cost, a.currency)}</dd></div>
+                <div><dt>${t.duration}</dt><dd>${duration}</dd></div>
+              </dl>
+            </div>
+          </section>
+
+          <div class="modes" role="radiogroup">
+            ${["normal", "smart", "solar", "solar_smart"]
+              .filter((m) => a.has_surplus_source || !m.startsWith("solar"))
+              .map((m) => `<button class="mode ${a.mode === m ? "sel" : ""}" data-act="mode" data-mode="${m}" role="radio" aria-checked="${a.mode === m}">${t.modes[m]}</button>`)
+              .join("")}
+          </div>
+
+          <nav class="tabs">
+            ${tabs
+              .filter((x) => x !== "grid" || (a.equalizer && Object.keys(a.equalizer).length) || a.has_surplus_source)
+              .map((x) => `<button class="tab ${this._tab === x ? "sel" : ""}" data-act="tab" data-tab="${x}">${t.tabs[x]}</button>`)
+              .join("")}
+          </nav>
+          <section class="body">${body()}</section>
+        </ha-card>`;
+    }
+
+    _tabCharge(a, t, status) {
+      const src = a.sources || {};
+      const lockSw = this._state(src.cable_locked_permanently);
+      const locked = lockSw && lockSw.state === "on";
+      const charging = status === "charging";
+      const canStart = CONNECTED.has(status) && !charging && status !== "completed";
+      const limit = this._val(src.dynamic_charger_limit);
+      const current = this._val(src.current);
+      const reason = this._state(src.reason_for_no_current);
+      return `
+        <div class="actions">
+          <button class="act primary" data-act="${charging ? "pause" : "resume"}" ${charging || canStart ? "" : "disabled"}>
+            ${charging ? t.pause : t.resume}
+          </button>
+          <button class="act ${a.boost ? "on" : ""}" data-act="boost" ${CONNECTED.has(status) ? "" : "disabled"}>${t.boost}</button>
+          ${lockSw ? `<button class="act ${locked ? "on" : ""}" data-act="lock">${locked ? t.lock : t.unlock}</button>` : ""}
+        </div>
+        <div class="grid3">
+          <div class="tile"><span>${t.today}</span><b>${this._num(a.today && a.today.energy, 1)} ${t.kwh}</b><small>${this._money(a.today && a.today.cost, a.currency)}</small></div>
+          <div class="tile"><span>${t.amps}</span><b>${this._num(current, 1)} A</b><small>max ${this._num(limit, 0)} A</small></div>
+          <div class="tile"><span>${a.currency || "€"}/kWh</span><b>${this._num(a.price, 3)}</b><small>${t.now}</small></div>
+        </div>
+        ${reason && !/^\(?0\)?\b|No reason/i.test(reason.state) && CONNECTED.has(status) ? `<p class="note">${esc(reason.state)}</p>` : ""}`;
+    }
+
+    _tabPlan(a, t) {
+      const ent = a.entities || {};
+      const useSoc = a.has_soc && ent.target_soc;
+      const targetVal = useSoc ? a.target_soc : a.target_energy;
+      const step = useSoc ? 5 : 1;
+      const unit = useSoc ? "%" : t.kwh;
+      const chart = this._priceChart(a, t);
+      const summary = a.plan && a.plan.length
+        ? `<div class="plansum">
+             <div><span>${t.planStart}</span><b>${this._time(a.next_start)}</b></div>
+             <div><span>${t.planEnd}</span><b>${this._time(a.complete_by)}</b></div>
+             <div><span>${t.planCost}</span><b>${this._money(a.plan_cost, a.currency)}</b></div>
+           </div>`
+        : `<p class="note">${a.prices && a.prices.length ? t.noPlan : t.noPrices}</p>`;
+      return `
+        <div class="controls">
+          <label class="ctl"><span>${t.departure}</span>
+            <input type="time" value="${esc(a.departure || "07:00")}" data-ctl="departure">
+          </label>
+          <div class="ctl"><span>${useSoc ? t.targetSoc : t.target}</span>
+            <div class="stepper">
+              <button data-act="step" data-dir="-1" data-step="${step}" aria-label="−">−</button>
+              <b>${this._num(targetVal, 0)} ${unit}</b>
+              <button data-act="step" data-dir="1" data-step="${step}" aria-label="+">+</button>
+            </div>
+          </div>
+          <div class="ctl"><span>${t.needed}</span><b class="plain">${this._num(a.energy_needed, 1)} ${t.kwh}</b></div>
+        </div>
+        ${chart}
+        ${summary}`;
+    }
+
+    _priceChart(a, t) {
+      const prices = (a.prices || []).filter((p) => new Date(p.end) > new Date(Date.now() - 3600e3)).slice(0, 96);
+      if (!prices.length) return "";
+      const planned = new Set((a.plan || []).map((p) => new Date(p.start).getTime()));
+      const inPlan = (p) => (a.plan || []).some((s) => new Date(s.start) < new Date(p.end) && new Date(s.end) > new Date(p.start));
+      const vals = prices.map((p) => p.price);
+      const max = Math.max(...vals, 0.01);
+      const lo = Math.min(...vals);
+      // all-positive prices: start the axis a bit below the cheapest slot so differences stay visible
+      const min = lo < 0 ? lo : Math.max(0, lo - (max - lo) * 0.35);
+      const W = 600, H = 120, pad = 2;
+      const bw = W / prices.length;
+      const y = (v) => H - ((v - min) / (max - min || 1)) * (H - 14) - 2;
+      const zero = y(0);
+      const now = Date.now();
+      let nowX = null;
+      const bars = prices.map((p, i) => {
+        const s = new Date(p.start).getTime(), e = new Date(p.end).getTime();
+        if (now >= s && now < e) nowX = i * bw + ((now - s) / (e - s)) * bw;
+        const top = Math.min(y(p.price), zero), h = Math.max(1.5, Math.abs(zero - y(p.price)));
+        const cls = inPlan(p) || planned.has(s) ? "bar plan" : "bar";
+        return `<rect class="${cls}" x="${(i * bw + pad / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${Math.max(1, bw - pad).toFixed(1)}" height="${h.toFixed(1)}" rx="1.5"><title>${this._time(p.start)} · ${this._num(p.price, 3)}</title></rect>`;
+      }).join("");
+      const ticks = prices.map((p, i) => {
+        const d = new Date(p.start);
+        return d.getMinutes() === 0 && d.getHours() % 6 === 0 ? `<text x="${(i * bw).toFixed(1)}" y="${H + 14}">${String(d.getHours()).padStart(2, "0")}:00</text>` : "";
+      }).join("");
+      return `
+        <figure class="chart">
+          <svg viewBox="0 -4 ${W} ${H + 20}" preserveAspectRatio="none" role="img">
+            <line class="zero" x1="0" x2="${W}" y1="${zero.toFixed(1)}" y2="${zero.toFixed(1)}"></line>
+            ${bars}
+            ${nowX !== null ? `<line class="nowline" x1="${nowX.toFixed(1)}" x2="${nowX.toFixed(1)}" y1="0" y2="${H}"></line>` : ""}
+            ${ticks}
+          </svg>
+          <figcaption><span class="key plan"></span>${t.planned} · ${this._num(lo, 3)} – ${this._num(max, 3)} ${a.currency || "€"}/kWh</figcaption>
+        </figure>`;
+    }
+
+    _tabGrid(a, t) {
+      const eq = a.equalizer || {};
+      const fuse = a.main_fuse;
+      const grid = a.grid_power_kw;
+      if (grid === null || grid === undefined) return `<p class="note">${t.noGrid}</p>`;
+      const exporting = grid < 0;
+      const phases = (a.phase_currents || []).map((c, i) => {
+        const pct = fuse && c !== null ? Math.min(100, (c / fuse) * 100) : 0;
+        const warn = pct > 90 ? "hot" : pct > 70 ? "warm" : "";
+        return `<div class="phase">
+            <span>L${i + 1}</span>
+            <div class="track"><i class="${warn}" style="width:${pct.toFixed(0)}%"></i></div>
+            <b>${this._num(c, 1)} A</b>
+            <small>${this._num(a.phase_voltages && a.phase_voltages[i], 0)} V</small>
+          </div>`;
+      }).join("");
+      const hasPhases = (a.phase_currents || []).some((c) => c !== null);
+      const imp = this._val(eq.import_energy), exp = this._val(eq.export_energy);
+      return `
+        <div class="flow ${exporting ? "out" : "in"}">
+          <div><span>${exporting ? t.exporting : t.importing}</span><b>${this._num(Math.abs(grid), 2)} kW</b></div>
+          ${a.surplus_kw !== null && a.surplus_kw !== undefined ? `<div><span>${t.surplus}</span><b>${this._num(Math.max(0, a.surplus_kw), 2)} kW</b></div>` : ""}
+          ${fuse ? `<div><span>${t.fuse}</span><b>${this._num(fuse, 0)} A</b><small>${this._num(a.phase_headroom, 1)} A ${t.headroom}</small></div>` : ""}
+        </div>
+        ${hasPhases ? `<div class="phases">${phases}</div>` : ""}
+        ${imp !== null || exp !== null ? `<div class="grid3">
+            <div class="tile"><span>${t.importing}</span><b>${this._num(imp, 0)}</b><small>${t.kwh}</small></div>
+            <div class="tile"><span>${t.exporting}</span><b>${this._num(exp, 0)}</b><small>${t.kwh}</small></div>
+            <div class="tile"><span>°C</span><b>${this._num(this._val(eq.temp_max), 0)}</b><small>Equalizer</small></div>
+          </div>` : ""}`;
+    }
+
+    _tabHistory(a, t) {
+      const m = a.month || {};
+      const avg = m.energy ? m.cost / m.energy : null;
+      const months = (a.months || []).slice(-6);
+      const maxE = Math.max(...months.map((x) => x.energy), 1);
+      const sessions = (a.sessions || []).slice(0, 8);
+      return `
+        <div class="grid3">
+          <div class="tile"><span>${t.month}</span><b>${this._num(m.energy, 1)} ${t.kwh}</b><small>${this._money(m.cost, a.currency)}</small></div>
+          <div class="tile"><span>${t.avg} ${a.currency || "€"}/kWh</span><b>${this._num(avg, 3)}</b><small>${t.month.toLowerCase()}</small></div>
+          ${a.reimbursement_per_kwh !== null && a.reimbursement_per_kwh !== undefined
+            ? `<div class="tile"><span>${t.reimb}</span><b>${this._money((m.energy || 0) * a.reimbursement_per_kwh, a.currency)}</b><small>${this._num(a.reimbursement_per_kwh, 3)}/${t.kwh}</small></div>`
+            : `<div class="tile"><span>${t.today}</span><b>${this._num(a.today && a.today.energy, 1)} ${t.kwh}</b><small>${this._money(a.today && a.today.cost, a.currency)}</small></div>`}
+        </div>
+        ${months.length > 1 ? `<div class="months">${months.map((x) => `
+            <div class="mcol" title="${esc(x.month)}: ${this._num(x.energy, 1)} kWh · ${this._money(x.cost, a.currency)}">
+              <i style="height:${Math.max(4, (x.energy / maxE) * 100).toFixed(0)}%"></i>
+              <span>${new Date(x.month + "-01").toLocaleDateString(this._lang, { month: "short" })}</span>
+            </div>`).join("")}</div>` : ""}
+        <h4>${t.sessions}</h4>
+        ${sessions.length ? `<ul class="sessions">${sessions.map((s) => `
+            <li><span>${this._day(s.start)} ${this._time(s.start)}–${this._time(s.end)}</span>
+            <b>${this._num(s.energy, 1)} ${t.kwh}</b><em>${this._money(s.cost, a.currency)}</em></li>`).join("")}</ul>` : `<p class="note">${t.none}</p>`}
+        <button class="act wide" data-act="export">${this._exported ? t.exported : t.export}</button>`;
+    }
+
+    // ----------------------------------------------------------------- actions
+    _attrs() {
+      const st = this._hass.states[this._entityId()];
+      return st ? st.attributes : {};
+    }
+
+    async _onClick(e) {
+      const btn = e.target.closest("[data-act]");
+      if (!btn || btn.disabled) return;
+      const a = this._attrs();
+      const ent = a.entities || {};
+      const src = a.sources || {};
+      const call = (d, s, data) => this._hass.callService(d, s, data);
+      switch (btn.dataset.act) {
+        case "tab":
+          this._tab = btn.dataset.tab;
+          this._sig = null;
+          this._render();
+          return;
+        case "mode":
+          if (ent.charge_mode) await call("select", "select_option", { entity_id: ent.charge_mode, option: btn.dataset.mode });
+          return;
+        case "pause":
+        case "resume": {
+          const status = this._hass.states[this._entityId()].state;
+          const cmd = btn.dataset.act === "pause" ? "pause" : status === "awaiting_start" || status === "ready_to_charge" ? "resume" : "start";
+          await call("easee", "action_command", { device_id: a.device_id, action_command: cmd });
+          return;
+        }
+        case "boost":
+          if (ent.boost) await call("switch", a.boost ? "turn_off" : "turn_on", { entity_id: ent.boost });
+          return;
+        case "lock": {
+          const sw = this._hass.states[src.cable_locked_permanently];
+          if (sw) await call("switch", sw.state === "on" ? "turn_off" : "turn_on", { entity_id: src.cable_locked_permanently });
+          return;
+        }
+        case "step": {
+          const useSoc = a.has_soc && ent.target_soc;
+          const id = useSoc ? ent.target_soc : ent.target_energy;
+          const cur = useSoc ? a.target_soc : a.target_energy;
+          const next = Math.min(useSoc ? 100 : 120, Math.max(useSoc ? 10 : 1, Number(cur) + Number(btn.dataset.dir) * Number(btn.dataset.step)));
+          if (id) await call("number", "set_value", { entity_id: id, value: next });
+          return;
+        }
+        case "export":
+          if (ent.export_report) {
+            await call("button", "press", { entity_id: ent.export_report });
+            this._exported = true;
+            this._sig = null;
+            this._render();
+          }
+          return;
+        default:
+      }
+    }
+
+    async _onChange(e) {
+      const el = e.target;
+      if (el.dataset.ctl === "departure") {
+        const ent = this._attrs().entities || {};
+        if (ent.departure_time && el.value) {
+          await this._hass.callService("time", "set_value", { entity_id: ent.departure_time, time: `${el.value}:00` });
+        }
+      }
+    }
+  }
+
+  const CSS = `
+    :host { display:block; container-type:inline-size; }
+    ha-card {
+      display:block;
+      --bg:#14181E; --panel:#1C2129; --line:#2A303A; --text:#EDF0F4; --muted:#8C95A2; --accent:#5AA9FF;
+      background:var(--bg); color:var(--text); border-radius:var(--ha-card-border-radius,16px);
+      padding:18px 18px 16px; font-family:var(--ha-font-family-body, "Roboto", system-ui, sans-serif);
+      overflow:hidden; border:1px solid var(--line);
+    }
+    .empty { padding:16px; color:var(--muted); }
+    header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .title { display:flex; flex-direction:column; gap:2px; }
+    .name { font-size:1.05rem; font-weight:600; letter-spacing:.01em; }
+    .model { font-size:.8rem; color:var(--muted); }
+    .online { width:9px; height:9px; border-radius:50%; background:#59616D; }
+    .online.on { background:#45D69A; box-shadow:0 0 0 3px rgba(69,214,154,.15); }
+
+    .hero { display:grid; grid-template-columns:86px 1fr; gap:20px; align-items:center; padding:6px 0 18px; }
+    .post {
+      position:relative; height:176px; width:76px; justify-self:center;
+      background:linear-gradient(160deg,#2B313B 0%,#1A1F26 70%); border-radius:22px;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 10px 24px rgba(0,0,0,.35);
+    }
+    .strip {
+      position:absolute; left:50%; top:22px; bottom:52px; width:6px; transform:translateX(-50%);
+      border-radius:6px; background:var(--led); box-shadow:0 0 14px var(--led), 0 0 30px color-mix(in srgb, var(--led) 40%, transparent);
+      overflow:hidden;
+    }
+    .strip i { position:absolute; left:0; right:0; height:40%; background:linear-gradient(to top, transparent, rgba(255,255,255,.85), transparent); opacity:0; }
+    .strip.flow i { opacity:1; animation:flow 1.8s linear infinite; }
+    .strip.breathe { animation:breathe 3.2s ease-in-out infinite; }
+    .strip.blink { animation:blink 1s steps(2) infinite; }
+    .socket { position:absolute; left:50%; bottom:16px; width:26px; height:26px; transform:translateX(-50%); border-radius:50%;
+      background:radial-gradient(circle at 50% 45%, #0F1216 55%, #2C333D 57%); }
+    @keyframes flow { from { bottom:-40%; } to { bottom:100%; } }
+    @keyframes breathe { 0%,100% { opacity:.45; } 50% { opacity:1; } }
+    @keyframes blink { 50% { opacity:.25; } }
+    @media (prefers-reduced-motion: reduce) { .strip, .strip i { animation:none !important; } }
+
+    .status { font-size:.95rem; color:var(--led); font-weight:600; }
+    .power { display:flex; align-items:baseline; gap:6px; margin:2px 0 4px; }
+    .big { font-size:3rem; font-weight:300; line-height:1; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+    .unit { font-size:1rem; color:var(--muted); }
+    .smartline { font-size:.82rem; color:var(--muted); min-height:1.1em; }
+    .facts { display:flex; gap:18px; margin:12px 0 0; }
+    .facts div { display:flex; flex-direction:column-reverse; }
+    .facts dt { font-size:.72rem; color:var(--muted); }
+    .facts dd { margin:0; font-size:.98rem; font-variant-numeric:tabular-nums; }
+
+    .modes { display:grid; grid-auto-flow:column; grid-auto-columns:1fr; background:var(--panel); border-radius:12px; padding:3px; gap:3px; }
+    .mode { background:none; border:0; color:var(--muted); padding:9px 4px; border-radius:9px; font:inherit; font-size:.82rem; cursor:pointer; }
+    .mode.sel { background:#2C3440; color:var(--text); }
+
+    .tabs { display:flex; gap:18px; margin:16px 2px 10px; border-bottom:1px solid var(--line); }
+    .tab { background:none; border:0; color:var(--muted); font:inherit; font-size:.85rem; padding:6px 0 9px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
+    .tab.sel { color:var(--text); border-bottom-color:var(--accent); }
+    button:focus-visible, input:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+    .actions { display:flex; gap:8px; margin:4px 0 12px; }
+    .act { flex:1; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:12px; padding:11px 8px; font:inherit; font-size:.88rem; cursor:pointer; }
+    .act.primary { background:var(--accent); border-color:var(--accent); color:#06121F; font-weight:600; }
+    .act.on { border-color:var(--led); color:var(--led); }
+    .act[disabled] { opacity:.4; cursor:default; }
+    .act.wide { width:100%; margin-top:12px; }
+
+    .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .tile { background:var(--panel); border-radius:12px; padding:10px 11px; display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .tile span, .tile small { font-size:.72rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .tile b { font-weight:500; font-size:1.02rem; font-variant-numeric:tabular-nums; }
+    .note { color:var(--muted); font-size:.82rem; margin:10px 2px 0; line-height:1.45; }
+
+    .controls { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px; }
+    .ctl { background:var(--panel); border-radius:12px; padding:9px 11px; display:flex; flex-direction:column; gap:4px; }
+    .ctl > span { font-size:.72rem; color:var(--muted); }
+    .ctl input { background:none; border:0; color:var(--text); font:inherit; font-size:1rem; padding:0; color-scheme:dark; }
+    .stepper { display:flex; align-items:center; justify-content:space-between; gap:4px; }
+    .stepper button { width:26px; height:26px; border-radius:8px; border:1px solid var(--line); background:none; color:var(--text); cursor:pointer; font-size:1rem; line-height:1; }
+    .stepper b, b.plain { font-weight:500; font-size:.98rem; white-space:nowrap; }
+
+    .chart { margin:0; }
+    .chart svg { width:100%; height:140px; display:block; overflow:visible; }
+    .bar { fill:#3A4250; }
+    .bar.plan { fill:var(--accent); }
+    .zero { stroke:var(--line); stroke-width:1; }
+    .nowline { stroke:#fff; stroke-width:1.5; stroke-dasharray:3 3; opacity:.7; }
+    .chart text { fill:var(--muted); font-size:11px; }
+    figcaption { font-size:.74rem; color:var(--muted); display:flex; align-items:center; gap:6px; margin-top:2px; }
+    .key.plan { width:10px; height:10px; border-radius:3px; background:var(--accent); display:inline-block; }
+    .plansum { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
+    .plansum div { display:flex; flex-direction:column; gap:2px; }
+    .plansum span { font-size:.72rem; color:var(--muted); }
+    .plansum b { font-weight:500; font-size:1.05rem; }
+
+    .flow { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px; }
+    .flow div { display:flex; flex-direction:column; gap:2px; }
+    .flow span, .flow small { font-size:.72rem; color:var(--muted); }
+    .flow b { font-size:1.35rem; font-weight:400; font-variant-numeric:tabular-nums; }
+    .flow.out div:first-child b { color:#FFD54F; }
+    .phases { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+    .phase { display:grid; grid-template-columns:22px 1fr 58px 42px; align-items:center; gap:10px; font-size:.85rem; }
+    .phase span, .phase small { color:var(--muted); }
+    .phase b { font-weight:500; text-align:right; font-variant-numeric:tabular-nums; }
+    .track { height:8px; border-radius:4px; background:var(--panel); overflow:hidden; }
+    .track i { display:block; height:100%; background:#45D69A; border-radius:4px; transition:width .6s ease; }
+    .track i.warm { background:#F4B740; } .track i.hot { background:#FF5C61; }
+
+    .months { display:flex; gap:10px; align-items:flex-end; height:92px; margin:14px 2px 4px; }
+    .mcol { flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:4px; }
+    .mcol i { width:100%; max-width:30px; background:#3A4250; border-radius:5px 5px 2px 2px; }
+    .mcol:last-child i { background:var(--accent); }
+    .mcol span { font-size:.7rem; color:var(--muted); }
+    h4 { font-size:.8rem; font-weight:500; color:var(--muted); margin:14px 2px 6px; }
+    .sessions { list-style:none; margin:0; padding:0; }
+    .sessions li { display:grid; grid-template-columns:1fr auto auto; gap:12px; padding:8px 2px; border-bottom:1px solid var(--line); font-size:.84rem; }
+    .sessions li span { color:var(--muted); }
+    .sessions em { font-style:normal; min-width:62px; text-align:right; }
+    .sessions b { font-weight:500; }
+
+    @container (max-width: 420px) {
+      .hero { grid-template-columns:64px 1fr; gap:14px; }
+      .post { width:58px; height:140px; border-radius:18px; }
+      .big { font-size:2.5rem; }
+      .controls { grid-template-columns:1fr 1fr; }
+      .controls .ctl:last-child { grid-column:1 / -1; }
+      .facts { gap:12px; }
+    }
+  `;
+
+  // ------------------------------------------------------------------- editor
+  class EaseeSmartCardEditor extends HTMLElement {
+    setConfig(config) {
+      this._config = config;
+      this._render();
+    }
+    set hass(hass) {
+      this._hass = hass;
+      this._render();
+    }
+    _render() {
+      if (!this._hass || !this._config) return;
+      if (!this._form) {
+        this._form = document.createElement("ha-form");
+        this._form.computeLabel = (s) => ({ entity: "Easee Smart status", name: "Name", tab: "Start tab" }[s.name] || s.name);
+        this._form.addEventListener("value-changed", (ev) => {
+          this._config = ev.detail.value;
+          this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
+        });
+        this.appendChild(this._form);
+      }
+      this._form.hass = this._hass;
+      this._form.data = this._config;
+      this._form.schema = [
+        { name: "entity", selector: { entity: { integration: "easee_smart", domain: "sensor" } } },
+        { name: "name", selector: { text: {} } },
+        { name: "tab", selector: { select: { mode: "dropdown", options: ["charge", "plan", "grid", "history"] } } },
+      ];
+    }
+  }
+
+  if (!customElements.get("easee-smart-card")) customElements.define("easee-smart-card", EaseeSmartCard);
+  if (!customElements.get("easee-smart-card-editor")) customElements.define("easee-smart-card-editor", EaseeSmartCardEditor);
+  window.customCards = window.customCards || [];
+  if (!window.customCards.some((c) => c.type === "easee-smart-card")) {
+    window.customCards.push({
+      type: "easee-smart-card",
+      name: "Easee Smart",
+      description: "Charger, smart charging, Equalizer and costs in one card.",
+      preview: true,
+      documentationURL: "https://github.com/George-120/ha-easee-smart",
+    });
+  }
+  console.info(`%c EASEE-SMART-CARD %c ${VERSION} `, "background:#5AA9FF;color:#06121F;font-weight:600", "background:#14181E;color:#EDF0F4");
+})();
