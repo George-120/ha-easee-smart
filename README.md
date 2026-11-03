@@ -1,4 +1,4 @@
-# Easee Smart Charging
+<h1><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/custom_components/easee_smart/brand/icon.png" alt="" width="56" height="56" align="absmiddle"> Easee Smart Charging</h1>
 
 Slim laden, Equalizer-inzicht, laadkosten en een app-achtige dashboardkaart voor je Easee-laadpaal in Home Assistant — gebouwd bovenop de bestaande Easee-integratie. Geen tweede login, geen extra belasting van de Easee-cloud.
 
