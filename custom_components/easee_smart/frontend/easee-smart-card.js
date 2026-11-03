@@ -1,6 +1,6 @@
 /* Easee Smart Charging card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.4.1";
+  const VERSION = "1.4.2";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -875,14 +875,26 @@
     ["grid", "Aansluiting / Grid", "Grid power, phases and main fuse."],
     ["costs", "Kosten / Costs", "Costs, ERE, sessions and report."],
   ];
-  if (!customElements.get("easee-smart-card")) customElements.define("easee-smart-card", EaseeSmartCard);
+  // Some setups load a scoped custom-element registry polyfill *after* this script.
+  // That polyfill forgets earlier definitions, so Lovelace reports "Custom element doesn't exist".
+  // Register (again) until the active registry knows every card.
+  const DEFS = [["easee-smart-card", EaseeSmartCard], ["easee-smart-card-editor", EaseeSmartCardEditor]];
   for (const [view] of EXTRA) {
-    const tag = `easee-smart-${view}-card`;
-    if (!customElements.get(tag)) {
-      customElements.define(tag, class extends EaseeSmartCard { static get VIEW() { return view; } });
-    }
+    DEFS.push([`easee-smart-${view}-card`, class extends EaseeSmartCard { static get VIEW() { return view; } }]);
   }
-  if (!customElements.get("easee-smart-card-editor")) customElements.define("easee-smart-card-editor", EaseeSmartCardEditor);
+  const register = () => {
+    for (const [tag, cls] of DEFS) {
+      if (customElements.get(tag)) continue;
+      try {
+        customElements.define(tag, cls);
+      } catch (_e) {
+        try { customElements.define(tag, class extends cls {}); } catch (_e2) { /* already known */ }
+      }
+    }
+  };
+  register();
+  for (const ms of [0, 300, 1000, 2500, 5000, 10000, 20000]) setTimeout(register, ms);
+  window.addEventListener("load", register);
   window.customCards = window.customCards || [];
   if (!window.customCards.some((c) => c.type === "easee-smart-card")) {
     window.customCards.push({
