@@ -62,7 +62,6 @@ def build_dashboard(manager: EaseeSmartManager) -> dict[str, Any]:
     status = own.get("charger_status")
     if not status:
         raise HomeAssistantError("Easee Smart status sensor not ready yet")
-    power = manager.charger_entities.get("power")
 
     def card(view: str | None = None, **extra: Any) -> dict[str, Any]:
         kind = f"custom:easee-smart-{view}-card" if view else "custom:easee-smart-card"
@@ -93,14 +92,6 @@ def build_dashboard(manager: EaseeSmartManager) -> dict[str, Any]:
             badges.append(badge("", entity=car.soc_entity, name=car.name))
     badges = [b for b in badges if b]
 
-    history_entities = [e for e in (power, own.get("grid_power")) if e]
-    energy_cards: list[dict[str, Any]] = [heading(t["history"], "mdi:chart-line")]
-    if history_entities:
-        energy_cards.append({"type": "history-graph", "title": t["power"], "hours_to_show": 24, "entities": history_entities})
-    if own.get("current_price"):
-        energy_cards.append({"type": "history-graph", "title": t["price"], "hours_to_show": 24,
-                             "entities": [own["current_price"]]})
-
     sections = [
         {"type": "grid", "cards": [heading(t["charger"], "mdi:ev-station"), card("charger")]},
         {"type": "grid", "cards": [heading(t["control"], "mdi:tune-variant"), card("modes"), card("cars")]},
@@ -109,7 +100,6 @@ def build_dashboard(manager: EaseeSmartManager) -> dict[str, Any]:
     energy_sections = [
         {"type": "grid", "cards": [heading(t["grid"], "mdi:transmission-tower"), card("grid")]},
         {"type": "grid", "cards": [heading(t["costs"], "mdi:cash-multiple"), card("costs")]},
-        {"type": "grid", "cards": energy_cards},
     ]
     header = {
         "layout": "responsive",
@@ -127,7 +117,7 @@ def build_dashboard(manager: EaseeSmartManager) -> dict[str, Any]:
              "max_columns": 3, "dense_section_placement": True, "header": header, "badges": badges,
              "sections": sections},
             {"title": t["energy"], "path": "energie", "icon": "mdi:chart-box-outline", "type": "sections",
-             "max_columns": 3, "dense_section_placement": True, "header": header, "badges": badges,
+             "max_columns": 2, "dense_section_placement": True, "header": header, "badges": badges,
              "sections": energy_sections},
             {"title": t["all"], "path": "alles", "icon": "mdi:view-dashboard-outline", "type": "sections",
              "max_columns": 2, "sections": [{"type": "grid", "cards": [card(None, tab="charge")]}]},
