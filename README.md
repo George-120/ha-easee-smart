@@ -7,9 +7,11 @@ Slim laden, Equalizer-inzicht, laadkosten en een app-achtige dashboardkaart voor
 
 ![Easee Smart-kaart](docs/preview.png)
 
-*English and Deutsch below.*
+**Taal / Language / Sprache:** [Nederlands](#nederlands) · [English](#english) · [Deutsch](#deutsch)
 
-## Wat het doet
+## Nederlands
+
+### Wat het doet
 
 - **Kies gewoon je laadpaal.** De integratie vindt je Easee-laadpalen en Equalizer zelf en herkent het model (Home, Charge, Charge Lite, Max, Up, Core, Pro, One).
 - **Slim laden op dynamische prijzen.** De day-ahead beursprijzen (EPEX SPOT, voorheen APX) worden automatisch per kwartier opgehaald voor vandaag en morgen, voor elke Europese prijszone — zonder account of extra integratie. Vul de opslag van je contract in, dan rekent hij met (beurs + opslag + energiebelasting) × (1 + btw). Je stelt een vertrektijd en hoeveel je wilt laden in (kWh, of accupercentage als je auto een accusensor heeft) en de integratie kiest de goedkoopste kwartieren.
@@ -27,7 +29,7 @@ Slim laden, Equalizer-inzicht, laadkosten en een app-achtige dashboardkaart voor
 
 Load balancing doet de Easee Equalizer zelf; deze integratie grijpt daar niet in.
 
-## Installatie
+### Installatie
 
 1. Zorg dat de **Easee-integratie** draait ([nordicopen/easee_hass](https://github.com/nordicopen/easee_hass) via HACS).
 2. Installeer **Easee Smart Charging** via HACS (knop hierboven) en herstart Home Assistant.
@@ -38,7 +40,7 @@ Alle instellingen pas je later aan via *Configureren* op de integratie: laadpaal
 
 Vink bij stap 4 *Benodigde Easee-sensoren automatisch inschakelen* aan: een paar Easee-sensoren (fasestromen, spanning, limieten) staan standaard uit.
 
-## De kaart
+### De kaart
 
 De kaart wordt automatisch geladen; je hoeft niets aan je dashboard of resources te veranderen. Voeg hem toe via *Kaart toevoegen → Easee Smart Charging*, of in YAML:
 
@@ -49,7 +51,7 @@ tab: charge                         # charge | plan | grid | history
 language: auto                      # auto | nl | en | de
 ```
 
-### Losse kaarten
+#### Losse kaarten
 
 Naast de complete kaart zijn er losse kaarten om je dashboard zelf in te delen (allemaal in de kaartkiezer onder *Easee Smart Charging*):
 
@@ -64,7 +66,7 @@ Naast de complete kaart zijn er losse kaarten om je dashboard zelf in te delen (
 
 Elke kaart volgt je licht/donker thema (`theme: auto | light | dark`) en heeft een optionele `title`.
 
-## Entiteiten
+### Entiteiten
 
 | Entiteit | Wat |
 | --- | --- |
@@ -79,12 +81,16 @@ Elke kaart volgt je licht/donker thema (`theme: auto | light | dark`) en heeft e
 | `sensor … geladen vandaag / deze maand` | Energie |
 | `sensor … vergoeding deze maand` | Als je een vergoedingstarief hebt ingesteld |
 | `sensor … netvermogen / zonne-overschot` | Met Equalizer of netsensor |
-| `sensor … stroom fase L1-L3 / ruimte / belasting hoofdzekering` | Met Equalizer |
+| `sensor … stroom fase L1-L3 / ruimte / belasting hoofdzekering` | Met Equalizer of fasesensoren van je meter |
+| `select … aangesloten auto` | Automatisch of een vaste auto |
+| `sensor … accu auto` | Accuniveau van de aangesloten auto |
+| `sensor … ERE deze maand / dit jaar / totaal` | Opbrengst van de ERE-regeling |
+| `button … gegevens auto verversen` / `laden starten in auto` | Acties op de auto |
 | `button … maandrapport exporteren` | CSV in `/config/www/easee_smart/` |
 
 Acties: `easee_smart.export_report` (geeft het resultaat terug, handig in automatiseringen) en `easee_smart.set_mode`.
 
-## Goed om te weten
+### Goed om te weten
 
 - Zet in de Easee-app de eigen *slim laden* van Easee uit als je deze integratie de planning laat doen, anders sturen twee systemen tegelijk.
 - Sommige auto's vallen in slaap tijdens een lange pauze. De integratie stuurt na drie minuten zonder stroom automatisch een *hervat*-commando.
@@ -96,20 +102,113 @@ Dit is een communityproject en geen officieel product van Easee.
 
 ## English
 
-Smart charging, Equalizer insight, charging costs and an app-style dashboard card for Easee chargers, built on top of the existing Easee integration (no second login).
+Smart charging, grid connection insight, charging costs and app-style dashboard cards for your Easee charger in Home Assistant — built on top of the existing Easee integration. No second login and no extra load on the Easee cloud.
 
-Pick your charger, set a departure time and how much energy you need, and Easee Smart Charging charges in the cheapest quarter hours (day-ahead EPEX SPOT prices for every European bidding zone are fetched automatically, no account needed), on solar surplus (via the Equalizer or any grid power sensor), or both. It reads all Equalizer values (grid power, per-phase current and voltage, main fuse load and headroom), tracks costs per session/day/month and exports a monthly CSV with optional reimbursement. The dynamic limit is always set with a 15-minute time-to-live, so the charger returns to normal if Home Assistant stops. Translated into English, Dutch and German.
+### What it does
 
-Install: Easee integration first, then this repository via HACS, restart, add the *Easee Smart Charging* integration. The card (`custom:easee-smart-card`) is loaded automatically.
+- **Just pick your charger.** The integration finds your Easee chargers and Equalizer by itself and recognises the model (Home, Charge, Charge Lite, Max, Up, Core, Pro, One). Circuit size and main fuse are taken from your Easee settings.
+- **Smart charging on dynamic prices.** Day-ahead market prices (EPEX SPOT, formerly APX) are fetched automatically per quarter hour for today and tomorrow, for every European bidding zone — no account or extra integration needed. Enter your contract's markup and it calculates (market + markup + energy tax) × (1 + VAT). Set a departure time and how much you want to charge (kWh, or a battery percentage when your car has a battery sensor) and the integration picks the cheapest quarter hours.
+- **Solar surplus charging.** With an Easee Equalizer the measured import and export are used automatically. Without an Equalizer you add your **main connection**: your smart meter is detected automatically — HomeWizard P1 first because it is the most accurate, then DSMR, P1 Monitor, Zonneplan Connect, Tibber and Enphase — and you choose your main fuse (e.g. 3×25 A). You can change it any time under *Configure → Main connection*. Start and stop delays prevent the charger from switching on and off.
+- **Solar + smart.** Charges from the sun during the day and tops up the rest in the cheapest hours before departure.
+- **Link your cars — any brand.** Up to six cars. Pick your car's device (Kia, Hyundai, Tesla, VW, BMW, Polestar, …) and Easee Smart Charging fills in the battery level, plug sensor, charge limit, range and the buttons to refresh data or start charging. Everything can be changed, including your own name and photo. With a plug sensor per car it detects which car is connected, and your charge target is also set in the car.
+- **Wake the car.** If a car does not start charging, Easee Smart Charging sends *resume* to the charger after three minutes and turns on the car's start entity.
+- **ERE scheme.** Turn on the ERE scheme (emission reduction units) and enter what you receive per charged kWh; you see the revenue per month, per year and in total (also in the monthly report).
+- **Boost.** One button to charge at full power right away, until you unplug.
+- **Equalizer values.** Grid power, current per phase (L1/L2/L3), voltage, load and headroom on your main fuse, plus imported/exported energy.
+- **Costs and reimbursement.** Costs per session, day and month based on the actual price at that moment. Optionally a reimbursement rate for company-car drivers, with a monthly CSV report for your employer.
+- **App-style cards.** The charger's light strip is the status light (white = standby, blue = connected, flowing green = charging, amber = waiting for a cheap moment, yellow = solar, red = error). One complete card plus separate cards for charger, charge mode, cars, planning, grid connection and costs. Light and dark theme.
+- **Safe.** Smart control sets the charge current with a 15-minute expiry. If Home Assistant stops, your car simply charges normally again. Without price data it charges right away.
+- English, Dutch and German.
+
+Load balancing is done by the Easee Equalizer itself; this integration does not interfere with it.
+
+### Installation
+
+1. Make sure the **Easee integration** is running ([nordicopen/easee_hass](https://github.com/nordicopen/easee_hass) via HACS).
+2. Install **Easee Smart Charging** via HACS (button at the top) and restart Home Assistant.
+3. Go to *Settings → Devices & services → Add integration → Easee Smart Charging* (or use the second button).
+4. Pick your charger (and Equalizer), check the detected model, check your main connection (when you have no Equalizer), optionally enter your energy contract's markup and link a car. Done.
+
+All settings can be changed later under *Configure* on the integration: charger, main connection, prices and costs (incl. ERE), cars, and advanced (minimum charge current, solar delays, solar buffer, charging efficiency, refreshing car data, language).
+
+Tick *Enable the Easee sensors this integration needs* in step 4: a few Easee sensors (phase currents, voltage, limits) are disabled by default.
+
+### The cards
+
+The cards are loaded automatically; you do not have to change your dashboard or resources. Add them via *Add card → Easee Smart Charging*, or in YAML:
+
+```yaml
+type: custom:easee-smart-card       # or easee-smart-charger-card, -modes-, -cars-, -plan-, -grid-, -costs-card
+entity: sensor.driveway_smart_status  # optional; without it the first charger is used
+theme: auto                          # auto | light | dark
+language: auto                       # auto | nl | en | de
+```
+
+### Good to know
+
+- Turn off Easee's own *smart charging* in the Easee app when you let this integration plan, otherwise two systems control the charger at once.
+- Costs are counted from the moment the integration runs; earlier sessions are not in the history.
+
+This is a community project and not an official Easee product.
+
+---
 
 ## Deutsch
 
-Smartes Laden, Equalizer-Werte, Ladekosten und eine App-ähnliche Karte für Easee-Wallboxen, aufbauend auf der bestehenden Easee-Integration. Laden zu den günstigsten Stunden vor der Abfahrt, mit Solarüberschuss oder beides; alle Equalizer-Werte inklusive Phasenströme und Auslastung der Hauptsicherung; Kosten pro Ladevorgang und Monat mit CSV-Export. Installation: zuerst die Easee-Integration, dann dieses Repository über HACS.
+Smartes Laden, Einblick in den Hausanschluss, Ladekosten und App-ähnliche Dashboard-Karten für deine Easee-Wallbox in Home Assistant — aufbauend auf der bestehenden Easee-Integration. Kein zweites Login und keine zusätzliche Last für die Easee-Cloud.
 
-## Bronnen
+### Was es macht
 
-Prijsdata: [Energy-Charts](https://energy-charts.info) (Fraunhofer ISE), licentie CC BY 4.0.
+- **Einfach die Wallbox wählen.** Die Integration findet deine Easee-Wallboxen und den Equalizer selbst und erkennt das Modell (Home, Charge, Charge Lite, Max, Up, Core, Pro, One). Absicherung und Hauptsicherung werden aus deinen Easee-Einstellungen übernommen.
+- **Smartes Laden mit dynamischen Preisen.** Die Day-Ahead-Börsenpreise (EPEX SPOT) werden automatisch je Viertelstunde für heute und morgen abgerufen, für jede europäische Preiszone — ohne Konto oder zusätzliche Integration. Trage den Aufschlag deines Vertrags ein, dann rechnet sie mit (Börse + Aufschlag + Energiesteuer) × (1 + MwSt.). Du legst eine Abfahrtszeit und die gewünschte Lademenge fest (kWh oder Akkustand, wenn dein Auto einen Akkusensor hat) und die Integration wählt die günstigsten Viertelstunden.
+- **Laden mit Solarüberschuss.** Mit einem Easee Equalizer werden Bezug und Einspeisung automatisch genutzt. Ohne Equalizer fügst du deinen **Hausanschluss** hinzu: dein Smart Meter wird automatisch erkannt — HomeWizard P1 zuerst, weil er am genauesten ist, danach DSMR, P1 Monitor, Zonneplan Connect, Tibber und Enphase — und du wählst deine Hauptsicherung (z. B. 3×25 A). Änderungen jederzeit unter *Konfigurieren → Hausanschluss*. Start- und Stoppverzögerungen verhindern ständiges Ein- und Ausschalten.
+- **Solar + Smart.** Lädt tagsüber mit Sonnenstrom und füllt den Rest in den günstigsten Stunden vor der Abfahrt auf.
+- **Autos verbinden — jede Marke.** Bis zu sechs Autos. Wähle das Gerät deines Autos (Kia, Hyundai, Tesla, VW, BMW, Polestar, …) und Easee Smart Charging trägt Akkustand, Stecker-Sensor, Ladelimit, Reichweite und die Tasten zum Aktualisieren oder Starten des Ladens selbst ein. Alles ist anpassbar, auch Name und Foto. Mit einem Stecker-Sensor pro Auto erkennt sie, welches Auto angeschlossen ist; dein Ladeziel wird auch im Auto gesetzt.
+- **Auto wecken.** Lädt ein Auto nicht, sendet Easee Smart Charging nach drei Minuten *Fortsetzen* an die Wallbox und schaltet die Start-Entität des Autos ein.
+- **ERE (Emissionsminderung).** Schalte die ERE-Erfassung ein und trage ein, was du pro geladener kWh erhältst; du siehst den Erlös pro Monat, pro Jahr und gesamt (auch im Monatsbericht).
+- **Boost.** Eine Taste, um sofort mit voller Leistung zu laden, bis du absteckst.
+- **Equalizer-Werte.** Netzleistung, Strom pro Phase (L1/L2/L3), Spannung, Auslastung und Reserve der Hauptsicherung sowie Bezug/Einspeisung in kWh.
+- **Kosten und Erstattung.** Kosten pro Ladevorgang, Tag und Monat auf Basis des tatsächlichen Preises. Optional ein Erstattungssatz für Dienstwagenfahrer mit monatlichem CSV-Bericht für den Arbeitgeber.
+- **App-ähnliche Karten.** Der Lichtstreifen der Wallbox ist die Statusanzeige (weiß = Standby, blau = verbunden, fließend grün = lädt, bernstein = wartet auf günstigen Moment, gelb = Solar, rot = Fehler). Eine Gesamtkarte plus einzelne Karten für Wallbox, Lademodus, Autos, Planung, Hausanschluss und Kosten. Helles und dunkles Design.
+- **Sicher.** Die smarte Steuerung setzt den Ladestrom mit 15 Minuten Ablaufzeit. Fällt Home Assistant aus, lädt dein Auto einfach wieder normal. Ohne Preisdaten wird sofort geladen.
+- Deutsch, Englisch und Niederländisch.
 
-## Licentie
+Das Lastmanagement übernimmt der Easee Equalizer selbst; diese Integration greift nicht ein.
+
+### Installation
+
+1. Stelle sicher, dass die **Easee-Integration** läuft ([nordicopen/easee_hass](https://github.com/nordicopen/easee_hass) über HACS).
+2. Installiere **Easee Smart Charging** über HACS (Taste oben) und starte Home Assistant neu.
+3. Gehe zu *Einstellungen → Geräte & Dienste → Integration hinzufügen → Easee Smart Charging* (oder nutze die zweite Taste).
+4. Wähle deine Wallbox (und den Equalizer), prüfe das erkannte Modell und den Hausanschluss (ohne Equalizer), trage optional den Aufschlag deines Stromvertrags ein und verbinde ein Auto. Fertig.
+
+Alle Einstellungen änderst du später unter *Konfigurieren*: Wallbox, Hausanschluss, Preise und Kosten (inkl. ERE), Autos und Erweitert (minimaler Ladestrom, Solar-Verzögerungen, Solarpuffer, Ladewirkungsgrad, Autodaten aktualisieren, Sprache).
+
+Aktiviere in Schritt 4 *Benötigte Easee-Sensoren automatisch aktivieren*: einige Easee-Sensoren (Phasenströme, Spannung, Grenzen) sind standardmäßig deaktiviert.
+
+### Die Karten
+
+Die Karten werden automatisch geladen; du musst nichts an deinem Dashboard oder den Ressourcen ändern. Füge sie über *Karte hinzufügen → Easee Smart Charging* hinzu oder per YAML:
+
+```yaml
+type: custom:easee-smart-card       # oder easee-smart-charger-card, -modes-, -cars-, -plan-, -grid-, -costs-card
+theme: auto                          # auto | light | dark
+language: auto                       # auto | nl | en | de
+```
+
+### Gut zu wissen
+
+- Schalte das eigene *Smart Charging* von Easee in der Easee-App aus, wenn diese Integration plant, sonst steuern zwei Systeme gleichzeitig.
+- Kosten werden ab dem Moment gezählt, in dem die Integration läuft.
+
+Dies ist ein Community-Projekt und kein offizielles Produkt von Easee.
+
+---
+
+## Bronnen / Sources / Quellen
+
+Prijsdata / price data / Preisdaten: [Energy-Charts](https://energy-charts.info) (Fraunhofer ISE), licentie CC BY 4.0.
+
+## Licentie / License / Lizenz
 
 MIT
