@@ -42,22 +42,56 @@
         }
       },
       "energy": {
-        "title": "Preise, Auto und Kosten",
+        "title": "Preise und Kosten",
         "description": "Preise werden automatisch abgerufen. Trage den Aufschlag deines Vertrags ein, damit die Kosten stimmen.",
         "data": {
           "bidding_zone": "Preiszone (Day-Ahead / EPEX)",
           "price_markup": "Aufschlag Lieferant",
           "energy_tax": "Energiesteuer (ohne MwSt.)",
           "vat_percent": "MwSt.",
-          "soc_entity": "Akkustand-Sensor des Autos (optional)",
-          "battery_capacity": "Akkukapazität Auto",
-          "reimbursement_per_kwh": "Erstattungssatz (Leasing/Arbeitgeber)"
+          "reimbursement_per_kwh": "Erstattungssatz (Leasing/Arbeitgeber)",
+          "ere_enabled": "ERE-Erlöse erfassen (Emissionsminderung)",
+          "ere_rate": "ERE-Erlös pro kWh"
         },
         "data_description": {
           "bidding_zone": "Day-Ahead-Börsenpreise (EPEX SPOT) werden automatisch je Viertelstunde für heute und morgen abgerufen. Kein Konto nötig.",
           "price_markup": "Pro kWh, ohne MwSt., aus deinem dynamischen Vertrag.",
           "energy_tax": "Pro kWh, ohne MwSt. Preis = (Börse + Aufschlag + Steuer) × (1 + MwSt.).",
-          "reimbursement_per_kwh": "Wird für den Monatsbericht des Heimladens genutzt."
+          "reimbursement_per_kwh": "Wird für den Monatsbericht des Heimladens genutzt.",
+          "ere_rate": "Was du pro geladener kWh erhältst. Pro Monat, Jahr und gesamt."
+        }
+      },
+      "cars": {
+        "title": "Auto verbinden (optional)",
+        "description": "Leer lassen zum Überspringen. Später bis zu sechs Autos unter Konfigurieren → Autos.",
+        "data": {
+          "device_id": "Auto (Gerät)"
+        },
+        "data_description": {
+          "device_id": "Wähle dein Auto aus einer beliebigen Integration. Die Sensoren werden automatisch eingetragen."
+        }
+      },
+      "car_details": {
+        "title": "Auto",
+        "description": "Alles außer dem Namen ist optional. Funktioniert mit jeder Marke.",
+        "data": {
+          "name": "Name",
+          "image": "Foto (URL oder /local/…)",
+          "soc": "Akkustand",
+          "capacity": "Akkukapazität",
+          "target": "Laden bis",
+          "plug": "Stecker-Sensor",
+          "start_entity": "Laden starten (Schalter, Taste oder Skript)",
+          "refresh_entity": "Autodaten aktualisieren (Taste, Schalter oder Skript)",
+          "limit_entity": "Ladelimit im Auto",
+          "range_entity": "Reichweite",
+          "remove": "Dieses Auto entfernen"
+        },
+        "data_description": {
+          "image": "Foto in /config/www/ ablegen und /local/name.png eintragen, oder eine Webadresse.",
+          "plug": "Damit erkennt Easee Smart, welches Auto angeschlossen ist.",
+          "start_entity": "Wird eingeschaltet, wenn das Auto nicht von selbst lädt.",
+          "limit_entity": "Dein Ladeziel wird auch im Auto gesetzt."
         }
       }
     },
@@ -74,7 +108,9 @@
         "menu_options": {
           "charger": "Wallbox",
           "grid": "Hausanschluss",
-          "energy": "Preise, Auto und Kosten"
+          "energy": "Preise und Kosten",
+          "cars": "Autos",
+          "advanced": "Erweitert"
         }
       },
       "charger": {
@@ -105,22 +141,88 @@
         }
       },
       "energy": {
-        "title": "Preise, Auto und Kosten",
+        "title": "Preise und Kosten",
         "description": "Preise werden automatisch abgerufen. Trage den Aufschlag deines Vertrags ein, damit die Kosten stimmen.",
         "data": {
           "bidding_zone": "Preiszone (Day-Ahead / EPEX)",
           "price_markup": "Aufschlag Lieferant",
           "energy_tax": "Energiesteuer (ohne MwSt.)",
           "vat_percent": "MwSt.",
-          "soc_entity": "Akkustand-Sensor des Autos (optional)",
-          "battery_capacity": "Akkukapazität Auto",
-          "reimbursement_per_kwh": "Erstattungssatz (Leasing/Arbeitgeber)"
+          "reimbursement_per_kwh": "Erstattungssatz (Leasing/Arbeitgeber)",
+          "ere_enabled": "ERE-Erlöse erfassen (Emissionsminderung)",
+          "ere_rate": "ERE-Erlös pro kWh"
         },
         "data_description": {
           "bidding_zone": "Day-Ahead-Börsenpreise (EPEX SPOT) werden automatisch je Viertelstunde für heute und morgen abgerufen. Kein Konto nötig.",
           "price_markup": "Pro kWh, ohne MwSt., aus deinem dynamischen Vertrag.",
           "energy_tax": "Pro kWh, ohne MwSt. Preis = (Börse + Aufschlag + Steuer) × (1 + MwSt.).",
-          "reimbursement_per_kwh": "Wird für den Monatsbericht des Heimladens genutzt."
+          "reimbursement_per_kwh": "Wird für den Monatsbericht des Heimladens genutzt.",
+          "ere_rate": "Was du pro geladener kWh erhältst. Pro Monat, Jahr und gesamt."
+        }
+      },
+      "cars": {
+        "title": "Autos",
+        "menu_options": {
+          "car_add": "Auto hinzufügen",
+          "car_pick": "Auto ändern oder entfernen"
+        }
+      },
+      "car_add": {
+        "title": "Auto hinzufügen",
+        "data": {
+          "device_id": "Auto (Gerät)"
+        },
+        "data_description": {
+          "device_id": "Wähle dein Auto aus einer beliebigen Integration. Die Sensoren werden automatisch eingetragen."
+        }
+      },
+      "car_pick": {
+        "title": "Welches Auto?",
+        "data": {
+          "car": "Auto"
+        }
+      },
+      "car_details": {
+        "title": "Auto",
+        "description": "Alles außer dem Namen ist optional. Funktioniert mit jeder Marke.",
+        "data": {
+          "name": "Name",
+          "image": "Foto (URL oder /local/…)",
+          "soc": "Akkustand",
+          "capacity": "Akkukapazität",
+          "target": "Laden bis",
+          "plug": "Stecker-Sensor",
+          "start_entity": "Laden starten (Schalter, Taste oder Skript)",
+          "refresh_entity": "Autodaten aktualisieren (Taste, Schalter oder Skript)",
+          "limit_entity": "Ladelimit im Auto",
+          "range_entity": "Reichweite",
+          "remove": "Dieses Auto entfernen"
+        },
+        "data_description": {
+          "image": "Foto in /config/www/ ablegen und /local/name.png eintragen, oder eine Webadresse.",
+          "plug": "Damit erkennt Easee Smart, welches Auto angeschlossen ist.",
+          "start_entity": "Wird eingeschaltet, wenn das Auto nicht von selbst lädt.",
+          "limit_entity": "Dein Ladeziel wird auch im Auto gesetzt."
+        }
+      },
+      "advanced": {
+        "title": "Erweitert",
+        "data": {
+          "min_current": "Minimaler Ladestrom",
+          "solar_start_delay": "Solar: Start nach Überschuss von",
+          "solar_stop_delay": "Solar: Stopp nach Defizit von",
+          "solar_buffer": "Solar: mindestens weiter einspeisen",
+          "charge_efficiency": "Ladewirkungsgrad",
+          "boost_reset_on_unplug": "Boost ausschalten beim Abstecken",
+          "resume_nudge": "Auto wecken, wenn es nicht lädt",
+          "car_refresh_minutes": "Autodaten aktualisieren alle (0 = aus)",
+          "language": "Sprache von Karte und Bericht"
+        },
+        "data_description": {
+          "min_current": "Die meisten Autos brauchen mindestens 6 A.",
+          "charge_efficiency": "Ladeverluste; für die Berechnung der benötigten Energie.",
+          "resume_nudge": "Nach 3 Minuten ohne Laden: Fortsetzen an der Wallbox und Start-Entität des Autos.",
+          "car_refresh_minutes": "Nur wenn ein Auto angeschlossen ist."
         }
       }
     }
@@ -138,6 +240,14 @@
         "smart": "Smart (günstigste Stunden)",
         "solar": "Solarüberschuss",
         "solar_smart": "Solar + Smart"
+      }
+    },
+    "language": {
+      "options": {
+        "auto": "Automatisch (Home Assistant)",
+        "nl": "Nederlands",
+        "en": "English",
+        "de": "Deutsch"
       }
     }
   },
@@ -254,6 +364,18 @@
       },
       "phase_load": {
         "name": "Auslastung Hauptsicherung"
+      },
+      "car_soc": {
+        "name": "Autoakku"
+      },
+      "ere_month": {
+        "name": "ERE diesen Monat"
+      },
+      "ere_year": {
+        "name": "ERE dieses Jahr"
+      },
+      "ere_total": {
+        "name": "ERE gesamt"
       }
     },
     "binary_sensor": {
@@ -272,6 +394,12 @@
           "smart": "Smart (günstigste Stunden)",
           "solar": "Solarüberschuss",
           "solar_smart": "Solar + Smart"
+        }
+      },
+      "active_car": {
+        "name": "Angeschlossenes Auto",
+        "state": {
+          "auto": "Automatisch"
         }
       }
     },
@@ -299,6 +427,12 @@
     "button": {
       "export_report": {
         "name": "Bericht letzter Monat exportieren"
+      },
+      "refresh_car": {
+        "name": "Autodaten aktualisieren"
+      },
+      "start_car": {
+        "name": "Laden im Auto starten"
       }
     }
   },

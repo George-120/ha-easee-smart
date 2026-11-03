@@ -16,7 +16,13 @@ async def async_setup_entry(
     entry: EaseeSmartConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    async_add_entities([ExportReport(entry.runtime_data, "export_report")])
+    manager = entry.runtime_data
+    entities: list[ButtonEntity] = [ExportReport(manager, "export_report")]
+    if any(c.refresh_entity for c in manager.cars):
+        entities.append(RefreshCar(manager, "refresh_car"))
+    if any(c.start_entity for c in manager.cars):
+        entities.append(StartCar(manager, "start_car"))
+    async_add_entities(entities)
 
 
 class ExportReport(EaseeSmartEntity, ButtonEntity):
@@ -31,3 +37,17 @@ class ExportReport(EaseeSmartEntity, ButtonEntity):
             title=f"{self.manager.name} · {result['month']}",
             notification_id=f"easee_smart_report_{self.manager.charger_id}",
         )
+
+
+class RefreshCar(EaseeSmartEntity, ButtonEntity):
+    """Ask the connected car for fresh data (battery level, plug)."""
+
+    async def async_press(self) -> None:
+        await self.manager.async_refresh_car()
+
+
+class StartCar(EaseeSmartEntity, ButtonEntity):
+    """Tell the connected car to start charging (for cars that fall asleep)."""
+
+    async def async_press(self) -> None:
+        await self.manager.async_force_car_start()

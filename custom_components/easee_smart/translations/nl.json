@@ -42,22 +42,56 @@
         }
       },
       "energy": {
-        "title": "Prijzen, auto en kosten",
+        "title": "Prijzen en kosten",
         "description": "De prijzen worden automatisch opgehaald. Vul de opslag van je contract in, dan kloppen de kosten met je rekening.",
         "data": {
           "bidding_zone": "Prijszone (day-ahead / APX)",
           "price_markup": "Opslag leverancier",
           "energy_tax": "Energiebelasting (excl. btw)",
           "vat_percent": "Btw",
-          "soc_entity": "Accuniveau-sensor van de auto (optioneel)",
-          "battery_capacity": "Accucapaciteit auto",
-          "reimbursement_per_kwh": "Vergoedingstarief (lease/werkgever)"
+          "reimbursement_per_kwh": "Vergoedingstarief (lease/werkgever)",
+          "ere_enabled": "ERE-regeling bijhouden (emissiereductie-eenheden)",
+          "ere_rate": "ERE-opbrengst per kWh"
         },
         "data_description": {
           "bidding_zone": "De day-ahead beursprijzen (EPEX SPOT, voorheen APX) worden automatisch per kwartier opgehaald voor vandaag en morgen. Geen account nodig.",
           "price_markup": "Per kWh, excl. btw, uit je dynamische contract.",
           "energy_tax": "Per kWh, excl. btw. De prijs wordt (beurs + opslag + belasting) × (1 + btw).",
-          "reimbursement_per_kwh": "Wordt gebruikt voor het maandrapport van thuisladen."
+          "reimbursement_per_kwh": "Wordt gebruikt voor het maandrapport van thuisladen.",
+          "ere_rate": "Wat je per geladen kWh ontvangt. Wordt getoond per maand, per jaar en totaal."
+        }
+      },
+      "cars": {
+        "title": "Auto koppelen (optioneel)",
+        "description": "Laat leeg om over te slaan. Later kun je tot zes auto's toevoegen via Configureren → Auto's.",
+        "data": {
+          "device_id": "Auto (apparaat)"
+        },
+        "data_description": {
+          "device_id": "Kies je auto uit elke integratie. De sensoren worden automatisch ingevuld; je kunt alles aanpassen."
+        }
+      },
+      "car_details": {
+        "title": "Auto",
+        "description": "Alles behalve de naam is optioneel. Werkt met elk merk.",
+        "data": {
+          "name": "Naam",
+          "image": "Foto (URL of /local/…)",
+          "soc": "Accuniveau",
+          "capacity": "Accucapaciteit",
+          "target": "Laden tot",
+          "plug": "Stekker-sensor",
+          "start_entity": "Laden starten (schakelaar, knop of script)",
+          "refresh_entity": "Gegevens auto verversen (knop, schakelaar of script)",
+          "limit_entity": "Laadlimiet in de auto",
+          "range_entity": "Actieradius",
+          "remove": "Deze auto verwijderen"
+        },
+        "data_description": {
+          "image": "Zet een foto in /config/www/ en vul /local/naam.png in, of plak een webadres.",
+          "plug": "Hiermee ziet Easee Smart welke auto aan de laadpaal hangt.",
+          "start_entity": "Wordt aangezet als de auto niet vanzelf begint met laden (slapende auto's).",
+          "limit_entity": "Je 'laden tot'-doel wordt ook in de auto gezet."
         }
       }
     },
@@ -74,7 +108,9 @@
         "menu_options": {
           "charger": "Laadpaal",
           "grid": "Hoofdaansluiting",
-          "energy": "Prijzen, auto en kosten"
+          "energy": "Prijzen en kosten",
+          "cars": "Auto's",
+          "advanced": "Geavanceerd"
         }
       },
       "charger": {
@@ -105,22 +141,88 @@
         }
       },
       "energy": {
-        "title": "Prijzen, auto en kosten",
+        "title": "Prijzen en kosten",
         "description": "De prijzen worden automatisch opgehaald. Vul de opslag van je contract in, dan kloppen de kosten met je rekening.",
         "data": {
           "bidding_zone": "Prijszone (day-ahead / APX)",
           "price_markup": "Opslag leverancier",
           "energy_tax": "Energiebelasting (excl. btw)",
           "vat_percent": "Btw",
-          "soc_entity": "Accuniveau-sensor van de auto (optioneel)",
-          "battery_capacity": "Accucapaciteit auto",
-          "reimbursement_per_kwh": "Vergoedingstarief (lease/werkgever)"
+          "reimbursement_per_kwh": "Vergoedingstarief (lease/werkgever)",
+          "ere_enabled": "ERE-regeling bijhouden (emissiereductie-eenheden)",
+          "ere_rate": "ERE-opbrengst per kWh"
         },
         "data_description": {
           "bidding_zone": "De day-ahead beursprijzen (EPEX SPOT, voorheen APX) worden automatisch per kwartier opgehaald voor vandaag en morgen. Geen account nodig.",
           "price_markup": "Per kWh, excl. btw, uit je dynamische contract.",
           "energy_tax": "Per kWh, excl. btw. De prijs wordt (beurs + opslag + belasting) × (1 + btw).",
-          "reimbursement_per_kwh": "Wordt gebruikt voor het maandrapport van thuisladen."
+          "reimbursement_per_kwh": "Wordt gebruikt voor het maandrapport van thuisladen.",
+          "ere_rate": "Wat je per geladen kWh ontvangt. Wordt getoond per maand, per jaar en totaal."
+        }
+      },
+      "cars": {
+        "title": "Auto's",
+        "menu_options": {
+          "car_add": "Auto toevoegen",
+          "car_pick": "Auto wijzigen of verwijderen"
+        }
+      },
+      "car_add": {
+        "title": "Auto toevoegen",
+        "data": {
+          "device_id": "Auto (apparaat)"
+        },
+        "data_description": {
+          "device_id": "Kies je auto uit elke integratie. De sensoren worden automatisch ingevuld; je kunt alles aanpassen."
+        }
+      },
+      "car_pick": {
+        "title": "Welke auto?",
+        "data": {
+          "car": "Auto"
+        }
+      },
+      "car_details": {
+        "title": "Auto",
+        "description": "Alles behalve de naam is optioneel. Werkt met elk merk.",
+        "data": {
+          "name": "Naam",
+          "image": "Foto (URL of /local/…)",
+          "soc": "Accuniveau",
+          "capacity": "Accucapaciteit",
+          "target": "Laden tot",
+          "plug": "Stekker-sensor",
+          "start_entity": "Laden starten (schakelaar, knop of script)",
+          "refresh_entity": "Gegevens auto verversen (knop, schakelaar of script)",
+          "limit_entity": "Laadlimiet in de auto",
+          "range_entity": "Actieradius",
+          "remove": "Deze auto verwijderen"
+        },
+        "data_description": {
+          "image": "Zet een foto in /config/www/ en vul /local/naam.png in, of plak een webadres.",
+          "plug": "Hiermee ziet Easee Smart welke auto aan de laadpaal hangt.",
+          "start_entity": "Wordt aangezet als de auto niet vanzelf begint met laden (slapende auto's).",
+          "limit_entity": "Je 'laden tot'-doel wordt ook in de auto gezet."
+        }
+      },
+      "advanced": {
+        "title": "Geavanceerd",
+        "data": {
+          "min_current": "Minimale laadstroom",
+          "solar_start_delay": "Zon: starten na overschot van",
+          "solar_stop_delay": "Zon: stoppen na tekort van",
+          "solar_buffer": "Zon: minimaal blijven terugleveren",
+          "charge_efficiency": "Laadrendement",
+          "boost_reset_on_unplug": "Boost uitzetten als de auto wordt losgekoppeld",
+          "resume_nudge": "Auto wekken als hij niet begint met laden",
+          "car_refresh_minutes": "Gegevens auto verversen elke (0 = uit)",
+          "language": "Taal van kaart en rapport"
+        },
+        "data_description": {
+          "min_current": "De meeste auto's hebben minimaal 6 A nodig. Sommige laden efficiënter vanaf 8 of 10 A.",
+          "charge_efficiency": "Verlies tijdens het laden; wordt gebruikt om te berekenen hoeveel energie er nog nodig is.",
+          "resume_nudge": "Na 3 minuten zonder laden: hervatten op de laadpaal en de start-entiteit van de auto.",
+          "car_refresh_minutes": "Alleen als er een auto aangesloten is. Gebruikt de verversen-entiteit van de auto."
         }
       }
     }
@@ -138,6 +240,14 @@
         "smart": "Slim (goedkoopste uren)",
         "solar": "Zonne-overschot",
         "solar_smart": "Zon + slim"
+      }
+    },
+    "language": {
+      "options": {
+        "auto": "Automatisch (Home Assistant)",
+        "nl": "Nederlands",
+        "en": "English",
+        "de": "Deutsch"
       }
     }
   },
@@ -254,6 +364,18 @@
       },
       "phase_load": {
         "name": "Belasting hoofdzekering"
+      },
+      "car_soc": {
+        "name": "Accu auto"
+      },
+      "ere_month": {
+        "name": "ERE deze maand"
+      },
+      "ere_year": {
+        "name": "ERE dit jaar"
+      },
+      "ere_total": {
+        "name": "ERE totaal"
       }
     },
     "binary_sensor": {
@@ -272,6 +394,12 @@
           "smart": "Slim (goedkoopste uren)",
           "solar": "Zonne-overschot",
           "solar_smart": "Zon + slim"
+        }
+      },
+      "active_car": {
+        "name": "Aangesloten auto",
+        "state": {
+          "auto": "Automatisch"
         }
       }
     },
@@ -299,6 +427,12 @@
     "button": {
       "export_report": {
         "name": "Maandrapport vorige maand exporteren"
+      },
+      "refresh_car": {
+        "name": "Gegevens auto verversen"
+      },
+      "start_car": {
+        "name": "Laden starten in auto"
       }
     }
   },

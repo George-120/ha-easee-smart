@@ -15,6 +15,9 @@ Slim laden, Equalizer-inzicht, laadkosten en een app-achtige dashboardkaart voor
 - **Slim laden op dynamische prijzen.** De day-ahead beursprijzen (EPEX SPOT, voorheen APX) worden automatisch per kwartier opgehaald voor vandaag en morgen, voor elke Europese prijszone — zonder account of extra integratie. Vul de opslag van je contract in, dan rekent hij met (beurs + opslag + energiebelasting) × (1 + btw). Je stelt een vertrektijd en hoeveel je wilt laden in (kWh, of accupercentage als je auto een accusensor heeft) en de integratie kiest de goedkoopste kwartieren.
 - **Laden op zonne-overschot.** Met een Easee Equalizer gebruikt de integratie automatisch de gemeten afname en teruglevering. Zonder Equalizer voeg je je **hoofdaansluiting** toe: je slimme meter (P1) wordt automatisch herkend — HomeWizard P1 heeft voorrang omdat die het nauwkeurigst is, daarna DSMR, P1 Monitor, Zonneplan Connect, Tibber en Enphase, en je kiest je hoofdzekering (bijv. 3×25 A). Achteraf wijzigen kan altijd via *Configureren → Hoofdaansluiting*. Start- en stopvertraging voorkomen pendelen.
 - **Zon + slim.** Laadt overdag van de zon en vult het tekort aan in de goedkoopste uren vóór vertrek.
+- **Auto's koppelen — elk merk.** Tot zes auto's. Kies het apparaat van je auto (Kia, Hyundai, Tesla, VW, BMW, Polestar, …) en Easee Smart vult automatisch het accuniveau, de stekker-sensor, de laadlimiet, de actieradius en de knoppen om te verversen of het laden te starten in. Alles is aan te passen, inclusief een eigen naam en foto. Met een stekker-sensor per auto kiest hij zelf welke auto aan de laadpaal hangt; je laaddoel wordt ook in de auto gezet.
+- **Auto wekken.** Begint een auto niet met laden, dan stuurt Easee Smart na drie minuten een *hervatten* naar de laadpaal en zet de start-entiteit van de auto aan.
+- **ERE-regeling.** Zet de ERE-regeling aan en vul in wat je per geladen kWh ontvangt; je ziet de opbrengst per maand, per jaar en totaal (ook in het maandrapport).
 - **Boost.** Eén knop om direct op vol vermogen te laden, tot je de stekker eruit haalt.
 - **Equalizer uitgelezen.** Netvermogen, stroom per fase (L1/L2/L3), spanning, belasting en resterende ruimte op je hoofdzekering, plus afname/teruglevering in kWh.
 - **Kosten en vergoeding.** Kosten per sessie, dag en maand op basis van de echte prijs op dat moment. Optioneel een vergoedingstarief voor leaserijders, met een CSV-maandrapport voor je werkgever.
@@ -31,7 +34,7 @@ Load balancing doet de Easee Equalizer zelf; deze integratie grijpt daar niet in
 3. Ga naar *Instellingen → Apparaten & diensten → Integratie toevoegen → Easee Smart* (of gebruik de tweede knop).
 4. Kies je laadpaal (en Equalizer), controleer het herkende model, check je hoofdaansluiting (als je geen Equalizer hebt) en vul eventueel de opslag van je energiecontract in. Klaar.
 
-Alle instellingen pas je later aan via *Configureren* op de integratie: laadpaal, hoofdaansluiting, en prijzen/auto/kosten.
+Alle instellingen pas je later aan via *Configureren* op de integratie: laadpaal, hoofdaansluiting, prijzen en kosten (incl. ERE), auto's, en geavanceerd (minimale laadstroom, zonne-vertragingen, zonbuffer, laadrendement, auto verversen, taal).
 
 Vink bij stap 4 *Benodigde Easee-sensoren automatisch inschakelen* aan: een paar Easee-sensoren (fasestromen, spanning, limieten) staan standaard uit.
 

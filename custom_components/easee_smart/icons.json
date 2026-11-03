@@ -47,12 +47,17 @@
       "phase_l2_current": { "default": "mdi:sine-wave" },
       "phase_l3_current": { "default": "mdi:sine-wave" },
       "phase_headroom": { "default": "mdi:gauge-low" },
-      "phase_load": { "default": "mdi:gauge" }
+      "phase_load": { "default": "mdi:gauge" },
+      "car_soc": { "default": "mdi:car-battery" },
+      "ere_month": { "default": "mdi:leaf-circle-outline" },
+      "ere_year": { "default": "mdi:leaf-circle-outline" },
+      "ere_total": { "default": "mdi:leaf-circle" }
     },
     "binary_sensor": {
       "smart_active": { "default": "mdi:brain" }
     },
     "select": {
+      "active_car": { "default": "mdi:car-electric" },
       "charge_mode": {
         "default": "mdi:tune-variant",
         "state": {
@@ -75,7 +80,9 @@
       "boost": { "default": "mdi:lightning-bolt" }
     },
     "button": {
-      "export_report": { "default": "mdi:file-delimited-outline" }
+      "export_report": { "default": "mdi:file-delimited-outline" },
+      "refresh_car": { "default": "mdi:car-sync" },
+      "start_car": { "default": "mdi:car-electric-outline" }
     }
   },
   "services": {

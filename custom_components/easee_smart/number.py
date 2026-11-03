@@ -19,7 +19,7 @@ async def async_setup_entry(
 ) -> None:
     manager = entry.runtime_data
     entities: list[NumberEntity] = [TargetEnergy(manager, "target_energy"), PriceThreshold(manager, "price_threshold")]
-    if manager.soc_entity:
+    if manager.cars:
         entities.append(TargetSoc(manager, "target_soc"))
     async_add_entities(entities)
 
@@ -52,10 +52,10 @@ class TargetSoc(EaseeSmartEntity, NumberEntity):
 
     @property
     def native_value(self) -> int:
-        return self.manager.settings.target_soc
+        return self.manager.car_target(self.manager.active_car())
 
     async def async_set_native_value(self, value: float) -> None:
-        await self.manager.async_set_setting("target_soc", int(value))
+        await self.manager.async_set_car_target(int(value))
 
 
 class PriceThreshold(EaseeSmartEntity, NumberEntity):

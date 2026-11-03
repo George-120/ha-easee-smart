@@ -190,6 +190,30 @@ GENERAL: tuple[EaseeSmartSensorDescription, ...] = (
     ),
 )
 
+ERE: tuple[EaseeSmartSensorDescription, ...] = tuple(
+    EaseeSmartSensorDescription(
+        key=f"ere_{period}",
+        monetary=True,
+        state_class=SensorStateClass.TOTAL,
+        suggested_display_precision=2,
+        value_fn=lambda m, period=period: m.ere_earned(period),
+        attr_fn=lambda m: {"rate_per_kwh": m.ere_rate},
+    )
+    for period in ("month", "year", "total")
+)
+
+CAR: tuple[EaseeSmartSensorDescription, ...] = (
+    EaseeSmartSensorDescription(
+        key="car_soc",
+        device_class=SensorDeviceClass.BATTERY,
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        value_fn=lambda m: m.car_soc(m.active_car()),
+        attr_fn=lambda m: m._car_payload() or {},
+    ),
+)
+
 SURPLUS: tuple[EaseeSmartSensorDescription, ...] = (
     EaseeSmartSensorDescription(
         key="grid_power",
@@ -247,6 +271,10 @@ async def async_setup_entry(
 ) -> None:
     manager = entry.runtime_data
     descriptions = list(GENERAL)
+    if manager.cars:
+        descriptions += CAR
+    if manager.ere_rate is not None:
+        descriptions += ERE
     if manager.has_surplus_source:
         descriptions += SURPLUS
     if manager.equalizer_entities or any(manager.phase_entities):
@@ -267,7 +295,7 @@ class EaseeSmartSensor(EaseeSmartEntity, SensorEntity):
             "next_start", "complete_by", "energy_needed", "target_current",
             "surplus_kw", "grid_power_kw", "phase_currents", "phase_voltages",
             "main_fuse", "phase_headroom", "session", "today", "month", "months",
-            "sessions", "reimbursement_per_kwh", "has_surplus_source", "has_soc", "uses_meter", "meter",
+            "sessions", "reimbursement_per_kwh", "has_surplus_source", "has_soc", "uses_meter", "meter", "car", "cars", "active_car_setting", "ere", "language",
         }
     )
 

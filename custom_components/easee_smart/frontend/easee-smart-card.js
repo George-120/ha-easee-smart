@@ -1,6 +1,6 @@
 /* Easee Smart card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.3.1";
+  const VERSION = "1.4.0";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -34,7 +34,7 @@
       headroom: "headroom", surplus: "Solar surplus", phase: "Phase", noGrid: "No Equalizer or main connection set. Add your meter under Configure → Main connection.",
       month: "This month", prev: "Previous months", reimb: "Reimbursement", sessions: "Recent sessions",
       export: "Export last month (CSV)", exported: "Report written", today: "Today", none: "No sessions yet.",
-      kwh: "kWh", avg: "avg.", amps: "Charge current", planned: "Planned charging",
+      kwh: "kWh", avg: "avg.", amps: "Charge current", planned: "Planned charging", refresh: "Refresh car data", ere: "ERE revenue", year: "This year", total: "Total", range: "range",
     },
     nl: {
       tabs: { charge: "Laden", plan: "Planning", grid: "Equalizer", meter: "Aansluiting", history: "Historie" },
@@ -63,7 +63,7 @@
       headroom: "ruimte", surplus: "Zonne-overschot", phase: "Fase", noGrid: "Geen Equalizer of hoofdaansluiting ingesteld. Voeg je meter toe via Configureren → Hoofdaansluiting.",
       month: "Deze maand", prev: "Vorige maanden", reimb: "Vergoeding", sessions: "Recente sessies",
       export: "Vorige maand exporteren (CSV)", exported: "Rapport opgeslagen", today: "Vandaag", none: "Nog geen sessies.",
-      kwh: "kWh", avg: "gem.", amps: "Laadstroom", planned: "Gepland laden",
+      kwh: "kWh", avg: "gem.", amps: "Laadstroom", planned: "Gepland laden", refresh: "Gegevens auto verversen", ere: "ERE-opbrengst", year: "Dit jaar", total: "Totaal", range: "actieradius",
     },
     de: {
       tabs: { charge: "Laden", plan: "Planung", grid: "Equalizer", meter: "Anschluss", history: "Verlauf" },
@@ -92,7 +92,7 @@
       headroom: "Reserve", surplus: "Solarüberschuss", phase: "Phase", noGrid: "Kein Equalizer oder Hausanschluss eingerichtet. Zähler unter Konfigurieren → Hausanschluss hinzufügen.",
       month: "Dieser Monat", prev: "Vormonate", reimb: "Erstattung", sessions: "Letzte Ladevorgänge",
       export: "Letzten Monat exportieren (CSV)", exported: "Bericht gespeichert", today: "Heute", none: "Noch keine Ladevorgänge.",
-      kwh: "kWh", avg: "Ø", amps: "Ladestrom", planned: "Geplantes Laden",
+      kwh: "kWh", avg: "Ø", amps: "Ladestrom", planned: "Geplantes Laden", refresh: "Autodaten aktualisieren", ere: "ERE-Erlös", year: "Dieses Jahr", total: "Gesamt", range: "Reichweite",
     },
   };
 
@@ -164,7 +164,9 @@
     get _lang() {
       // Card option "language" (nl / en / de) overrides the Home Assistant profile language.
       const forced = this._config && this._config.language && this._config.language !== "auto" ? this._config.language : null;
-      return forced || (this._hass && (this._hass.locale?.language || this._hass.language)) || "en";
+      const st = this._hass && this._entityId() && this._hass.states[this._entityId()];
+      const integration = st && st.attributes.language && st.attributes.language !== "auto" ? st.attributes.language : null;
+      return forced || integration || (this._hass && (this._hass.locale?.language || this._hass.language)) || "en";
     }
 
     get _t() {
@@ -270,6 +272,7 @@
               </dl>
             </div>
           </section>
+          ${this._carRow(a, t)}
 
           <div class="modes" role="radiogroup">
             ${["normal", "smart", "solar", "solar_smart"]
@@ -286,6 +289,26 @@
           </nav>
           <section class="body">${body()}</section>
         </ha-card>`;
+    }
+
+    _carRow(a, t) {
+      const car = a.car;
+      if (!car) return "";
+      const soc = car.soc === null || car.soc === undefined ? null : Number(car.soc);
+      const pct = soc === null ? 0 : Math.max(0, Math.min(100, soc));
+      const target = Number(car.target || 0);
+      const img = car.image
+        ? `<img class="carimg" src="${esc(car.image)}" alt="" loading="lazy">`
+        : `<div class="carimg placeholder" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg></div>`;
+      return `
+        <div class="car">
+          ${img}
+          <div class="carinfo">
+            <div class="carhead"><b>${esc(car.name)}</b><span>${soc === null ? "–" : this._num(soc, 0) + "%"} → ${this._num(target, 0)}%${car.range_km ? ` · ${this._num(car.range_km, 0)} km ${t.range}` : ""}</span></div>
+            <div class="socbar"><i style="width:${pct}%"></i><em style="left:${Math.min(100, target)}%"></em></div>
+          </div>
+          ${car.can_refresh ? `<button class="iconbtn" data-act="refresh" title="${t.refresh}" aria-label="${t.refresh}"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>` : ""}
+        </div>`;
     }
 
     _tabCharge(a, t, status) {
@@ -430,6 +453,11 @@
             ? `<div class="tile"><span>${t.reimb}</span><b>${this._money((m.energy || 0) * a.reimbursement_per_kwh, a.currency)}</b><small>${this._num(a.reimbursement_per_kwh, 3)}/${t.kwh}</small></div>`
             : `<div class="tile"><span>${t.today}</span><b>${this._num(a.today && a.today.energy, 1)} ${t.kwh}</b><small>${this._money(a.today && a.today.cost, a.currency)}</small></div>`}
         </div>
+        ${a.ere ? `<div class="grid3 ere">
+            <div class="tile"><span>${t.ere} · ${t.month.toLowerCase()}</span><b>${this._money(a.ere.month, a.currency)}</b><small>${this._num(a.ere.rate, 3)}/${t.kwh}</small></div>
+            <div class="tile"><span>${t.ere} · ${t.year.toLowerCase()}</span><b>${this._money(a.ere.year, a.currency)}</b><small>&nbsp;</small></div>
+            <div class="tile"><span>${t.ere} · ${t.total.toLowerCase()}</span><b>${this._money(a.ere.total, a.currency)}</b><small>&nbsp;</small></div>
+          </div>` : ""}
         ${months.length > 1 ? `<div class="months">${months.map((x) => `
             <div class="mcol" title="${esc(x.month)}: ${this._num(x.energy, 1)} kWh · ${this._money(x.cost, a.currency)}">
               <i style="height:${Math.max(4, (x.energy / maxE) * 100).toFixed(0)}%"></i>
@@ -487,6 +515,9 @@
           if (id) await call("number", "set_value", { entity_id: id, value: next });
           return;
         }
+        case "refresh":
+          if (ent.refresh_car) await call("button", "press", { entity_id: ent.refresh_car });
+          return;
         case "export":
           if (ent.export_report) {
             await call("button", "press", { entity_id: ent.export_report });
@@ -558,6 +589,20 @@
     .facts dt { font-size:.72rem; color:var(--muted); }
     .facts dd { margin:0; font-size:.98rem; font-variant-numeric:tabular-nums; }
 
+    .car { display:flex; align-items:center; gap:12px; background:var(--panel); border-radius:12px; padding:10px 12px; margin:0 0 12px; }
+    .carimg { width:64px; height:40px; object-fit:contain; flex:none; border-radius:6px; }
+    .carimg.placeholder { display:flex; align-items:center; justify-content:center; color:var(--muted); }
+    .carimg.placeholder svg { width:30px; height:30px; }
+    .carinfo { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+    .carhead { display:flex; justify-content:space-between; gap:8px; font-size:.86rem; }
+    .carhead b { font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .carhead span { color:var(--muted); white-space:nowrap; }
+    .socbar { position:relative; height:6px; border-radius:3px; background:#2A303A; }
+    .socbar i { display:block; height:100%; border-radius:3px; background:var(--led); transition:width .6s ease; }
+    .socbar em { position:absolute; top:-3px; width:2px; height:12px; background:var(--text); opacity:.7; transform:translateX(-1px); }
+    .iconbtn { flex:none; width:34px; height:34px; border-radius:10px; border:1px solid var(--line); background:none; color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .iconbtn svg { width:18px; height:18px; }
+    .grid3.ere { margin-top:8px; }
     .modes { display:grid; grid-auto-flow:column; grid-auto-columns:1fr; background:var(--panel); border-radius:12px; padding:3px; gap:3px; }
     .mode { background:none; border:0; color:var(--muted); padding:9px 4px; border-radius:9px; font:inherit; font-size:.82rem; cursor:pointer; }
     .mode.sel { background:#2C3440; color:var(--text); }

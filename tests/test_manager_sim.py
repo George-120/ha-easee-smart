@@ -337,3 +337,88 @@ def test_energy_charts_prices_all_in(tmp_path):
     assert slots[0].price == round((0.20013 + 0.0165 + 0.0916) * 1.21, 5)
     assert slots[0].end - slots[0].start == timedelta(minutes=15) * 1 or slots[0].end - slots[0].start == timedelta(minutes=30)
     assert pr.default_zone(types.SimpleNamespace(config=types.SimpleNamespace(country="DE"))) == "DE-LU"
+
+
+def test_cars_active_by_plug_target_efficiency_and_ere(tmp_path):
+    async def run():
+        cars = [
+            {"name": "e-Niro", "soc": "sensor.niro_soc", "capacity": 64, "plug": "binary_sensor.niro_plug", "target": 80,
+             "start_entity": "button.niro_start", "refresh_entity": "button.niro_refresh", "limit_entity": "number.niro_limit"},
+            {"name": "Inster", "soc": "sensor.inster_soc", "capacity": 49, "plug": "binary_sensor.inster_plug", "target": 90},
+        ]
+        hass, m = make(tmp_path, equalizer=False, extra={"cars": cars, "charge_efficiency": 90, "ere_enabled": True, "ere_rate": 0.12})
+        await m.async_setup()
+        setstate(hass, "sensor.c_status", "awaiting_start")
+        setstate(hass, "sensor.niro_soc", 30)
+        setstate(hass, "sensor.inster_soc", 50)
+        setstate(hass, "binary_sensor.niro_plug", "off")
+        setstate(hass, "binary_sensor.inster_plug", "on")
+        m._recompute()
+        assert m.active_car().name == "Inster"
+        # (90 - 50)% of 49 kWh / 0.9 efficiency
+        assert m.snapshot.energy_needed == round(0.40 * 49 / 0.9, 2)
+        setstate(hass, "binary_sensor.inster_plug", "off")
+        setstate(hass, "binary_sensor.niro_plug", "on")
+        m._recompute()
+        assert m.active_car().name == "e-Niro"
+        await m.async_set_car_target(70)
+        assert m.car_target(m.active_car()) == 70
+        assert ("number", "set_value", {"entity_id": "number.niro_limit", "value": 70}) in hass.services.calls
+        await m.async_refresh_car()
+        await m.async_force_car_start()
+        assert ("button", "press", {"entity_id": "button.niro_refresh"}) in hass.services.calls
+        assert ("button", "press", {"entity_id": "button.niro_start"}) in hass.services.calls
+        await m.async_set_setting("active_car", "Inster")
+        assert m.active_car().name == "Inster"
+        m.days = {"2026-11-03": {"energy": 100.0, "cost": 20.0}, "2026-10-01": {"energy": 50.0, "cost": 10.0}}
+        m.totals = {"energy": 400.0, "cost": 80.0}
+        assert m.ere_earned("month") == 12.0 and m.ere_earned("year") == 18.0 and m.ere_earned("total") == 48.0
+        assert m.card_payload()["car"]["name"] == "Inster"
+    asyncio.run(run())
+
+
+def test_old_single_battery_sensor_migrates_to_a_car(tmp_path):
+    install_stubs()
+    sys.modules.pop("easee_smart.cars", None)
+    cars = importlib.import_module("easee_smart.cars")
+    out = cars.cars_from_options({"soc_entity": "sensor.ev", "battery_capacity": 64})
+    assert len(out) == 1 and out[0].soc_entity == "sensor.ev" and out[0].capacity == 64
+    assert cars.cars_from_options({"cars": [], "soc_entity": "sensor.ev"}) == []
+
+
+def test_detect_car_entities_any_brand(tmp_path):
+    install_stubs()
+    sys.modules.pop("easee_smart.cars", None)
+    cars = importlib.import_module("easee_smart.cars")
+
+    def e(eid, dc=None, name=None, unit=None):
+        return types.SimpleNamespace(entity_id=eid, domain=eid.split(".")[0], disabled_by=None, device_id="car1",
+                                     original_device_class=dc, device_class=None, original_name=name,
+                                     translation_key=None, unit_of_measurement=unit)
+
+    entries = [
+        e("sensor.e_niro_ev_battery_level", "battery", unit="%"),
+        e("sensor.e_niro_gezondheid_ev_accu_soh", "battery", unit="%"),
+        e("sensor.e_niro_12v_battery", "battery", unit="%"),
+        e("binary_sensor.e_niro_ev_plugged_in", "plug"),
+        e("button.e_niro_force_update"),
+        e("switch.e_niro_ev_charging"),
+        e("switch.e_niro_climate"),
+        e("number.e_niro_ac_charging_limit", unit="%"),
+        e("sensor.e_niro_ev_range", "distance", unit="km"),
+    ]
+    er_mod = sys.modules["homeassistant.helpers.entity_registry"]
+    er_mod.async_entries_for_device = lambda reg, dev: entries
+    sys.modules["homeassistant.helpers.device_registry"].async_get = lambda h: types.SimpleNamespace(
+        async_get=lambda i: types.SimpleNamespace(name="Kia e-Niro", name_by_user=None, model="e-Niro"))
+    hass = types.SimpleNamespace(states=States())
+    for x in entries:
+        setstate(hass, x.entity_id, "1", device_class=x.original_device_class, unit_of_measurement=x.unit_of_measurement)
+    found = cars.detect_car_entities(hass, "car1")
+    assert found["name"] == "Kia e-Niro"
+    assert found["soc"] == "sensor.e_niro_ev_battery_level"
+    assert found["plug"] == "binary_sensor.e_niro_ev_plugged_in"
+    assert found["refresh_entity"] == "button.e_niro_force_update"
+    assert found["start_entity"] == "switch.e_niro_ev_charging"
+    assert found["limit_entity"] == "number.e_niro_ac_charging_limit"
+    assert found["range_entity"] == "sensor.e_niro_ev_range"

@@ -15,26 +15,58 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import selector
 
+from .cars import (
+    ACTION_DOMAINS,
+    CONF_CARS,
+    DEFAULT_CAR_TARGET,
+    F_CAPACITY,
+    F_DEVICE,
+    F_IMAGE,
+    F_LIMIT,
+    F_NAME,
+    F_PLUG,
+    F_RANGE,
+    F_REFRESH,
+    F_SOC,
+    F_START,
+    F_TARGET,
+    MAX_CARS,
+    cars_from_options,
+    detect_car_entities,
+    suggest_car_devices,
+)
+from .cars import (
+    DEFAULT_CAPACITY as DEFAULT_CAR_CAPACITY,
+)
 from .const import (
-    CONF_BATTERY_CAPACITY,
     CONF_BIDDING_ZONE,
+    CONF_BOOST_RESET,
+    CONF_CAR_REFRESH_MIN,
     CONF_CHARGER_DEVICE,
+    CONF_EFFICIENCY,
     CONF_ENABLE_ENTITIES,
     CONF_ENERGY_TAX,
     CONF_EQUALIZER_DEVICE,
+    CONF_ERE_ENABLED,
+    CONF_ERE_RATE,
     CONF_GRID_EXPORT_ENTITY,
     CONF_GRID_IMPORT_ENTITY,
     CONF_GRID_POWER_ENTITY,
     CONF_GRID_POWER_INVERTED,
+    CONF_LANGUAGE,
     CONF_MAIN_FUSE,
     CONF_MARKUP,
     CONF_MAX_CURRENT,
+    CONF_MIN_CURRENT,
     CONF_MODEL,
+    CONF_NUDGE,
     CONF_PHASES,
     CONF_REIMBURSEMENT,
-    CONF_SOC_ENTITY,
+    CONF_SOLAR_BUFFER,
+    CONF_SOLAR_START_DELAY,
+    CONF_SOLAR_STOP_DELAY,
     CONF_VAT,
-    DEFAULT_BATTERY_CAPACITY,
+    DEFAULT_EFFICIENCY,
     DEFAULT_MAIN_FUSE,
     DEFAULT_MAX_CURRENT,
     DEFAULT_PHASES,
@@ -43,11 +75,15 @@ from .const import (
     EASEE_MODELS,
     EQUALIZER_MODEL,
     GRID_KEYS,
+    LANGUAGES,
     MAIN_FUSE_SIZES,
+    MIN_CHARGE_CURRENT,
     MODEL_MAX_CURRENT,
     PHASE_ENTITY_KEYS,
     REQUIRED_CHARGER_KEYS,
     REQUIRED_EQUALIZER_KEYS,
+    SOLAR_START_DELAY_S,
+    SOLAR_STOP_DELAY_S,
 )
 from .grid_detect import suggest_grid_sensors
 from .manager import easee_product_id, enable_disabled_entities, resolve_entities
@@ -127,18 +163,10 @@ def _energy_schema(hass: HomeAssistant, defaults: dict[str, Any]) -> dict:
     )
     schema.update(
         {
-            vol.Optional(
-                CONF_SOC_ENTITY,
-                description={"suggested_value": defaults.get(CONF_SOC_ENTITY)},
-            ): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="sensor", device_class="battery")
-            ),
-            vol.Optional(
-                CONF_BATTERY_CAPACITY,
-                default=defaults.get(CONF_BATTERY_CAPACITY, DEFAULT_BATTERY_CAPACITY),
-            ): selector.NumberSelector(
+            vol.Optional(CONF_ERE_ENABLED, default=bool(defaults.get(CONF_ERE_ENABLED, False))): selector.BooleanSelector(),
+            vol.Optional(CONF_ERE_RATE, default=defaults.get(CONF_ERE_RATE) or 0.0): selector.NumberSelector(
                 selector.NumberSelectorConfig(
-                    min=5, max=200, step=1, unit_of_measurement="kWh",
+                    min=0, max=1, step="any", unit_of_measurement=f"{currency}/kWh",
                     mode=selector.NumberSelectorMode.BOX,
                 )
             ),
@@ -186,6 +214,97 @@ def _grid_schema(defaults: dict[str, Any]) -> dict:
     return schema
 
 
+def _action_selector() -> selector.EntitySelector:
+    return selector.EntitySelector(selector.EntitySelectorConfig(domain=ACTION_DOMAINS))
+
+
+def _car_schema(d: dict[str, Any], editing: bool) -> dict:
+    """All settings of one car; detected entities come in as suggested values."""
+
+    def opt(key: str, sel) -> tuple:
+        return vol.Optional(key, description={"suggested_value": d.get(key)}), sel
+
+    schema: dict = {
+        vol.Required(F_NAME, default=d.get(F_NAME) or "Auto"): selector.TextSelector(),
+    }
+    schema.update(
+        dict(
+            [
+                opt(F_IMAGE, selector.TextSelector()),
+                opt(F_SOC, selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor"))),
+            ]
+        )
+    )
+    schema[vol.Required(F_CAPACITY, default=d.get(F_CAPACITY) or DEFAULT_CAR_CAPACITY)] = selector.NumberSelector(
+        selector.NumberSelectorConfig(min=5, max=200, step=0.5, unit_of_measurement="kWh", mode=selector.NumberSelectorMode.BOX)
+    )
+    schema[vol.Required(F_TARGET, default=d.get(F_TARGET) or DEFAULT_CAR_TARGET)] = selector.NumberSelector(
+        selector.NumberSelectorConfig(min=10, max=100, step=5, unit_of_measurement="%", mode=selector.NumberSelectorMode.SLIDER)
+    )
+    schema.update(
+        dict(
+            [
+                opt(F_PLUG, selector.EntitySelector(selector.EntitySelectorConfig(domain="binary_sensor"))),
+                opt(F_START, _action_selector()),
+                opt(F_REFRESH, _action_selector()),
+                opt(F_LIMIT, selector.EntitySelector(selector.EntitySelectorConfig(domain=["number", "input_number"]))),
+                opt(F_RANGE, selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor"))),
+            ]
+        )
+    )
+    if editing:
+        schema[vol.Optional("remove", default=False)] = selector.BooleanSelector()
+    return schema
+
+
+def _clean_car(user_input: dict[str, Any], device_id: str | None) -> dict[str, Any]:
+    car = {k: v for k, v in user_input.items() if k != "remove" and v not in (None, "")}
+    if device_id:
+        car[F_DEVICE] = device_id
+    if F_CAPACITY in car:
+        car[F_CAPACITY] = float(car[F_CAPACITY])
+    if F_TARGET in car:
+        car[F_TARGET] = int(car[F_TARGET])
+    return car
+
+
+def _device_step_schema(hass: HomeAssistant, configured: set[str]) -> dict:
+    suggested = suggest_car_devices(hass, configured)
+    return {
+        vol.Optional(F_DEVICE, description={"suggested_value": suggested[0] if suggested else None}): selector.DeviceSelector(
+            selector.DeviceSelectorConfig()
+        ),
+    }
+
+
+def _advanced_schema(defaults: dict[str, Any]) -> dict:
+    def num(key: str, default: float, lo: float, hi: float, step: float, unit: str) -> tuple:
+        value = defaults.get(key)
+        return (
+            vol.Optional(key, default=value if value is not None else default),
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(min=lo, max=hi, step=step, unit_of_measurement=unit, mode=selector.NumberSelectorMode.BOX)
+            ),
+        )
+
+    schema = dict(
+        [
+            num(CONF_MIN_CURRENT, MIN_CHARGE_CURRENT, 6, 16, 1, "A"),
+            num(CONF_SOLAR_START_DELAY, SOLAR_START_DELAY_S / 60, 0, 30, 0.5, "min"),
+            num(CONF_SOLAR_STOP_DELAY, SOLAR_STOP_DELAY_S / 60, 0, 60, 0.5, "min"),
+            num(CONF_SOLAR_BUFFER, 0.0, 0, 5, 0.05, "kW"),
+            num(CONF_EFFICIENCY, DEFAULT_EFFICIENCY, 50, 100, 1, "%"),
+            num(CONF_CAR_REFRESH_MIN, 0, 0, 240, 5, "min"),
+        ]
+    )
+    schema[vol.Optional(CONF_LANGUAGE, default=defaults.get(CONF_LANGUAGE) or "auto")] = selector.SelectSelector(
+        selector.SelectSelectorConfig(options=LANGUAGES, translation_key="language", mode=selector.SelectSelectorMode.DROPDOWN)
+    )
+    schema[vol.Optional(CONF_BOOST_RESET, default=defaults.get(CONF_BOOST_RESET, True))] = selector.BooleanSelector()
+    schema[vol.Optional(CONF_NUDGE, default=defaults.get(CONF_NUDGE, True))] = selector.BooleanSelector()
+    return schema
+
+
 def _charger_schema(defaults: dict[str, Any]) -> dict:
     return {
         vol.Required(CONF_MODEL, default=defaults.get(CONF_MODEL, EASEE_MODELS[0])): selector.SelectSelector(
@@ -225,6 +344,7 @@ class EaseeSmartConfigFlow(ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         self._data: dict[str, Any] = {}
         self._charger: dr.DeviceEntry | None = None
+        self._car: dict[str, Any] = {}
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if not self.hass.config_entries.async_entries(EASEE_DOMAIN):
@@ -312,26 +432,43 @@ class EaseeSmartConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_energy(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        has_eq = CONF_EQUALIZER_DEVICE in self._data
         if user_input is not None:
             self._data.update(_clean(user_input))
-            if self._data.pop(CONF_ENABLE_ENTITIES, False):
-                registry = dr.async_get(self.hass)
-                enable_disabled_entities(
-                    self.hass, easee_product_id(self._charger), REQUIRED_CHARGER_KEYS
-                )
-                if has_eq:
-                    enable_disabled_entities(
-                        self.hass,
-                        easee_product_id(registry.async_get(self._data[CONF_EQUALIZER_DEVICE])),
-                        REQUIRED_EQUALIZER_KEYS,
-                    )
-            title = (self._charger.name_by_user or self._charger.name) if self._charger else "Easee"
-            return self.async_create_entry(title=f"{title} Smart", data=self._data)
+            return await self.async_step_cars()
         return self.async_show_form(
             step_id="energy",
             data_schema=vol.Schema(_energy_schema(self.hass, {})),
         )
+
+    async def async_step_cars(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Optionally link a car now (more cars can be added later)."""
+        if user_input is not None:
+            device_id = user_input.get(F_DEVICE)
+            if not device_id:
+                return self._finish()
+            self._car = detect_car_entities(self.hass, device_id)
+            return await self.async_step_car_details()
+        return self.async_show_form(step_id="cars", data_schema=vol.Schema(_device_step_schema(self.hass, set())))
+
+    async def async_step_car_details(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None:
+            self._data[CONF_CARS] = [_clean_car(user_input, self._car.get(F_DEVICE))]
+            return self._finish()
+        return self.async_show_form(step_id="car_details", data_schema=vol.Schema(_car_schema(self._car, False)))
+
+    def _finish(self) -> ConfigFlowResult:
+        has_eq = CONF_EQUALIZER_DEVICE in self._data
+        if self._data.pop(CONF_ENABLE_ENTITIES, False):
+            registry = dr.async_get(self.hass)
+            enable_disabled_entities(self.hass, easee_product_id(self._charger), REQUIRED_CHARGER_KEYS)
+            if has_eq:
+                enable_disabled_entities(
+                    self.hass,
+                    easee_product_id(registry.async_get(self._data[CONF_EQUALIZER_DEVICE])),
+                    REQUIRED_EQUALIZER_KEYS,
+                )
+        title = (self._charger.name_by_user or self._charger.name) if self._charger else "Easee"
+        return self.async_create_entry(title=f"{title} Smart", data=self._data)
 
     @staticmethod
     @callback
@@ -354,7 +491,7 @@ class EaseeSmartOptionsFlow(OptionsFlow):
         return self.async_create_entry(data=data)
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        menu = ["charger", "energy"]
+        menu = ["charger", "energy", "cars", "advanced"]
         if CONF_EQUALIZER_DEVICE not in self.config_entry.data:
             menu.insert(1, "grid")
         return self.async_show_menu(step_id="init", menu_options=menu)
@@ -379,5 +516,66 @@ class EaseeSmartOptionsFlow(OptionsFlow):
 
     async def async_step_energy(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
-            return self._save(user_input, [CONF_SOC_ENTITY, CONF_REIMBURSEMENT])
+            return self._save(user_input, [CONF_REIMBURSEMENT])
         return self.async_show_form(step_id="energy", data_schema=vol.Schema(_energy_schema(self.hass, self._current())))
+
+    # ------------------------------------------------------------------ cars
+    def _cars(self) -> list[dict[str, Any]]:
+        return [dict(c.raw) for c in cars_from_options(self._current())]
+
+    def _save_cars(self, cars: list[dict[str, Any]]) -> ConfigFlowResult:
+        data = {**self.config_entry.options, CONF_CARS: cars, "soc_entity": None, "battery_capacity": None}
+        return self.async_create_entry(data=data)
+
+    async def async_step_cars(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        cars = self._cars()
+        menu = []
+        if len(cars) < MAX_CARS:
+            menu.append("car_add")
+        if cars:
+            menu.append("car_pick")
+        return self.async_show_menu(step_id="cars", menu_options=menu)
+
+    async def async_step_car_add(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None:
+            device_id = user_input.get(F_DEVICE)
+            self._car = detect_car_entities(self.hass, device_id) if device_id else {}
+            self._car_index = None
+            return await self.async_step_car_details()
+        configured = {c.get(F_DEVICE) for c in self._cars() if c.get(F_DEVICE)}
+        return self.async_show_form(step_id="car_add", data_schema=vol.Schema(_device_step_schema(self.hass, configured)))
+
+    async def async_step_car_pick(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        cars = self._cars()
+        if user_input is not None:
+            self._car_index = int(user_input["car"])
+            self._car = cars[self._car_index]
+            return await self.async_step_car_details()
+        options = [selector.SelectOptionDict(value=str(i), label=c.get(F_NAME) or f"Auto {i + 1}") for i, c in enumerate(cars)]
+        return self.async_show_form(
+            step_id="car_pick",
+            data_schema=vol.Schema(
+                {vol.Required("car", default="0"): selector.SelectSelector(
+                    selector.SelectSelectorConfig(options=options, mode=selector.SelectSelectorMode.LIST)
+                )}
+            ),
+        )
+
+    async def async_step_car_details(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        editing = getattr(self, "_car_index", None) is not None
+        if user_input is not None:
+            cars = self._cars()
+            if editing:
+                if user_input.get("remove"):
+                    cars.pop(self._car_index)
+                else:
+                    cars[self._car_index] = _clean_car(user_input, self._car.get(F_DEVICE))
+            else:
+                cars.append(_clean_car(user_input, self._car.get(F_DEVICE)))
+            return self._save_cars(cars[:MAX_CARS])
+        return self.async_show_form(step_id="car_details", data_schema=vol.Schema(_car_schema(self._car, editing)))
+
+    async def async_step_advanced(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None:
+            return self._save(user_input, [])
+        return self.async_show_form(step_id="advanced", data_schema=vol.Schema(_advanced_schema(self._current())))

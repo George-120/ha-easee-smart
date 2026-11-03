@@ -76,6 +76,10 @@ SENSORS = {
  "phase_l3_current": T("Phase L3 current","Stroom fase L3","Strom Phase L3"),
  "phase_headroom": T("Phase headroom","Ruimte op hoofdzekering","Reserve Hauptsicherung"),
  "phase_load": T("Main fuse load","Belasting hoofdzekering","Auslastung Hauptsicherung"),
+ "car_soc": T("Car battery","Accu auto","Autoakku"),
+ "ere_month": T("ERE this month","ERE deze maand","ERE diesen Monat"),
+ "ere_year": T("ERE this year","ERE dit jaar","ERE dieses Jahr"),
+ "ere_total": T("ERE total","ERE totaal","ERE gesamt"),
 }
 MODELS = ["Easee Home","Easee Charge","Charge Lite","Charge Max","Charge Up","Charge Core","Charge Pro","Charge One"]
 
@@ -86,9 +90,9 @@ def build(lang):
      "price_markup": T("Supplier markup","Opslag leverancier","Aufschlag Lieferant"),
      "energy_tax": T("Energy tax (excl. VAT)","Energiebelasting (excl. btw)","Energiesteuer (ohne MwSt.)"),
      "vat_percent": T("VAT","Btw","MwSt."),
-     "soc_entity": T("Car battery level sensor (optional)","Accuniveau-sensor van de auto (optioneel)","Akkustand-Sensor des Autos (optional)"),
-     "battery_capacity": T("Car battery capacity","Accucapaciteit auto","Akkukapazität Auto"),
      "reimbursement_per_kwh": T("Reimbursement rate (lease/employer)","Vergoedingstarief (lease/werkgever)","Erstattungssatz (Leasing/Arbeitgeber)"),
+     "ere_enabled": T("Track ERE revenue (emission reduction units)","ERE-regeling bijhouden (emissiereductie-eenheden)","ERE-Erlöse erfassen (Emissionsminderung)"),
+     "ere_rate": T("ERE revenue per kWh","ERE-opbrengst per kWh","ERE-Erlös pro kWh"),
     }
     cfg_desc_energy = {
      "bidding_zone": T("Day-ahead market prices (EPEX SPOT, formerly APX) are fetched automatically for this zone, per quarter hour, for today and tomorrow. No account needed.",
@@ -99,6 +103,7 @@ def build(lang):
                      "Per kWh, excl. btw. De prijs wordt (beurs + opslag + belasting) × (1 + btw).",
                      "Pro kWh, ohne MwSt. Preis = (Börse + Aufschlag + Steuer) × (1 + MwSt.)."),
      "reimbursement_per_kwh": T("Used for the monthly report of home charging.","Wordt gebruikt voor het maandrapport van thuisladen.","Wird für den Monatsbericht des Heimladens genutzt."),
+     "ere_rate": T("What you receive per charged kWh. Shown per month, per year and in total.","Wat je per geladen kWh ontvangt. Wordt getoond per maand, per jaar en totaal.","Was du pro geladener kWh erhältst. Pro Monat, Jahr und gesamt."),
     }
     cfg_fields_charger = {
      "model": T("Charger model","Laadpaalmodel","Wallbox-Modell"),
@@ -129,7 +134,7 @@ def build(lang):
      "data_description": {k: t(v) for k, v in grid_desc.items()},
     }
     energy_step = {
-     "title": t(T("Prices, car and costs","Prijzen, auto en kosten","Preise, Auto und Kosten")),
+     "title": t(T("Prices and costs","Prijzen en kosten","Preise und Kosten")),
      "description": t(T("Prices are fetched automatically. Fill in your contract's markup so costs match your bill.",
                         "De prijzen worden automatisch opgehaald. Vul de opslag van je contract in, dan kloppen de kosten met je rekening.",
                         "Preise werden automatisch abgerufen. Trage den Aufschlag deines Vertrags ein, damit die Kosten stimmen.")),
@@ -139,6 +144,71 @@ def build(lang):
     charger_opts = {
      "title": t(T("Charger","Laadpaal","Wallbox")),
      "data": {k: t(v) for k, v in cfg_fields_charger.items()},
+    }
+    car_detail_fields = {
+     "name": T("Name","Naam","Name"),
+     "image": T("Photo (URL or /local/…)","Foto (URL of /local/…)","Foto (URL oder /local/…)"),
+     "soc": T("Battery level","Accuniveau","Akkustand"),
+     "capacity": T("Battery capacity","Accucapaciteit","Akkukapazität"),
+     "target": T("Charge to","Laden tot","Laden bis"),
+     "plug": T("Plugged-in sensor","Stekker-sensor","Stecker-Sensor"),
+     "start_entity": T("Start charging (switch, button or script)","Laden starten (schakelaar, knop of script)","Laden starten (Schalter, Taste oder Skript)"),
+     "refresh_entity": T("Refresh car data (button, switch or script)","Gegevens auto verversen (knop, schakelaar of script)","Autodaten aktualisieren (Taste, Schalter oder Skript)"),
+     "limit_entity": T("Charge limit in the car","Laadlimiet in de auto","Ladelimit im Auto"),
+     "range_entity": T("Range","Actieradius","Reichweite"),
+     "remove": T("Remove this car","Deze auto verwijderen","Dieses Auto entfernen"),
+    }
+    car_detail_desc = {
+     "image": T("Put a photo in /config/www/ and use /local/name.png, or paste a web address.","Zet een foto in /config/www/ en vul /local/naam.png in, of plak een webadres.","Foto in /config/www/ ablegen und /local/name.png eintragen, oder eine Webadresse."),
+     "plug": T("Lets Easee Smart see which car is connected.","Hiermee ziet Easee Smart welke auto aan de laadpaal hangt.","Damit erkennt Easee Smart, welches Auto angeschlossen ist."),
+     "start_entity": T("Turned on when the car does not start charging by itself (sleeping cars).","Wordt aangezet als de auto niet vanzelf begint met laden (slapende auto's).","Wird eingeschaltet, wenn das Auto nicht von selbst lädt."),
+     "limit_entity": T("Your 'charge to' target is also set in the car.","Je 'laden tot'-doel wordt ook in de auto gezet.","Dein Ladeziel wird auch im Auto gesetzt."),
+    }
+    device_field = {"device_id": t(T("Car (device)","Auto (apparaat)","Auto (Gerät)"))}
+    device_desc = {"device_id": t(T("Pick your car from any integration. Its sensors are filled in automatically; you can change everything.",
+                                    "Kies je auto uit elke integratie. De sensoren worden automatisch ingevuld; je kunt alles aanpassen.",
+                                    "Wähle dein Auto aus einer beliebigen Integration. Die Sensoren werden automatisch eingetragen."))}
+    car_details_step = {
+     "title": t(T("Car","Auto","Auto")),
+     "description": t(T("Everything except the name is optional. Works with every brand.","Alles behalve de naam is optioneel. Werkt met elk merk.","Alles außer dem Namen ist optional. Funktioniert mit jeder Marke.")),
+     "data": {k: t(v) for k, v in car_detail_fields.items()},
+     "data_description": {k: t(v) for k, v in car_detail_desc.items()},
+    }
+    cars_setup_step = {
+     "title": t(T("Link a car (optional)","Auto koppelen (optioneel)","Auto verbinden (optional)")),
+     "description": t(T("Leave empty to skip. You can add up to six cars later under Configure → Cars.","Laat leeg om over te slaan. Later kun je tot zes auto's toevoegen via Configureren → Auto's.","Leer lassen zum Überspringen. Später bis zu sechs Autos unter Konfigurieren → Autos.")),
+     "data": device_field, "data_description": device_desc,
+    }
+    cars_menu = {
+     "title": t(T("Cars","Auto's","Autos")),
+     "menu_options": {
+      "car_add": t(T("Add a car","Auto toevoegen","Auto hinzufügen")),
+      "car_pick": t(T("Change or remove a car","Auto wijzigen of verwijderen","Auto ändern oder entfernen")),
+     },
+    }
+    car_add_step = {"title": t(T("Add a car","Auto toevoegen","Auto hinzufügen")), "data": device_field, "data_description": device_desc}
+    car_pick_step = {"title": t(T("Which car?","Welke auto?","Welches Auto?")), "data": {"car": t(T("Car","Auto","Auto"))}}
+    adv_fields = {
+     "min_current": T("Minimum charge current","Minimale laadstroom","Minimaler Ladestrom"),
+     "solar_start_delay": T("Solar: start after surplus lasts","Zon: starten na overschot van","Solar: Start nach Überschuss von"),
+     "solar_stop_delay": T("Solar: stop after shortage lasts","Zon: stoppen na tekort van","Solar: Stopp nach Defizit von"),
+     "solar_buffer": T("Solar: keep exporting at least","Zon: minimaal blijven terugleveren","Solar: mindestens weiter einspeisen"),
+     "charge_efficiency": T("Charging efficiency","Laadrendement","Ladewirkungsgrad"),
+     "boost_reset_on_unplug": T("Turn Boost off when the car is unplugged","Boost uitzetten als de auto wordt losgekoppeld","Boost ausschalten beim Abstecken"),
+     "resume_nudge": T("Wake the car when it does not start charging","Auto wekken als hij niet begint met laden","Auto wecken, wenn es nicht lädt"),
+     "car_refresh_minutes": T("Refresh car data every (0 = off)","Gegevens auto verversen elke (0 = uit)","Autodaten aktualisieren alle (0 = aus)"),
+     "language": T("Language of card and report","Taal van kaart en rapport","Sprache von Karte und Bericht"),
+    }
+    adv_desc = {
+     "min_current": T("Most cars need at least 6 A. Some charge more efficiently from 8 or 10 A.","De meeste auto's hebben minimaal 6 A nodig. Sommige laden efficiënter vanaf 8 of 10 A.","Die meisten Autos brauchen mindestens 6 A."),
+     "charge_efficiency": T("Energy lost while charging; used to calculate how much energy is still needed.","Verlies tijdens het laden; wordt gebruikt om te berekenen hoeveel energie er nog nodig is.","Ladeverluste; für die Berechnung der benötigten Energie."),
+     "resume_nudge": T("After 3 minutes without charging: resume on the charger and the car's start entity.","Na 3 minuten zonder laden: hervatten op de laadpaal en de start-entiteit van de auto.","Nach 3 Minuten ohne Laden: Fortsetzen an der Wallbox und Start-Entität des Autos."),
+     "car_refresh_minutes": T("Only while a car is connected. Uses the car's refresh entity.","Alleen als er een auto aangesloten is. Gebruikt de verversen-entiteit van de auto.","Nur wenn ein Auto angeschlossen ist."),
+    }
+    adv_step = {
+     "title": t(T("Advanced","Geavanceerd","Erweitert")),
+     "data": {k: t(v) for k, v in adv_fields.items()},
+     "data_description": {k: t(v) for k, v in adv_desc.items()},
     }
     data = {
      "config": {
@@ -166,6 +236,8 @@ def build(lang):
        },
        "grid": grid_step,
        "energy": energy_step,
+       "cars": cars_setup_step,
+       "car_details": car_details_step,
       },
       "abort": {
        "easee_missing": t(T("Install and set up the Easee integration first (HACS: nordicopen/easee_hass).",
@@ -182,17 +254,25 @@ def build(lang):
         "menu_options": {
          "charger": t(T("Charger","Laadpaal","Wallbox")),
          "grid": t(T("Main connection","Hoofdaansluiting","Hausanschluss")),
-         "energy": t(T("Prices, car and costs","Prijzen, auto en kosten","Preise, Auto und Kosten")),
+         "energy": t(T("Prices and costs","Prijzen en kosten","Preise und Kosten")),
+         "cars": t(T("Cars","Auto's","Autos")),
+         "advanced": t(T("Advanced","Geavanceerd","Erweitert")),
         },
        },
        "charger": charger_opts,
        "grid": grid_step,
        "energy": energy_step,
+       "cars": cars_menu,
+       "car_add": car_add_step,
+       "car_pick": car_pick_step,
+       "car_details": car_details_step,
+       "advanced": adv_step,
       },
      },
      "selector": {
       "phases": {"options": {"1": t(T("1 phase","1 fase","1 Phase")), "3": t(T("3 phases","3 fasen","3 Phasen"))}},
       "charge_mode": {"options": {k: t(v) for k, v in MODES.items()}},
+      "language": {"options": {"auto": t(T("Automatic (Home Assistant)","Automatisch (Home Assistant)","Automatisch (Home Assistant)")), "nl": "Nederlands", "en": "English", "de": "Deutsch"}},
      },
      "entity": {
       "sensor": {k: {"name": t(v)} for k, v in SENSORS.items()},
@@ -200,7 +280,10 @@ def build(lang):
        "car_connected": {"name": t(T("Car connected","Auto aangesloten","Fahrzeug verbunden"))},
        "smart_active": {"name": t(T("Smart control active","Slimme sturing actief","Smarte Steuerung aktiv"))},
       },
-      "select": {"charge_mode": {"name": t(T("Charge mode","Laadmodus","Lademodus")), "state": {k: t(v) for k, v in MODES.items()}}},
+      "select": {
+       "charge_mode": {"name": t(T("Charge mode","Laadmodus","Lademodus")), "state": {k: t(v) for k, v in MODES.items()}},
+       "active_car": {"name": t(T("Connected car","Aangesloten auto","Angeschlossenes Auto")), "state": {"auto": t(T("Automatic","Automatisch","Automatisch"))}},
+      },
       "number": {
        "target_energy": {"name": t(T("Energy to add","Te laden energie","Zu ladende Energie"))},
        "target_soc": {"name": t(T("Target battery level","Doel accuniveau","Ziel-Akkustand"))},
@@ -208,7 +291,11 @@ def build(lang):
       },
       "time": {"departure_time": {"name": t(T("Departure time","Vertrektijd","Abfahrtszeit"))}},
       "switch": {"boost": {"name": t(T("Boost (charge now)","Boost (nu laden)","Boost (jetzt laden)"))}},
-      "button": {"export_report": {"name": t(T("Export last month report","Maandrapport vorige maand exporteren","Bericht letzter Monat exportieren"))}},
+      "button": {
+       "export_report": {"name": t(T("Export last month report","Maandrapport vorige maand exporteren","Bericht letzter Monat exportieren"))},
+       "refresh_car": {"name": t(T("Refresh car data","Gegevens auto verversen","Autodaten aktualisieren"))},
+       "start_car": {"name": t(T("Start charging in car","Laden starten in auto","Laden im Auto starten"))},
+      },
      },
      "services": {
       "export_report": {

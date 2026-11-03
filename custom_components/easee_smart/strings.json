@@ -42,22 +42,56 @@
         }
       },
       "energy": {
-        "title": "Prices, car and costs",
+        "title": "Prices and costs",
         "description": "Prices are fetched automatically. Fill in your contract's markup so costs match your bill.",
         "data": {
           "bidding_zone": "Price zone (day-ahead / APX)",
           "price_markup": "Supplier markup",
           "energy_tax": "Energy tax (excl. VAT)",
           "vat_percent": "VAT",
-          "soc_entity": "Car battery level sensor (optional)",
-          "battery_capacity": "Car battery capacity",
-          "reimbursement_per_kwh": "Reimbursement rate (lease/employer)"
+          "reimbursement_per_kwh": "Reimbursement rate (lease/employer)",
+          "ere_enabled": "Track ERE revenue (emission reduction units)",
+          "ere_rate": "ERE revenue per kWh"
         },
         "data_description": {
           "bidding_zone": "Day-ahead market prices (EPEX SPOT, formerly APX) are fetched automatically for this zone, per quarter hour, for today and tomorrow. No account needed.",
           "price_markup": "Per kWh, excl. VAT, from your dynamic contract.",
           "energy_tax": "Per kWh, excl. VAT. The consumer price is (market + markup + tax) × (1 + VAT).",
-          "reimbursement_per_kwh": "Used for the monthly report of home charging."
+          "reimbursement_per_kwh": "Used for the monthly report of home charging.",
+          "ere_rate": "What you receive per charged kWh. Shown per month, per year and in total."
+        }
+      },
+      "cars": {
+        "title": "Link a car (optional)",
+        "description": "Leave empty to skip. You can add up to six cars later under Configure → Cars.",
+        "data": {
+          "device_id": "Car (device)"
+        },
+        "data_description": {
+          "device_id": "Pick your car from any integration. Its sensors are filled in automatically; you can change everything."
+        }
+      },
+      "car_details": {
+        "title": "Car",
+        "description": "Everything except the name is optional. Works with every brand.",
+        "data": {
+          "name": "Name",
+          "image": "Photo (URL or /local/…)",
+          "soc": "Battery level",
+          "capacity": "Battery capacity",
+          "target": "Charge to",
+          "plug": "Plugged-in sensor",
+          "start_entity": "Start charging (switch, button or script)",
+          "refresh_entity": "Refresh car data (button, switch or script)",
+          "limit_entity": "Charge limit in the car",
+          "range_entity": "Range",
+          "remove": "Remove this car"
+        },
+        "data_description": {
+          "image": "Put a photo in /config/www/ and use /local/name.png, or paste a web address.",
+          "plug": "Lets Easee Smart see which car is connected.",
+          "start_entity": "Turned on when the car does not start charging by itself (sleeping cars).",
+          "limit_entity": "Your 'charge to' target is also set in the car."
         }
       }
     },
@@ -74,7 +108,9 @@
         "menu_options": {
           "charger": "Charger",
           "grid": "Main connection",
-          "energy": "Prices, car and costs"
+          "energy": "Prices and costs",
+          "cars": "Cars",
+          "advanced": "Advanced"
         }
       },
       "charger": {
@@ -105,22 +141,88 @@
         }
       },
       "energy": {
-        "title": "Prices, car and costs",
+        "title": "Prices and costs",
         "description": "Prices are fetched automatically. Fill in your contract's markup so costs match your bill.",
         "data": {
           "bidding_zone": "Price zone (day-ahead / APX)",
           "price_markup": "Supplier markup",
           "energy_tax": "Energy tax (excl. VAT)",
           "vat_percent": "VAT",
-          "soc_entity": "Car battery level sensor (optional)",
-          "battery_capacity": "Car battery capacity",
-          "reimbursement_per_kwh": "Reimbursement rate (lease/employer)"
+          "reimbursement_per_kwh": "Reimbursement rate (lease/employer)",
+          "ere_enabled": "Track ERE revenue (emission reduction units)",
+          "ere_rate": "ERE revenue per kWh"
         },
         "data_description": {
           "bidding_zone": "Day-ahead market prices (EPEX SPOT, formerly APX) are fetched automatically for this zone, per quarter hour, for today and tomorrow. No account needed.",
           "price_markup": "Per kWh, excl. VAT, from your dynamic contract.",
           "energy_tax": "Per kWh, excl. VAT. The consumer price is (market + markup + tax) × (1 + VAT).",
-          "reimbursement_per_kwh": "Used for the monthly report of home charging."
+          "reimbursement_per_kwh": "Used for the monthly report of home charging.",
+          "ere_rate": "What you receive per charged kWh. Shown per month, per year and in total."
+        }
+      },
+      "cars": {
+        "title": "Cars",
+        "menu_options": {
+          "car_add": "Add a car",
+          "car_pick": "Change or remove a car"
+        }
+      },
+      "car_add": {
+        "title": "Add a car",
+        "data": {
+          "device_id": "Car (device)"
+        },
+        "data_description": {
+          "device_id": "Pick your car from any integration. Its sensors are filled in automatically; you can change everything."
+        }
+      },
+      "car_pick": {
+        "title": "Which car?",
+        "data": {
+          "car": "Car"
+        }
+      },
+      "car_details": {
+        "title": "Car",
+        "description": "Everything except the name is optional. Works with every brand.",
+        "data": {
+          "name": "Name",
+          "image": "Photo (URL or /local/…)",
+          "soc": "Battery level",
+          "capacity": "Battery capacity",
+          "target": "Charge to",
+          "plug": "Plugged-in sensor",
+          "start_entity": "Start charging (switch, button or script)",
+          "refresh_entity": "Refresh car data (button, switch or script)",
+          "limit_entity": "Charge limit in the car",
+          "range_entity": "Range",
+          "remove": "Remove this car"
+        },
+        "data_description": {
+          "image": "Put a photo in /config/www/ and use /local/name.png, or paste a web address.",
+          "plug": "Lets Easee Smart see which car is connected.",
+          "start_entity": "Turned on when the car does not start charging by itself (sleeping cars).",
+          "limit_entity": "Your 'charge to' target is also set in the car."
+        }
+      },
+      "advanced": {
+        "title": "Advanced",
+        "data": {
+          "min_current": "Minimum charge current",
+          "solar_start_delay": "Solar: start after surplus lasts",
+          "solar_stop_delay": "Solar: stop after shortage lasts",
+          "solar_buffer": "Solar: keep exporting at least",
+          "charge_efficiency": "Charging efficiency",
+          "boost_reset_on_unplug": "Turn Boost off when the car is unplugged",
+          "resume_nudge": "Wake the car when it does not start charging",
+          "car_refresh_minutes": "Refresh car data every (0 = off)",
+          "language": "Language of card and report"
+        },
+        "data_description": {
+          "min_current": "Most cars need at least 6 A. Some charge more efficiently from 8 or 10 A.",
+          "charge_efficiency": "Energy lost while charging; used to calculate how much energy is still needed.",
+          "resume_nudge": "After 3 minutes without charging: resume on the charger and the car's start entity.",
+          "car_refresh_minutes": "Only while a car is connected. Uses the car's refresh entity."
         }
       }
     }
@@ -138,6 +240,14 @@
         "smart": "Smart (cheapest hours)",
         "solar": "Solar surplus",
         "solar_smart": "Solar + smart"
+      }
+    },
+    "language": {
+      "options": {
+        "auto": "Automatic (Home Assistant)",
+        "nl": "Nederlands",
+        "en": "English",
+        "de": "Deutsch"
       }
     }
   },
@@ -254,6 +364,18 @@
       },
       "phase_load": {
         "name": "Main fuse load"
+      },
+      "car_soc": {
+        "name": "Car battery"
+      },
+      "ere_month": {
+        "name": "ERE this month"
+      },
+      "ere_year": {
+        "name": "ERE this year"
+      },
+      "ere_total": {
+        "name": "ERE total"
       }
     },
     "binary_sensor": {
@@ -272,6 +394,12 @@
           "smart": "Smart (cheapest hours)",
           "solar": "Solar surplus",
           "solar_smart": "Solar + smart"
+        }
+      },
+      "active_car": {
+        "name": "Connected car",
+        "state": {
+          "auto": "Automatic"
         }
       }
     },
@@ -299,6 +427,12 @@
     "button": {
       "export_report": {
         "name": "Export last month report"
+      },
+      "refresh_car": {
+        "name": "Refresh car data"
+      },
+      "start_car": {
+        "name": "Start charging in car"
       }
     }
   },

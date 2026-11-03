@@ -29,32 +29,43 @@ from homeassistant.helpers.event import (
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .cars import Car, cars_from_options
 from .const import (
+    ACTIVE_CAR_AUTO,
     CHARGER_KEYS,
-    CONF_BATTERY_CAPACITY,
     CONF_BIDDING_ZONE,
+    CONF_BOOST_RESET,
+    CONF_CAR_REFRESH_MIN,
     CONF_CHARGER_DEVICE,
+    CONF_EFFICIENCY,
     CONF_ENERGY_TAX,
     CONF_EQUALIZER_DEVICE,
+    CONF_ERE_ENABLED,
+    CONF_ERE_RATE,
     CONF_GRID_EXPORT_ENTITY,
     CONF_GRID_IMPORT_ENTITY,
     CONF_GRID_POWER_ENTITY,
     CONF_GRID_POWER_INVERTED,
+    CONF_LANGUAGE,
     CONF_MAIN_FUSE,
     CONF_MARKUP,
     CONF_MAX_CURRENT,
+    CONF_MIN_CURRENT,
     CONF_MODEL,
+    CONF_NUDGE,
     CONF_PHASES,
     CONF_REIMBURSEMENT,
-    CONF_SOC_ENTITY,
+    CONF_SOLAR_BUFFER,
+    CONF_SOLAR_START_DELAY,
+    CONF_SOLAR_STOP_DELAY,
     CONF_VAT,
     CONF_VOLTAGE,
     CONNECTED_STATUSES,
     CONTROL_INTERVAL_S,
     CONTROL_REFRESH_S,
     CONTROL_TTL_MIN,
-    DEFAULT_BATTERY_CAPACITY,
     DEFAULT_DEPARTURE,
+    DEFAULT_EFFICIENCY,
     DEFAULT_MAIN_FUSE,
     DEFAULT_MAX_CURRENT,
     DEFAULT_PHASES,
@@ -165,6 +176,8 @@ class Settings:
     departure: str = DEFAULT_DEPARTURE
     target_energy: float = DEFAULT_TARGET_ENERGY
     target_soc: int = DEFAULT_TARGET_SOC
+    active_car: str = ACTIVE_CAR_AUTO
+    car_targets: dict = field(default_factory=dict)
     price_threshold: float | None = None
     boost: bool = False
 
@@ -220,7 +233,7 @@ class EaseeSmartManager:
         self.snapshot = Snapshot()
         self.solar = SolarRegulator(
             min_current=MIN_CHARGE_CURRENT,
-            max_current=self.max_current,
+            max_current=DEFAULT_MAX_CURRENT,
             start_delay=SOLAR_START_DELAY_S,
             stop_delay=SOLAR_STOP_DELAY_S,
         )
@@ -231,6 +244,9 @@ class EaseeSmartManager:
         self._last_change_at: datetime | None = None
         self._stalled_since: datetime | None = None
         self._lock = asyncio.Lock()
+        self._last_plugged: str | None = None
+        self._last_car_refresh: datetime | None = None
+        self._car_started_at: datetime | None = None
         self.charger_device_id: str = entry.data[CONF_CHARGER_DEVICE]
         self.equalizer_device_id: str | None = entry.data.get(CONF_EQUALIZER_DEVICE)
         devices = dr.async_get(hass)
@@ -295,9 +311,65 @@ class EaseeSmartManager:
     def grid_entity(self) -> str | None:
         return self._opt(CONF_GRID_POWER_ENTITY) or None
 
+    # ------------------------------------------------------------- advanced
+    @property
+    def min_current(self) -> int:
+        return int(self._opt(CONF_MIN_CURRENT, MIN_CHARGE_CURRENT) or MIN_CHARGE_CURRENT)
+
+    @property
+    def efficiency(self) -> float:
+        value = float(self._opt(CONF_EFFICIENCY, DEFAULT_EFFICIENCY) or DEFAULT_EFFICIENCY)
+        return min(max(value, 50.0), 100.0) / 100
+
+    @property
+    def solar_buffer_kw(self) -> float:
+        return float(self._opt(CONF_SOLAR_BUFFER, 0.0) or 0.0)
+
+    def _apply_solar_settings(self) -> None:
+        self.solar.min_current = self.min_current
+        self.solar.max_current = self.max_current
+        self.solar.start_delay = float(self._opt(CONF_SOLAR_START_DELAY, SOLAR_START_DELAY_S / 60) or 0) * 60
+        self.solar.stop_delay = float(self._opt(CONF_SOLAR_STOP_DELAY, SOLAR_STOP_DELAY_S / 60) or 0) * 60
+
+    # ----------------------------------------------------------------- cars
+    @property
+    def cars(self) -> list[Car]:
+        return cars_from_options({**self.entry.data, **self.entry.options})
+
     @property
     def soc_entity(self) -> str | None:
-        return self._opt(CONF_SOC_ENTITY) or None
+        car = self.active_car()
+        return car.soc_entity if car else None
+
+    def _plugged(self, car: Car) -> bool | None:
+        state = self._state(car.plug_entity)
+        return None if state is None else state.state == "on"
+
+    def active_car(self) -> Car | None:
+        cars = self.cars
+        if not cars:
+            return None
+        chosen = self.settings.active_car
+        if chosen != ACTIVE_CAR_AUTO:
+            for car in cars:
+                if car.name == chosen:
+                    return car
+        plugged = [c for c in cars if self._plugged(c)]
+        if len(plugged) == 1:
+            return plugged[0]
+        if self._last_plugged:
+            for car in cars:
+                if car.name == self._last_plugged:
+                    return car
+        return cars[0]
+
+    def car_target(self, car: Car | None) -> int:
+        if car is None:
+            return self.settings.target_soc
+        return int(self.settings.car_targets.get(car.name, car.target))
+
+    def car_soc(self, car: Car | None) -> float | None:
+        return self._float(car.soc_entity) if car else None
 
     @property
     def grid_import_entity(self) -> str | None:
@@ -325,6 +397,21 @@ class EaseeSmartManager:
         )
 
     @property
+    def ere_rate(self) -> float | None:
+        """ERE (emission reduction units) revenue per charged kWh, when enabled."""
+        if not self._opt(CONF_ERE_ENABLED, False):
+            return None
+        value = self._opt(CONF_ERE_RATE)
+        return float(value) if value not in (None, "") else 0.0
+
+    def ere_earned(self, period: str) -> float | None:
+        rate = self.ere_rate
+        if rate is None:
+            return None
+        energy = self.totals["energy"] if period == "total" else self.period_totals(period)["energy"]
+        return round(energy * rate, 2)
+
+    @property
     def reimbursement(self) -> float | None:
         value = self._opt(CONF_REIMBURSEMENT)
         return float(value) if value not in (None, "") else None
@@ -338,6 +425,8 @@ class EaseeSmartManager:
             departure=settings.get("departure", DEFAULT_DEPARTURE),
             target_energy=float(settings.get("target_energy", DEFAULT_TARGET_ENERGY)),
             target_soc=int(settings.get("target_soc", DEFAULT_TARGET_SOC)),
+            active_car=settings.get("active_car", ACTIVE_CAR_AUTO),
+            car_targets=dict(settings.get("car_targets", {})),
             price_threshold=settings.get("price_threshold"),
             boost=bool(settings.get("boost", False)),
         )
@@ -364,7 +453,8 @@ class EaseeSmartManager:
                 self.grid_entity,
                 self.grid_import_entity,
                 self.grid_export_entity,
-                self.soc_entity,
+                *[c.soc_entity for c in self.cars],
+                *[c.plug_entity for c in self.cars],
                 *self.phase_entities,
             )
             if e
@@ -479,6 +569,10 @@ class EaseeSmartManager:
             self._account_energy()
         if entity_id == self.charger_entities.get("status"):
             self._handle_status_change(event)
+        for car in self.cars:
+            new = event.data.get("new_state")
+            if entity_id == car.plug_entity and new is not None and new.state == "on":
+                self._last_plugged = car.name
         self._recompute()
         if entity_id in (
             self.charger_entities.get("status"),
@@ -549,11 +643,12 @@ class EaseeSmartManager:
         async_dispatcher_send(self.hass, SIGNAL_UPDATE.format(self.entry.entry_id))
 
     def _energy_needed(self) -> float | None:
-        if self.soc_entity:
-            soc = self._float(self.soc_entity)
-            if soc is not None:
-                capacity = float(self._opt(CONF_BATTERY_CAPACITY, DEFAULT_BATTERY_CAPACITY))
-                return round(max(0.0, (self.settings.target_soc - soc) / 100 * capacity), 2)
+        """Energy still to deliver from the wall (battery energy / charging efficiency)."""
+        car = self.active_car()
+        soc = self.car_soc(car)
+        if car is not None and soc is not None:
+            battery = max(0.0, (self.car_target(car) - soc) / 100 * car.capacity)
+            return round(battery / self.efficiency, 2)
         delivered = self.snapshot.session_energy if self.snapshot.connected else 0.0
         return round(max(0.0, self.settings.target_energy - (delivered or 0.0)), 2)
 
@@ -628,7 +723,8 @@ class EaseeSmartManager:
             self.sessions.append(record)
             self.sessions = self.sessions[-MAX_STORED_SESSIONS:]
         self.session = SessionTracker()
-        self.settings.boost = False
+        if self._opt(CONF_BOOST_RESET, True):
+            self.settings.boost = False
         self.solar.reset()
         self._save()
 
@@ -669,6 +765,7 @@ class EaseeSmartManager:
     async def _async_tick(self, _now: datetime) -> None:
         if self.day_ahead.needs_refresh(dt_util.now()):
             await self._async_refresh_prices()
+        await self._async_periodic_car_refresh(dt_util.now())
         self._recompute()
         await self._async_control()
 
@@ -682,7 +779,7 @@ class EaseeSmartManager:
         snap = self.snapshot
         now = dt_util.now()
         mode = self.settings.mode
-        self.solar.max_current = self.max_current
+        self._apply_solar_settings()
 
         if mode == MODE_NORMAL and not self.settings.boost:
             snap.smart_state = SMART_IDLE
@@ -739,7 +836,7 @@ class EaseeSmartManager:
             if mode in (MODE_SOLAR, MODE_SOLAR_SMART):
                 if snap.surplus_kw is not None:
                     want_solar = self.solar.update(
-                        now, snap.surplus_kw, snap.power_kw or 0.0, self.phases, self.voltage
+                        now, snap.surplus_kw - self.solar_buffer_kw, snap.power_kw or 0.0, self.phases, self.voltage
                     )
                 if mode == MODE_SOLAR:
                     state = SMART_CHARGING_SOLAR if want_solar > 0 else SMART_WAITING_SOLAR
@@ -774,15 +871,70 @@ class EaseeSmartManager:
             self._last_sent_at = now
 
     async def _async_nudge(self, want: int, now: datetime) -> None:
-        """Resume if we want charging but the charger stays idle (some cars sleep)."""
+        """Wake the car if we want charging but nothing flows (some cars sleep)."""
         snap = self.snapshot
+        if not self._opt(CONF_NUDGE, True):
+            return
         if want > 0 and snap.status in ("awaiting_start", "ready_to_charge") and (snap.power_kw or 0) < 0.2:
             self._stalled_since = self._stalled_since or now
             if (now - self._stalled_since).total_seconds() > 180:
                 self._stalled_since = now
                 await self.async_charger_command("resume")
+                await self.async_force_car_start()
         else:
             self._stalled_since = None
+
+    # ------------------------------------------------------------- car actions
+    async def _async_action(self, entity_id: str | None) -> bool:
+        """Press a button or turn on a switch/script/boolean of the car."""
+        if not entity_id:
+            return False
+        domain = entity_id.split(".", 1)[0]
+        service = {"button": "press", "input_button": "press"}.get(domain, "turn_on")
+        try:
+            await self.hass.services.async_call(domain, service, {"entity_id": entity_id}, blocking=True)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Could not run %s.%s on %s: %s", domain, service, entity_id, err)
+            return False
+        return True
+
+    async def async_force_car_start(self) -> bool:
+        car = self.active_car()
+        if car and car.start_entity:
+            _LOGGER.debug("Forcing car %s to start charging via %s", car.name, car.start_entity)
+            self._car_started_at = dt_util.now()
+            return await self._async_action(car.start_entity)
+        return False
+
+    async def async_refresh_car(self) -> bool:
+        car = self.active_car()
+        if car and car.refresh_entity:
+            self._last_car_refresh = dt_util.now()
+            return await self._async_action(car.refresh_entity)
+        return False
+
+    async def _async_periodic_car_refresh(self, now: datetime) -> None:
+        minutes = float(self._opt(CONF_CAR_REFRESH_MIN, 0) or 0)
+        if minutes <= 0 or not self.snapshot.connected:
+            return
+        if self._last_car_refresh is None or (now - self._last_car_refresh).total_seconds() >= minutes * 60:
+            await self.async_refresh_car()
+
+    async def async_set_car_target(self, value: int) -> None:
+        """Store the target for the active car and push it to the car's own charge limit."""
+        car = self.active_car()
+        if car is None:
+            await self.async_set_setting("target_soc", int(value))
+            return
+        await self.async_set_setting("car_targets", {**self.settings.car_targets, car.name: int(value)})
+        if car.limit_entity:
+            domain = car.limit_entity.split(".", 1)[0]
+            try:
+                await self.hass.services.async_call(
+                    domain, "set_value", {"entity_id": car.limit_entity, "value": int(value)}, blocking=True
+                )
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.warning("Could not set charge limit on %s: %s", car.limit_entity, err)
 
     async def _async_restore_normal(self) -> None:
         limit = self.charger_value("max_charger_limit") or self.max_current
@@ -843,7 +995,8 @@ class EaseeSmartManager:
         writer.writerow(["charger", self.name, "model", self.model, "serial", self.charger_id or ""])
         writer.writerow(["month", month])
         writer.writerow([])
-        writer.writerow(["start", "end", "energy_kwh", "cost", "avg_price_per_kwh", "reimbursement"])
+        ere = self.ere_rate
+        writer.writerow(["start", "end", "energy_kwh", "cost", "avg_price_per_kwh", "reimbursement", "ere"])
         for s in sessions:
             writer.writerow(
                 [
@@ -853,6 +1006,7 @@ class EaseeSmartManager:
                     f"{s.get('cost', 0):.2f}".replace(".", ","),
                     "" if s.get("avg_price") is None else f"{s['avg_price']:.4f}".replace(".", ","),
                     "" if reimb is None else f"{s.get('energy', 0) * reimb:.2f}".replace(".", ","),
+                    "" if ere is None else f"{s.get('energy', 0) * ere:.2f}".replace(".", ","),
                 ]
             )
         writer.writerow([])
@@ -864,6 +1018,7 @@ class EaseeSmartManager:
                 f"{totals_cost:.2f}".replace(".", ","),
                 "",
                 "" if reimb is None else f"{totals_energy * reimb:.2f}".replace(".", ","),
+                "" if ere is None else f"{totals_energy * ere:.2f}".replace(".", ","),
             ]
         )
         filename = f"{(self.charger_id or 'easee').lower()}-{month}.csv"
@@ -887,6 +1042,22 @@ class EaseeSmartManager:
         }
 
     # ------------------------------------------------------------ card payload
+    def _car_payload(self) -> dict[str, Any] | None:
+        car = self.active_car()
+        if car is None:
+            return None
+        rng = self._float(car.range_entity)
+        return {
+            "name": car.name,
+            "image": car.image,
+            "range_km": rng,
+            "can_refresh": bool(car.refresh_entity),
+            "soc": self.car_soc(car),
+            "target": self.car_target(car),
+            "capacity": car.capacity,
+            "plugged": self._plugged(car),
+        }
+
     def card_payload(self) -> dict[str, Any]:
         snap = self.snapshot
         plan = snap.plan
@@ -900,10 +1071,14 @@ class EaseeSmartManager:
             "mode": self.settings.mode,
             "departure": self.settings.departure,
             "target_energy": self.settings.target_energy,
-            "target_soc": self.settings.target_soc,
+            "target_soc": self.car_target(self.active_car()),
+            "car": self._car_payload(),
+            "cars": [c.name for c in self.cars],
+            "active_car_setting": self.settings.active_car,
             "boost": self.settings.boost,
             "smart_state": snap.smart_state,
             "currency": self.hass.config.currency,
+            "language": self._opt(CONF_LANGUAGE) or "auto",
             "phases": self.phases,
             "max_current": self.max_current,
             "sources": self.charger_entities,
@@ -944,6 +1119,12 @@ class EaseeSmartManager:
             "months": self.month_history(12),
             "sessions": list(reversed(self.sessions[-15:])),
             "reimbursement_per_kwh": self.reimbursement,
+            "ere": None if self.ere_rate is None else {
+                "rate": self.ere_rate,
+                "month": self.ere_earned("month"),
+                "year": self.ere_earned("year"),
+                "total": self.ere_earned("total"),
+            },
             "has_surplus_source": self.has_surplus_source,
             "uses_meter": self.uses_meter,
             "meter": {
@@ -951,7 +1132,7 @@ class EaseeSmartManager:
                 "export": self.grid_export_entity,
                 "net": self.grid_entity,
             },
-            "has_soc": bool(self.soc_entity),
+            "has_soc": bool(self.cars),
         }
 
 
