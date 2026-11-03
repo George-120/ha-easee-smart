@@ -13,7 +13,7 @@ Slim laden, Equalizer-inzicht, laadkosten en een app-achtige dashboardkaart voor
 
 - **Kies gewoon je laadpaal.** De integratie vindt je Easee-laadpalen en Equalizer zelf en herkent het model (Home, Charge, Charge Lite, Max, Up, Core, Pro, One).
 - **Slim laden op dynamische prijzen.** Je stelt een vertrektijd en hoeveel je wilt laden in (kWh, of accupercentage als je auto een accusensor heeft). De integratie kiest de goedkoopste uren of kwartieren daarvoor. Werkt met Nordpool, Tibber, Frank Energie, Zonneplan, ENTSO-e en andere sensoren die een prijsverwachting als attribuut hebben.
-- **Laden op zonne-overschot.** Met een Easee Equalizer gebruikt de integratie automatisch de gemeten afname en teruglevering; zonder Equalizer kies je een netvermogen-sensor. Start- en stopvertraging voorkomen pendelen.
+- **Laden op zonne-overschot.** Met een Easee Equalizer gebruikt de integratie automatisch de gemeten afname en teruglevering. Zonder Equalizer voeg je je **hoofdaansluiting** toe: je slimme meter (P1) wordt automatisch herkend (DSMR, HomeWizard, P1 Monitor, Zonneplan Connect, Tibber, Enphase), en je kiest je hoofdzekering (bijv. 3×25 A). Achteraf wijzigen kan altijd via *Configureren → Hoofdaansluiting*. Start- en stopvertraging voorkomen pendelen.
 - **Zon + slim.** Laadt overdag van de zon en vult het tekort aan in de goedkoopste uren vóór vertrek.
 - **Boost.** Eén knop om direct op vol vermogen te laden, tot je de stekker eruit haalt.
 - **Equalizer uitgelezen.** Netvermogen, stroom per fase (L1/L2/L3), spanning, belasting en resterende ruimte op je hoofdzekering, plus afname/teruglevering in kWh.
@@ -29,7 +29,9 @@ Load balancing doet de Easee Equalizer zelf; deze integratie grijpt daar niet in
 1. Zorg dat de **Easee-integratie** draait ([nordicopen/easee_hass](https://github.com/nordicopen/easee_hass) via HACS).
 2. Installeer **Easee Smart** via HACS (knop hierboven) en herstart Home Assistant.
 3. Ga naar *Instellingen → Apparaten & diensten → Integratie toevoegen → Easee Smart* (of gebruik de tweede knop).
-4. Kies je laadpaal (en Equalizer), controleer het herkende model en kies eventueel een prijssensor. Klaar.
+4. Kies je laadpaal (en Equalizer), controleer het herkende model, check je hoofdaansluiting (als je geen Equalizer hebt) en kies eventueel een prijssensor. Klaar.
+
+Alle instellingen pas je later aan via *Configureren* op de integratie: laadpaal, hoofdaansluiting, en prijzen/auto/kosten.
 
 Vink bij stap 4 *Benodigde Easee-sensoren automatisch inschakelen* aan: een paar Easee-sensoren (fasestromen, spanning, limieten) staan standaard uit.
 

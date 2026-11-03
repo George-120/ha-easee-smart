@@ -22,7 +22,10 @@ from .const import (
     CONF_EQUALIZER_DEVICE,
     CONF_FIXED_PRICE,
     CONF_GRID_POWER_ENTITY,
+    CONF_GRID_EXPORT_ENTITY,
+    CONF_GRID_IMPORT_ENTITY,
     CONF_GRID_POWER_INVERTED,
+    CONF_MAIN_FUSE,
     CONF_MAX_CURRENT,
     CONF_MODEL,
     CONF_PHASES,
@@ -30,7 +33,11 @@ from .const import (
     CONF_REIMBURSEMENT,
     CONF_SOC_ENTITY,
     DEFAULT_BATTERY_CAPACITY,
+    DEFAULT_MAIN_FUSE,
     DEFAULT_MAX_CURRENT,
+    GRID_KEYS,
+    MAIN_FUSE_SIZES,
+    PHASE_ENTITY_KEYS,
     DEFAULT_PHASES,
     DOMAIN,
     EASEE_DOMAIN,
@@ -40,6 +47,7 @@ from .const import (
     REQUIRED_CHARGER_KEYS,
     REQUIRED_EQUALIZER_KEYS,
 )
+from .grid_detect import suggest_grid_sensors
 from .manager import easee_product_id, enable_disabled_entities, resolve_entities
 
 NO_EQUALIZER = "none"
@@ -72,7 +80,7 @@ def _detect_model(device: dr.DeviceEntry | None) -> str:
     return EASEE_MODELS[0]
 
 
-def _energy_schema(hass: HomeAssistant, defaults: dict[str, Any], has_equalizer: bool) -> dict:
+def _energy_schema(hass: HomeAssistant, defaults: dict[str, Any]) -> dict:
     currency = hass.config.currency
     schema: dict = {
         vol.Optional(
@@ -89,18 +97,6 @@ def _energy_schema(hass: HomeAssistant, defaults: dict[str, Any], has_equalizer:
             )
         ),
     }
-    if not has_equalizer:
-        schema[
-            vol.Optional(
-                CONF_GRID_POWER_ENTITY,
-                description={"suggested_value": defaults.get(CONF_GRID_POWER_ENTITY)},
-            )
-        ] = selector.EntitySelector(
-            selector.EntitySelectorConfig(domain="sensor", device_class="power")
-        )
-        schema[
-            vol.Optional(CONF_GRID_POWER_INVERTED, default=defaults.get(CONF_GRID_POWER_INVERTED, False))
-        ] = selector.BooleanSelector()
     schema.update(
         {
             vol.Optional(
@@ -132,6 +128,36 @@ def _energy_schema(hass: HomeAssistant, defaults: dict[str, Any], has_equalizer:
     return schema
 
 
+def _grid_schema(defaults: dict[str, Any]) -> dict:
+    """Main connection: smart meter sensors and main fuse (only without an Equalizer)."""
+
+    def ent(key: str, device_class: str) -> tuple:
+        return (
+            vol.Optional(key, description={"suggested_value": defaults.get(key)}),
+            selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor", device_class=device_class)),
+        )
+
+    schema: dict = dict(
+        [
+            ent(CONF_GRID_IMPORT_ENTITY, "power"),
+            ent(CONF_GRID_EXPORT_ENTITY, "power"),
+            ent(CONF_GRID_POWER_ENTITY, "power"),
+        ]
+    )
+    schema[vol.Optional(CONF_GRID_POWER_INVERTED, default=defaults.get(CONF_GRID_POWER_INVERTED, False))] = (
+        selector.BooleanSelector()
+    )
+    schema.update(dict(ent(k, "current") for k in PHASE_ENTITY_KEYS))
+    schema[vol.Required(CONF_MAIN_FUSE, default=str(defaults.get(CONF_MAIN_FUSE, DEFAULT_MAIN_FUSE)))] = (
+        selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=MAIN_FUSE_SIZES, custom_value=True, mode=selector.SelectSelectorMode.DROPDOWN
+            )
+        )
+    )
+    return schema
+
+
 def _charger_schema(defaults: dict[str, Any]) -> dict:
     return {
         vol.Required(CONF_MODEL, default=defaults.get(CONF_MODEL, EASEE_MODELS[0])): selector.SelectSelector(
@@ -155,6 +181,11 @@ def _clean(data: dict[str, Any]) -> dict[str, Any]:
         out[CONF_PHASES] = int(out[CONF_PHASES])
     if CONF_MAX_CURRENT in out:
         out[CONF_MAX_CURRENT] = int(out[CONF_MAX_CURRENT])
+    if CONF_MAIN_FUSE in out:
+        try:
+            out[CONF_MAIN_FUSE] = int(float(out[CONF_MAIN_FUSE]))
+        except (TypeError, ValueError):
+            out[CONF_MAIN_FUSE] = DEFAULT_MAIN_FUSE
     return out
 
 
@@ -218,7 +249,9 @@ class EaseeSmartConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_charger(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
             self._data.update(_clean(user_input))
-            return await self.async_step_energy()
+            if CONF_EQUALIZER_DEVICE in self._data:
+                return await self.async_step_energy()
+            return await self.async_step_grid()
         model = _detect_model(self._charger)
         defaults = {
             CONF_MODEL: model,
@@ -231,6 +264,19 @@ class EaseeSmartConfigFlow(ConfigFlow, domain=DOMAIN):
                 "name": self._charger.name_by_user or self._charger.name or "Easee" if self._charger else "Easee",
                 "detected": model,
             },
+        )
+
+    async def async_step_grid(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Main connection: lets solar charging see export without an Equalizer."""
+        if user_input is not None:
+            self._data.update(_clean(user_input))
+            return await self.async_step_energy()
+        suggested = suggest_grid_sensors(self.hass)
+        found = ", ".join(suggested.values()) or "—"
+        return self.async_show_form(
+            step_id="grid",
+            data_schema=vol.Schema(_grid_schema(suggested)),
+            description_placeholders={"found": found},
         )
 
     async def async_step_energy(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
@@ -252,7 +298,7 @@ class EaseeSmartConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(title=f"{title} Smart", data=self._data)
         return self.async_show_form(
             step_id="energy",
-            data_schema=vol.Schema(_energy_schema(self.hass, {}, has_eq)),
+            data_schema=vol.Schema(_energy_schema(self.hass, {})),
         )
 
     @staticmethod
@@ -262,22 +308,44 @@ class EaseeSmartConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class EaseeSmartOptionsFlow(OptionsFlow):
-    """Change charger settings and energy sources later."""
+    """Change settings later: charger, main connection, prices and costs."""
+
+    def _current(self) -> dict[str, Any]:
+        return {**self.config_entry.data, **self.config_entry.options}
+
+    def _save(self, user_input: dict[str, Any], cleared: list[str]) -> ConfigFlowResult:
+        data = {**self.config_entry.options, **_clean(user_input)}
+        # Fields left empty clear the earlier value instead of falling back to the setup data.
+        for key in cleared:
+            if key not in user_input or user_input[key] in (None, ""):
+                data[key] = None
+        return self.async_create_entry(data=data)
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        current = {**self.config_entry.data, **self.config_entry.options}
-        has_eq = CONF_EQUALIZER_DEVICE in self.config_entry.data
+        menu = ["charger", "energy"]
+        if CONF_EQUALIZER_DEVICE not in self.config_entry.data:
+            menu.insert(1, "grid")
+        return self.async_show_menu(step_id="init", menu_options=menu)
+
+    async def async_step_charger(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
-            data = _clean(user_input)
-            # Fields left empty must clear the earlier value (not fall back to setup data).
-            for key in (
-                CONF_PRICE_ENTITY,
-                CONF_FIXED_PRICE,
-                CONF_GRID_POWER_ENTITY,
-                CONF_SOC_ENTITY,
-                CONF_REIMBURSEMENT,
-            ):
-                data.setdefault(key, None)
-            return self.async_create_entry(data=data)
-        schema = {**_charger_schema(current), **_energy_schema(self.hass, current, has_eq)}
-        return self.async_show_form(step_id="init", data_schema=vol.Schema(schema))
+            return self._save(user_input, [])
+        return self.async_show_form(step_id="charger", data_schema=vol.Schema(_charger_schema(self._current())))
+
+    async def async_step_grid(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None:
+            return self._save(user_input, list(GRID_KEYS))
+        current = self._current()
+        if not any(current.get(k) for k in GRID_KEYS):
+            suggested = suggest_grid_sensors(self.hass)
+            current = {**current, **{k: v for k, v in suggested.items() if not current.get(k)}}
+        return self.async_show_form(
+            step_id="grid",
+            data_schema=vol.Schema(_grid_schema(current)),
+            description_placeholders={"found": ", ".join(v for k, v in current.items() if k in GRID_KEYS and v) or "—"},
+        )
+
+    async def async_step_energy(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None:
+            return self._save(user_input, [CONF_PRICE_ENTITY, CONF_FIXED_PRICE, CONF_SOC_ENTITY, CONF_REIMBURSEMENT])
+        return self.async_show_form(step_id="energy", data_schema=vol.Schema(_energy_schema(self.hass, self._current())))

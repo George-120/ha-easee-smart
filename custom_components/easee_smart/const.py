@@ -6,7 +6,7 @@ from typing import Final
 
 DOMAIN: Final = "easee_smart"
 EASEE_DOMAIN: Final = "easee"
-VERSION: Final = "1.1.0"
+VERSION: Final = "1.2.0"
 
 CARD_BASE: Final = "/easee_smart"
 CARD_URL: Final = f"{CARD_BASE}/easee-smart-card.js"
@@ -26,6 +26,23 @@ CONF_SOC_ENTITY: Final = "soc_entity"
 CONF_BATTERY_CAPACITY: Final = "battery_capacity"
 CONF_REIMBURSEMENT: Final = "reimbursement_per_kwh"
 CONF_ENABLE_ENTITIES: Final = "enable_source_entities"
+CONF_GRID_IMPORT_ENTITY: Final = "grid_import_entity"
+CONF_GRID_EXPORT_ENTITY: Final = "grid_export_entity"
+CONF_PHASE_L1_ENTITY: Final = "phase_l1_entity"
+CONF_PHASE_L2_ENTITY: Final = "phase_l2_entity"
+CONF_PHASE_L3_ENTITY: Final = "phase_l3_entity"
+CONF_MAIN_FUSE: Final = "main_fuse"
+PHASE_ENTITY_KEYS: Final = [CONF_PHASE_L1_ENTITY, CONF_PHASE_L2_ENTITY, CONF_PHASE_L3_ENTITY]
+GRID_KEYS: Final = [
+    "grid_import_entity",
+    "grid_export_entity",
+    "grid_power_entity",
+    "phase_l1_entity",
+    "phase_l2_entity",
+    "phase_l3_entity",
+]
+DEFAULT_MAIN_FUSE: Final = 25
+MAIN_FUSE_SIZES: Final = ["25", "35", "40", "50", "63", "80"]
 
 DEFAULT_PHASES: Final = 3
 DEFAULT_VOLTAGE: Final = 230

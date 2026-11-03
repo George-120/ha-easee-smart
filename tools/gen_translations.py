@@ -102,6 +102,41 @@ def build(lang):
      "phases": T("Connection","Aansluiting","Anschluss"),
      "max_current": T("Maximum charge current","Maximale laadstroom","Maximaler Ladestrom"),
     }
+    grid_fields = {
+     "grid_import_entity": T("Grid import power (from grid)","Afname van het net (vermogen)","Netzbezug (Leistung)"),
+     "grid_export_entity": T("Grid export power (to grid)","Teruglevering aan het net (vermogen)","Netzeinspeisung (Leistung)"),
+     "grid_power_entity": T("Or: one net power sensor","Of: één netvermogen-sensor","Oder: ein Netzleistungssensor"),
+     "grid_power_inverted": T("Net sensor is positive when exporting","Netsensor is positief bij teruglevering","Netzsensor ist positiv bei Einspeisung"),
+     "phase_l1_entity": T("Current phase L1 (optional)","Stroom fase L1 (optioneel)","Strom Phase L1 (optional)"),
+     "phase_l2_entity": T("Current phase L2 (optional)","Stroom fase L2 (optioneel)","Strom Phase L2 (optional)"),
+     "phase_l3_entity": T("Current phase L3 (optional)","Stroom fase L3 (optioneel)","Strom Phase L3 (optional)"),
+     "main_fuse": T("Main fuse","Hoofdzekering","Hauptsicherung"),
+    }
+    grid_desc = {
+     "grid_import_entity": T("From your smart meter (P1). Detected sensors are filled in already.","Van je slimme meter (P1). Gevonden sensoren zijn al ingevuld.","Vom Smart Meter (P1). Gefundene Sensoren sind bereits eingetragen."),
+     "grid_power_entity": T("Use this only when your meter has a single net power value (positive = import).","Alleen gebruiken als je meter één netto waarde geeft (positief = afname).","Nur nutzen, wenn der Zähler einen Nettowert liefert (positiv = Bezug)."),
+     "main_fuse": T("Amperes per phase, e.g. 25 for a 3×25 A connection.","Ampère per fase, bijvoorbeeld 25 bij een 3×25 A-aansluiting.","Ampere pro Phase, z. B. 25 bei 3×25 A."),
+    }
+    grid_step = {
+     "title": t(T("Main connection","Hoofdaansluiting","Hausanschluss")),
+     "description": t(T("Tell Easee Smart where to see your grid connection, so it knows when solar power is left over. Found: {found}",
+                        "Laat Easee Smart je hoofdaansluiting zien, zodat hij weet wanneer er zonnestroom over is. Gevonden: {found}",
+                        "Zeige Easee Smart deinen Hausanschluss, damit erkannt wird, wann Solarstrom übrig ist. Gefunden: {found}")),
+     "data": {k: t(v) for k, v in grid_fields.items()},
+     "data_description": {k: t(v) for k, v in grid_desc.items()},
+    }
+    energy_step = {
+     "title": t(T("Prices, car and costs","Prijzen, auto en kosten","Preise, Auto und Kosten")),
+     "description": t(T("All optional. Without a price sensor smart charging just charges right away.",
+                        "Alles optioneel. Zonder prijssensor laadt slim laden gewoon direct.",
+                        "Alles optional. Ohne Preissensor lädt Smart-Laden sofort.")),
+     "data": {k: t(v) for k, v in cfg_fields_energy.items() if k not in ("grid_power_entity", "grid_power_inverted")},
+     "data_description": {k: t(v) for k, v in cfg_desc_energy.items() if k != "grid_power_entity"},
+    }
+    charger_opts = {
+     "title": t(T("Charger","Laadpaal","Wallbox")),
+     "data": {k: t(v) for k, v in cfg_fields_charger.items()},
+    }
     data = {
      "config": {
       "step": {
@@ -126,14 +161,8 @@ def build(lang):
         "description": t(T("Detected model: **{detected}**. Check the settings below.","Herkend model: **{detected}**. Controleer de instellingen hieronder.","Erkanntes Modell: **{detected}**. Prüfe die Einstellungen.")),
         "data": {k: t(v) for k, v in cfg_fields_charger.items()},
        },
-       "energy": {
-        "title": t(T("Prices, solar and costs","Prijzen, zon en kosten","Preise, Solar und Kosten")),
-        "description": t(T("All optional. Without a price sensor smart charging just charges right away.",
-                           "Alles optioneel. Zonder prijssensor laadt slim laden gewoon direct.",
-                           "Alles optional. Ohne Preissensor lädt Smart-Laden sofort.")),
-        "data": {k: t(v) for k, v in cfg_fields_energy.items()},
-        "data_description": {k: t(v) for k, v in cfg_desc_energy.items()},
-       },
+       "grid": grid_step,
+       "energy": energy_step,
       },
       "abort": {
        "easee_missing": t(T("Install and set up the Easee integration first (HACS: nordicopen/easee_hass).",
@@ -144,11 +173,19 @@ def build(lang):
       },
      },
      "options": {
-      "step": {"init": {
+      "step": {
+       "init": {
         "title": t(T("Easee Smart settings","Easee Smart-instellingen","Easee Smart-Einstellungen")),
-        "data": {**{k: t(v) for k, v in cfg_fields_charger.items()}, **{k: t(v) for k, v in cfg_fields_energy.items()}},
-        "data_description": {k: t(v) for k, v in cfg_desc_energy.items()},
-      }},
+        "menu_options": {
+         "charger": t(T("Charger","Laadpaal","Wallbox")),
+         "grid": t(T("Main connection","Hoofdaansluiting","Hausanschluss")),
+         "energy": t(T("Prices, car and costs","Prijzen, auto en kosten","Preise, Auto und Kosten")),
+        },
+       },
+       "charger": charger_opts,
+       "grid": grid_step,
+       "energy": energy_step,
+      },
      },
      "selector": {
       "phases": {"options": {"1": t(T("1 phase","1 fase","1 Phase")), "3": t(T("3 phases","3 fasen","3 Phasen"))}},

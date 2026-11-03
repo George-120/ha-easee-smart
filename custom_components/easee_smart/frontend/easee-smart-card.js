@@ -1,6 +1,6 @@
 /* Easee Smart card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.1.0";
+  const VERSION = "1.2.0";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -8,7 +8,7 @@
 
   const I18N = {
     en: {
-      tabs: { charge: "Charging", plan: "Planning", grid: "Equalizer", history: "History" },
+      tabs: { charge: "Charging", plan: "Planning", grid: "Equalizer", meter: "Grid", history: "History" },
       modes: { normal: "Normal", smart: "Smart", solar: "Solar", solar_smart: "Solar + smart" },
       status: {
         disconnected: "No car connected", awaiting_start: "Waiting to start", charging: "Charging",
@@ -31,13 +31,13 @@
       planStart: "Starts", planEnd: "Ready", planCost: "Estimated", noPlan: "No plan needed right now.",
       noPrices: "No price forecast available. Choose a price sensor in the integration settings.",
       now: "now", grid: "Grid", importing: "Importing", exporting: "Exporting", fuse: "Main fuse",
-      headroom: "headroom", surplus: "Solar surplus", phase: "Phase", noGrid: "No Equalizer or grid sensor configured.",
+      headroom: "headroom", surplus: "Solar surplus", phase: "Phase", noGrid: "No Equalizer or main connection set. Add your meter under Configure → Main connection.",
       month: "This month", prev: "Previous months", reimb: "Reimbursement", sessions: "Recent sessions",
       export: "Export last month (CSV)", exported: "Report written", today: "Today", none: "No sessions yet.",
       kwh: "kWh", avg: "avg.", amps: "Charge current", planned: "Planned charging",
     },
     nl: {
-      tabs: { charge: "Laden", plan: "Planning", grid: "Equalizer", history: "Historie" },
+      tabs: { charge: "Laden", plan: "Planning", grid: "Equalizer", meter: "Aansluiting", history: "Historie" },
       modes: { normal: "Normaal", smart: "Slim", solar: "Zon", solar_smart: "Zon + slim" },
       status: {
         disconnected: "Geen auto aangesloten", awaiting_start: "Wacht op start", charging: "Laden",
@@ -60,13 +60,13 @@
       planStart: "Start", planEnd: "Klaar", planCost: "Verwacht", noPlan: "Er is nu geen planning nodig.",
       noPrices: "Geen prijsverwachting beschikbaar. Kies een prijssensor in de instellingen van de integratie.",
       now: "nu", grid: "Net", importing: "Afname", exporting: "Teruglevering", fuse: "Hoofdzekering",
-      headroom: "ruimte", surplus: "Zonne-overschot", phase: "Fase", noGrid: "Geen Equalizer of netsensor ingesteld.",
+      headroom: "ruimte", surplus: "Zonne-overschot", phase: "Fase", noGrid: "Geen Equalizer of hoofdaansluiting ingesteld. Voeg je meter toe via Configureren → Hoofdaansluiting.",
       month: "Deze maand", prev: "Vorige maanden", reimb: "Vergoeding", sessions: "Recente sessies",
       export: "Vorige maand exporteren (CSV)", exported: "Rapport opgeslagen", today: "Vandaag", none: "Nog geen sessies.",
       kwh: "kWh", avg: "gem.", amps: "Laadstroom", planned: "Gepland laden",
     },
     de: {
-      tabs: { charge: "Laden", plan: "Planung", grid: "Equalizer", history: "Verlauf" },
+      tabs: { charge: "Laden", plan: "Planung", grid: "Equalizer", meter: "Anschluss", history: "Verlauf" },
       modes: { normal: "Normal", smart: "Smart", solar: "Solar", solar_smart: "Solar + Smart" },
       status: {
         disconnected: "Kein Fahrzeug verbunden", awaiting_start: "Wartet auf Start", charging: "Lädt",
@@ -89,7 +89,7 @@
       planStart: "Start", planEnd: "Fertig", planCost: "Erwartet", noPlan: "Derzeit ist keine Planung nötig.",
       noPrices: "Keine Preisprognose verfügbar. Wähle einen Preissensor in den Einstellungen der Integration.",
       now: "jetzt", grid: "Netz", importing: "Bezug", exporting: "Einspeisung", fuse: "Hauptsicherung",
-      headroom: "Reserve", surplus: "Solarüberschuss", phase: "Phase", noGrid: "Kein Equalizer oder Netzsensor eingerichtet.",
+      headroom: "Reserve", surplus: "Solarüberschuss", phase: "Phase", noGrid: "Kein Equalizer oder Hausanschluss eingerichtet. Zähler unter Konfigurieren → Hausanschluss hinzufügen.",
       month: "Dieser Monat", prev: "Vormonate", reimb: "Erstattung", sessions: "Letzte Ladevorgänge",
       export: "Letzten Monat exportieren (CSV)", exported: "Bericht gespeichert", today: "Heute", none: "Noch keine Ladevorgänge.",
       kwh: "kWh", avg: "Ø", amps: "Ladestrom", planned: "Geplantes Laden",
@@ -280,7 +280,7 @@
           <nav class="tabs">
             ${tabs
               .filter((x) => x !== "grid" || (a.equalizer && Object.keys(a.equalizer).length) || a.has_surplus_source)
-              .map((x) => `<button class="tab ${this._tab === x ? "sel" : ""}" data-act="tab" data-tab="${x}">${t.tabs[x]}</button>`)
+              .map((x) => `<button class="tab ${this._tab === x ? "sel" : ""}" data-act="tab" data-tab="${x}">${x === "grid" && !(a.equalizer && Object.keys(a.equalizer).length) ? t.tabs.meter : t.tabs[x]}</button>`)
               .join("")}
           </nav>
           <section class="body">${body()}</section>

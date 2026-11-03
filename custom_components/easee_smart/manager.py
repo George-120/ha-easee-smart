@@ -35,7 +35,10 @@ from .const import (
     CONF_EQUALIZER_DEVICE,
     CONF_FIXED_PRICE,
     CONF_GRID_POWER_ENTITY,
+    CONF_GRID_EXPORT_ENTITY,
+    CONF_GRID_IMPORT_ENTITY,
     CONF_GRID_POWER_INVERTED,
+    CONF_MAIN_FUSE,
     CONF_MAX_CURRENT,
     CONF_MODEL,
     CONF_PHASES,
@@ -49,6 +52,7 @@ from .const import (
     CONTROL_TTL_MIN,
     DEFAULT_BATTERY_CAPACITY,
     DEFAULT_DEPARTURE,
+    DEFAULT_MAIN_FUSE,
     DEFAULT_MAX_CURRENT,
     DEFAULT_PHASES,
     DEFAULT_TARGET_ENERGY,
@@ -64,6 +68,7 @@ from .const import (
     MODE_SOLAR,
     MODE_SOLAR_SMART,
     MODES,
+    PHASE_ENTITY_KEYS,
     REPORT_DIR,
     SIGNAL_UPDATE,
     SMART_CHARGING_BOOST,
@@ -276,8 +281,29 @@ class EaseeSmartManager:
         return self._opt(CONF_SOC_ENTITY) or None
 
     @property
+    def grid_import_entity(self) -> str | None:
+        return self._opt(CONF_GRID_IMPORT_ENTITY) or None
+
+    @property
+    def grid_export_entity(self) -> str | None:
+        return self._opt(CONF_GRID_EXPORT_ENTITY) or None
+
+    @property
+    def phase_entities(self) -> list[str | None]:
+        return [self._opt(k) or None for k in PHASE_ENTITY_KEYS]
+
+    @property
+    def uses_meter(self) -> bool:
+        """Main connection comes from the user's own meter instead of an Equalizer."""
+        return not self.equalizer_entities and bool(
+            self.grid_import_entity or self.grid_entity or any(self.phase_entities)
+        )
+
+    @property
     def has_surplus_source(self) -> bool:
-        return bool(self.equalizer_entities.get("import_power") or self.grid_entity)
+        return bool(
+            self.equalizer_entities.get("import_power") or self.grid_entity or self.grid_import_entity
+        )
 
     @property
     def reimbursement(self) -> float | None:
@@ -313,7 +339,18 @@ class EaseeSmartManager:
     @callback
     def async_start(self) -> None:
         tracked = list(self.charger_entities.values()) + list(self.equalizer_entities.values())
-        tracked += [e for e in (self.price_entity, self.grid_entity, self.soc_entity) if e]
+        tracked += [
+            e
+            for e in (
+                self.price_entity,
+                self.grid_entity,
+                self.grid_import_entity,
+                self.grid_export_entity,
+                self.soc_entity,
+                *self.phase_entities,
+            )
+            if e
+        ]
         if tracked:
             self._unsubs.append(
                 async_track_state_change_event(self.hass, tracked, self._handle_state_event)
@@ -425,6 +462,8 @@ class EaseeSmartManager:
             self.equalizer_entities.get("import_power"),
             self.equalizer_entities.get("export_power"),
             self.grid_entity,
+            self.grid_import_entity,
+            self.grid_export_entity,
         ):
             self.hass.async_create_task(self._async_control())
 
@@ -445,14 +484,20 @@ class EaseeSmartManager:
         # Equalizer / grid
         cur_entity = self.equalizer_entities.get("current")
         volt_entity = self.equalizer_entities.get("voltage")
-        snap.phase_currents = [
-            self._attr_float(cur_entity, f"state_currentL{i}") for i in (1, 2, 3)
-        ]
+        if self.equalizer_entities:
+            snap.phase_currents = [
+                self._attr_float(cur_entity, f"state_currentL{i}") for i in (1, 2, 3)
+            ]
+        else:
+            snap.phase_currents = [self._float(e) for e in self.phase_entities]
         snap.phase_voltages = [
             self._attr_float(volt_entity, f"state_voltageNL{i}") for i in (1, 2, 3)
         ]
         fuse_entity = self.equalizer_entities.get("max_continuous_limit")
-        snap.main_fuse = self._float(fuse_entity) or self._attr_float(fuse_entity, "config_ratedCurrent")
+        if self.equalizer_entities:
+            snap.main_fuse = self._float(fuse_entity) or self._attr_float(fuse_entity, "config_ratedCurrent")
+        else:
+            snap.main_fuse = float(self._opt(CONF_MAIN_FUSE, DEFAULT_MAIN_FUSE) or DEFAULT_MAIN_FUSE)
         valid = [c for c in snap.phase_currents if c is not None]
         if snap.main_fuse and valid:
             snap.phase_headroom = round(snap.main_fuse - max(valid), 1)
@@ -465,6 +510,12 @@ class EaseeSmartManager:
         exp = self.equalizer_value("export_power")
         if imp is not None or exp is not None:
             snap.grid_power_kw = round((imp or 0.0) - (exp or 0.0), 3)
+        elif self.grid_import_entity:
+            imp_kw = self._power_kw(self.grid_import_entity)
+            exp_kw = self._power_kw(self.grid_export_entity) if self.grid_export_entity else 0.0
+            snap.grid_power_kw = (
+                round((imp_kw or 0.0) - (exp_kw or 0.0), 3) if imp_kw is not None or exp_kw is not None else None
+            )
         elif self.grid_entity:
             value = self._power_kw(self.grid_entity)
             if value is not None and self._opt(CONF_GRID_POWER_INVERTED, False):
@@ -868,6 +919,12 @@ class EaseeSmartManager:
             "sessions": list(reversed(self.sessions[-15:])),
             "reimbursement_per_kwh": self.reimbursement,
             "has_surplus_source": self.has_surplus_source,
+            "uses_meter": self.uses_meter,
+            "meter": {
+                "import": self.grid_import_entity,
+                "export": self.grid_export_entity,
+                "net": self.grid_entity,
+            },
             "has_soc": bool(self.soc_entity),
         }
 

@@ -243,7 +243,7 @@ async def async_setup_entry(
     descriptions = list(GENERAL)
     if manager.has_surplus_source:
         descriptions += SURPLUS
-    if manager.equalizer_entities:
+    if manager.equalizer_entities or any(manager.phase_entities):
         descriptions += EQUALIZER
     async_add_entities(EaseeSmartSensor(manager, d) for d in descriptions)
 
@@ -261,7 +261,7 @@ class EaseeSmartSensor(EaseeSmartEntity, SensorEntity):
             "next_start", "complete_by", "energy_needed", "target_current",
             "surplus_kw", "grid_power_kw", "phase_currents", "phase_voltages",
             "main_fuse", "phase_headroom", "session", "today", "month", "months",
-            "sessions", "reimbursement_per_kwh", "has_surplus_source", "has_soc",
+            "sessions", "reimbursement_per_kwh", "has_surplus_source", "has_soc", "uses_meter", "meter",
         }
     )
 

@@ -112,7 +112,7 @@ def install_stubs():
     return devreg
 
 
-def make(tmp, options=None):
+def make(tmp, options=None, equalizer=True, extra=None):
     devreg = install_stubs()
     for k in list(sys.modules):
         if k.startswith("easee_smart."):
@@ -126,8 +126,11 @@ def make(tmp, options=None):
     for k in ["import_power", "export_power", "current", "voltage", "max_continuous_limit"]:
         REG[f"QP1_{k}"] = f"sensor.eq_{k}"
     hass = Hass(tmp)
-    entry = types.SimpleNamespace(entry_id="E1", data={"charger_device": "dev1", "equalizer_device": "dev2", "phases": 3, "max_current": 16,
-                                                         "price_entity": "sensor.price", "reimbursement_per_kwh": 0.23},
+    data = {"charger_device": "dev1", "phases": 3, "max_current": 16, "price_entity": "sensor.price", "reimbursement_per_kwh": 0.23}
+    if equalizer:
+        data["equalizer_device"] = "dev2"
+    data.update(extra or {})
+    entry = types.SimpleNamespace(entry_id="E1", data=data,
                                   options=options or {})
     return hass, mgr_mod.EaseeSmartManager(hass, entry)
 
@@ -225,3 +228,66 @@ def test_sessions_costs_and_report(tmp_path):
         payload = m.card_payload()
         assert payload["month"]["energy"] == 10.0 and payload["sessions"][0]["cost"] == 3.0
     asyncio.run(run())
+
+
+def test_main_connection_from_p1_meter(tmp_path):
+    async def run():
+        hass, m = make(tmp_path, equalizer=False, extra={
+            "grid_import_entity": "sensor.p1_in", "grid_export_entity": "sensor.p1_out",
+            "phase_l1_entity": "sensor.l1", "phase_l2_entity": "sensor.l2", "phase_l3_entity": "sensor.l3",
+            "main_fuse": 35,
+        })
+        await m.async_setup()
+        assert m.has_surplus_source and m.uses_meter
+        setstate(hass, "sensor.c_status", "awaiting_start")
+        setstate(hass, "sensor.c_power", 0)
+        setstate(hass, "sensor.p1_in", 0, unit_of_measurement="W")
+        setstate(hass, "sensor.p1_out", 4800, unit_of_measurement="W")
+        for i, v in enumerate((7.1, 6.0, 30.5), 1):
+            setstate(hass, f"sensor.l{i}", v)
+        m._recompute()
+        assert m.snapshot.grid_power_kw == -4.8 and m.snapshot.surplus_kw == 4.8
+        assert m.snapshot.main_fuse == 35 and m.snapshot.phase_headroom == 4.5
+        await m.async_set_setting("mode", "solar")
+        CLOCK["now"] += timedelta(seconds=130)
+        m._recompute()
+        await m._async_control()
+        assert last_limit(hass) == 6  # 4.8 kW / 690 = 6.9 A
+        CLOCK["now"] = datetime(2026, 11, 3, 20, 0, tzinfo=TZ)
+    asyncio.run(run())
+
+
+def test_detects_zonneplan_and_dsmr_meters(tmp_path):
+    install_stubs()
+    sys.modules.pop("easee_smart.grid_detect", None)
+    gd = importlib.import_module("easee_smart.grid_detect")
+
+    def entry(eid, platform, dc):
+        return types.SimpleNamespace(entity_id=eid, platform=platform, domain="sensor", disabled_by=None,
+                                     unique_id=eid, device_class=None, original_device_class=dc)
+
+    def run(entries):
+        reg = types.SimpleNamespace(entities={e.entity_id: e for e in entries})
+        sys.modules["homeassistant.helpers.entity_registry"].async_get = lambda h: reg
+        hass = types.SimpleNamespace(states=States())
+        return gd.suggest_grid_sensors(hass)
+
+    zp = run([
+        entry("sensor.connect_energiemeter_electricity_consumption", "zonneplan_one", "power"),
+        entry("sensor.connect_energiemeter_electricity_production", "zonneplan_one", "power"),
+        entry("sensor.envoy_1_current_power_production", "enphase_envoy", "power"),
+        entry("sensor.envoy_1_current_net_power_consumption", "enphase_envoy", "power"),
+    ])
+    assert zp == {"grid_import_entity": "sensor.connect_energiemeter_electricity_consumption",
+                  "grid_export_entity": "sensor.connect_energiemeter_electricity_production"}
+    dsmr = run([
+        entry("sensor.electricity_meter_power_consumption", "dsmr", "power"),
+        entry("sensor.electricity_meter_power_production", "dsmr", "power"),
+        entry("sensor.electricity_meter_current_phase_l1", "dsmr", "current"),
+        entry("sensor.electricity_meter_current_phase_l2", "dsmr", "current"),
+        entry("sensor.electricity_meter_current_phase_l3", "dsmr", "current"),
+    ])
+    assert dsmr["phase_l3_entity"] == "sensor.electricity_meter_current_phase_l3"
+    envoy = run([entry("sensor.envoy_1_current_net_power_consumption", "enphase_envoy", "power"),
+                 entry("sensor.envoy_1_current_power_production", "enphase_envoy", "power")])
+    assert envoy == {"grid_power_entity": "sensor.envoy_1_current_net_power_consumption"}

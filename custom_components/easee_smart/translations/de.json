@@ -22,21 +22,37 @@
           "max_current": "Maximaler Ladestrom"
         }
       },
+      "grid": {
+        "title": "Hausanschluss",
+        "description": "Zeige Easee Smart deinen Hausanschluss, damit erkannt wird, wann Solarstrom übrig ist. Gefunden: {found}",
+        "data": {
+          "grid_import_entity": "Netzbezug (Leistung)",
+          "grid_export_entity": "Netzeinspeisung (Leistung)",
+          "grid_power_entity": "Oder: ein Netzleistungssensor",
+          "grid_power_inverted": "Netzsensor ist positiv bei Einspeisung",
+          "phase_l1_entity": "Strom Phase L1 (optional)",
+          "phase_l2_entity": "Strom Phase L2 (optional)",
+          "phase_l3_entity": "Strom Phase L3 (optional)",
+          "main_fuse": "Hauptsicherung"
+        },
+        "data_description": {
+          "grid_import_entity": "Vom Smart Meter (P1). Gefundene Sensoren sind bereits eingetragen.",
+          "grid_power_entity": "Nur nutzen, wenn der Zähler einen Nettowert liefert (positiv = Bezug).",
+          "main_fuse": "Ampere pro Phase, z. B. 25 bei 3×25 A."
+        }
+      },
       "energy": {
-        "title": "Preise, Solar und Kosten",
+        "title": "Preise, Auto und Kosten",
         "description": "Alles optional. Ohne Preissensor lädt Smart-Laden sofort.",
         "data": {
           "price_entity": "Preissensor (dynamischer Tarif)",
           "fixed_price": "Festpreis (ohne Preissensor)",
-          "grid_power_entity": "Netzleistungssensor (für Solarüberschuss)",
-          "grid_power_inverted": "Sensor ist positiv bei Einspeisung",
           "soc_entity": "Akkustand-Sensor des Autos (optional)",
           "battery_capacity": "Akkukapazität Auto",
           "reimbursement_per_kwh": "Erstattungssatz (Leasing/Arbeitgeber)"
         },
         "data_description": {
           "price_entity": "Nordpool, Tibber, ENTSO-e… Preise für heute/morgen werden automatisch gelesen.",
-          "grid_power_entity": "Nur ohne Easee Equalizer nötig. Normalerweise positiv = Bezug.",
           "reimbursement_per_kwh": "Wird für den Monatsbericht des Heimladens genutzt."
         }
       }
@@ -51,21 +67,51 @@
     "step": {
       "init": {
         "title": "Easee Smart-Einstellungen",
+        "menu_options": {
+          "charger": "Wallbox",
+          "grid": "Hausanschluss",
+          "energy": "Preise, Auto und Kosten"
+        }
+      },
+      "charger": {
+        "title": "Wallbox",
         "data": {
           "model": "Wallbox-Modell",
           "phases": "Anschluss",
-          "max_current": "Maximaler Ladestrom",
+          "max_current": "Maximaler Ladestrom"
+        }
+      },
+      "grid": {
+        "title": "Hausanschluss",
+        "description": "Zeige Easee Smart deinen Hausanschluss, damit erkannt wird, wann Solarstrom übrig ist. Gefunden: {found}",
+        "data": {
+          "grid_import_entity": "Netzbezug (Leistung)",
+          "grid_export_entity": "Netzeinspeisung (Leistung)",
+          "grid_power_entity": "Oder: ein Netzleistungssensor",
+          "grid_power_inverted": "Netzsensor ist positiv bei Einspeisung",
+          "phase_l1_entity": "Strom Phase L1 (optional)",
+          "phase_l2_entity": "Strom Phase L2 (optional)",
+          "phase_l3_entity": "Strom Phase L3 (optional)",
+          "main_fuse": "Hauptsicherung"
+        },
+        "data_description": {
+          "grid_import_entity": "Vom Smart Meter (P1). Gefundene Sensoren sind bereits eingetragen.",
+          "grid_power_entity": "Nur nutzen, wenn der Zähler einen Nettowert liefert (positiv = Bezug).",
+          "main_fuse": "Ampere pro Phase, z. B. 25 bei 3×25 A."
+        }
+      },
+      "energy": {
+        "title": "Preise, Auto und Kosten",
+        "description": "Alles optional. Ohne Preissensor lädt Smart-Laden sofort.",
+        "data": {
           "price_entity": "Preissensor (dynamischer Tarif)",
           "fixed_price": "Festpreis (ohne Preissensor)",
-          "grid_power_entity": "Netzleistungssensor (für Solarüberschuss)",
-          "grid_power_inverted": "Sensor ist positiv bei Einspeisung",
           "soc_entity": "Akkustand-Sensor des Autos (optional)",
           "battery_capacity": "Akkukapazität Auto",
           "reimbursement_per_kwh": "Erstattungssatz (Leasing/Arbeitgeber)"
         },
         "data_description": {
           "price_entity": "Nordpool, Tibber, ENTSO-e… Preise für heute/morgen werden automatisch gelesen.",
-          "grid_power_entity": "Nur ohne Easee Equalizer nötig. Normalerweise positiv = Bezug.",
           "reimbursement_per_kwh": "Wird für den Monatsbericht des Heimladens genutzt."
         }
       }

@@ -22,21 +22,37 @@
           "max_current": "Maximale laadstroom"
         }
       },
+      "grid": {
+        "title": "Hoofdaansluiting",
+        "description": "Laat Easee Smart je hoofdaansluiting zien, zodat hij weet wanneer er zonnestroom over is. Gevonden: {found}",
+        "data": {
+          "grid_import_entity": "Afname van het net (vermogen)",
+          "grid_export_entity": "Teruglevering aan het net (vermogen)",
+          "grid_power_entity": "Of: één netvermogen-sensor",
+          "grid_power_inverted": "Netsensor is positief bij teruglevering",
+          "phase_l1_entity": "Stroom fase L1 (optioneel)",
+          "phase_l2_entity": "Stroom fase L2 (optioneel)",
+          "phase_l3_entity": "Stroom fase L3 (optioneel)",
+          "main_fuse": "Hoofdzekering"
+        },
+        "data_description": {
+          "grid_import_entity": "Van je slimme meter (P1). Gevonden sensoren zijn al ingevuld.",
+          "grid_power_entity": "Alleen gebruiken als je meter één netto waarde geeft (positief = afname).",
+          "main_fuse": "Ampère per fase, bijvoorbeeld 25 bij een 3×25 A-aansluiting."
+        }
+      },
       "energy": {
-        "title": "Prijzen, zon en kosten",
+        "title": "Prijzen, auto en kosten",
         "description": "Alles optioneel. Zonder prijssensor laadt slim laden gewoon direct.",
         "data": {
           "price_entity": "Prijssensor (dynamisch tarief)",
           "fixed_price": "Vaste prijs (als er geen prijssensor is)",
-          "grid_power_entity": "Netvermogen-sensor (voor zonne-overschot)",
-          "grid_power_inverted": "Sensor is positief bij teruglevering",
           "soc_entity": "Accuniveau-sensor van de auto (optioneel)",
           "battery_capacity": "Accucapaciteit auto",
           "reimbursement_per_kwh": "Vergoedingstarief (lease/werkgever)"
         },
         "data_description": {
           "price_entity": "Nordpool, Tibber, Frank Energie, Zonneplan, ENTSO-e… De prijzen voor vandaag/morgen worden automatisch gelezen.",
-          "grid_power_entity": "Alleen nodig zonder Easee Equalizer. Normaal positief = afname.",
           "reimbursement_per_kwh": "Wordt gebruikt voor het maandrapport van thuisladen."
         }
       }
@@ -51,21 +67,51 @@
     "step": {
       "init": {
         "title": "Easee Smart-instellingen",
+        "menu_options": {
+          "charger": "Laadpaal",
+          "grid": "Hoofdaansluiting",
+          "energy": "Prijzen, auto en kosten"
+        }
+      },
+      "charger": {
+        "title": "Laadpaal",
         "data": {
           "model": "Laadpaalmodel",
           "phases": "Aansluiting",
-          "max_current": "Maximale laadstroom",
+          "max_current": "Maximale laadstroom"
+        }
+      },
+      "grid": {
+        "title": "Hoofdaansluiting",
+        "description": "Laat Easee Smart je hoofdaansluiting zien, zodat hij weet wanneer er zonnestroom over is. Gevonden: {found}",
+        "data": {
+          "grid_import_entity": "Afname van het net (vermogen)",
+          "grid_export_entity": "Teruglevering aan het net (vermogen)",
+          "grid_power_entity": "Of: één netvermogen-sensor",
+          "grid_power_inverted": "Netsensor is positief bij teruglevering",
+          "phase_l1_entity": "Stroom fase L1 (optioneel)",
+          "phase_l2_entity": "Stroom fase L2 (optioneel)",
+          "phase_l3_entity": "Stroom fase L3 (optioneel)",
+          "main_fuse": "Hoofdzekering"
+        },
+        "data_description": {
+          "grid_import_entity": "Van je slimme meter (P1). Gevonden sensoren zijn al ingevuld.",
+          "grid_power_entity": "Alleen gebruiken als je meter één netto waarde geeft (positief = afname).",
+          "main_fuse": "Ampère per fase, bijvoorbeeld 25 bij een 3×25 A-aansluiting."
+        }
+      },
+      "energy": {
+        "title": "Prijzen, auto en kosten",
+        "description": "Alles optioneel. Zonder prijssensor laadt slim laden gewoon direct.",
+        "data": {
           "price_entity": "Prijssensor (dynamisch tarief)",
           "fixed_price": "Vaste prijs (als er geen prijssensor is)",
-          "grid_power_entity": "Netvermogen-sensor (voor zonne-overschot)",
-          "grid_power_inverted": "Sensor is positief bij teruglevering",
           "soc_entity": "Accuniveau-sensor van de auto (optioneel)",
           "battery_capacity": "Accucapaciteit auto",
           "reimbursement_per_kwh": "Vergoedingstarief (lease/werkgever)"
         },
         "data_description": {
           "price_entity": "Nordpool, Tibber, Frank Energie, Zonneplan, ENTSO-e… De prijzen voor vandaag/morgen worden automatisch gelezen.",
-          "grid_power_entity": "Alleen nodig zonder Easee Equalizer. Normaal positief = afname.",
           "reimbursement_per_kwh": "Wordt gebruikt voor het maandrapport van thuisladen."
         }
       }

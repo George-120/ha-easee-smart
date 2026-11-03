@@ -22,21 +22,37 @@
           "max_current": "Maximum charge current"
         }
       },
+      "grid": {
+        "title": "Main connection",
+        "description": "Tell Easee Smart where to see your grid connection, so it knows when solar power is left over. Found: {found}",
+        "data": {
+          "grid_import_entity": "Grid import power (from grid)",
+          "grid_export_entity": "Grid export power (to grid)",
+          "grid_power_entity": "Or: one net power sensor",
+          "grid_power_inverted": "Net sensor is positive when exporting",
+          "phase_l1_entity": "Current phase L1 (optional)",
+          "phase_l2_entity": "Current phase L2 (optional)",
+          "phase_l3_entity": "Current phase L3 (optional)",
+          "main_fuse": "Main fuse"
+        },
+        "data_description": {
+          "grid_import_entity": "From your smart meter (P1). Detected sensors are filled in already.",
+          "grid_power_entity": "Use this only when your meter has a single net power value (positive = import).",
+          "main_fuse": "Amperes per phase, e.g. 25 for a 3×25 A connection."
+        }
+      },
       "energy": {
-        "title": "Prices, solar and costs",
+        "title": "Prices, car and costs",
         "description": "All optional. Without a price sensor smart charging just charges right away.",
         "data": {
           "price_entity": "Price sensor (dynamic tariff)",
           "fixed_price": "Fixed price (if no price sensor)",
-          "grid_power_entity": "Grid power sensor (for solar surplus)",
-          "grid_power_inverted": "Sensor is positive when exporting",
           "soc_entity": "Car battery level sensor (optional)",
           "battery_capacity": "Car battery capacity",
           "reimbursement_per_kwh": "Reimbursement rate (lease/employer)"
         },
         "data_description": {
           "price_entity": "Nordpool, Tibber, Frank Energie, Zonneplan, ENTSO-e… Prices for today/tomorrow are read automatically.",
-          "grid_power_entity": "Only needed without an Easee Equalizer. Normally positive = import.",
           "reimbursement_per_kwh": "Used for the monthly report of home charging."
         }
       }
@@ -51,21 +67,51 @@
     "step": {
       "init": {
         "title": "Easee Smart settings",
+        "menu_options": {
+          "charger": "Charger",
+          "grid": "Main connection",
+          "energy": "Prices, car and costs"
+        }
+      },
+      "charger": {
+        "title": "Charger",
         "data": {
           "model": "Charger model",
           "phases": "Connection",
-          "max_current": "Maximum charge current",
+          "max_current": "Maximum charge current"
+        }
+      },
+      "grid": {
+        "title": "Main connection",
+        "description": "Tell Easee Smart where to see your grid connection, so it knows when solar power is left over. Found: {found}",
+        "data": {
+          "grid_import_entity": "Grid import power (from grid)",
+          "grid_export_entity": "Grid export power (to grid)",
+          "grid_power_entity": "Or: one net power sensor",
+          "grid_power_inverted": "Net sensor is positive when exporting",
+          "phase_l1_entity": "Current phase L1 (optional)",
+          "phase_l2_entity": "Current phase L2 (optional)",
+          "phase_l3_entity": "Current phase L3 (optional)",
+          "main_fuse": "Main fuse"
+        },
+        "data_description": {
+          "grid_import_entity": "From your smart meter (P1). Detected sensors are filled in already.",
+          "grid_power_entity": "Use this only when your meter has a single net power value (positive = import).",
+          "main_fuse": "Amperes per phase, e.g. 25 for a 3×25 A connection."
+        }
+      },
+      "energy": {
+        "title": "Prices, car and costs",
+        "description": "All optional. Without a price sensor smart charging just charges right away.",
+        "data": {
           "price_entity": "Price sensor (dynamic tariff)",
           "fixed_price": "Fixed price (if no price sensor)",
-          "grid_power_entity": "Grid power sensor (for solar surplus)",
-          "grid_power_inverted": "Sensor is positive when exporting",
           "soc_entity": "Car battery level sensor (optional)",
           "battery_capacity": "Car battery capacity",
           "reimbursement_per_kwh": "Reimbursement rate (lease/employer)"
         },
         "data_description": {
           "price_entity": "Nordpool, Tibber, Frank Energie, Zonneplan, ENTSO-e… Prices for today/tomorrow are read automatically.",
-          "grid_power_entity": "Only needed without an Easee Equalizer. Normally positive = import.",
           "reimbursement_per_kwh": "Used for the monthly report of home charging."
         }
       }
