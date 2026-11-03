@@ -1,6 +1,6 @@
 /* Easee Smart Charging card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.5.3";
+  const VERSION = "1.5.4";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -491,7 +491,7 @@
       const W = 600, H = 120, pad = 2;
       const bw = W / prices.length;
       const y = (v) => H - ((v - min) / (max - min || 1)) * (H - 14) - 2;
-      const zero = y(0);
+      const zero = Math.max(0, Math.min(H, y(0))); // axis may start above 0: bars rest on the bottom
       const now = Date.now();
       let nowX = null;
       const bars = prices.map((p, i) => {
