@@ -1,6 +1,10 @@
 /* Easee Smart card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.0.0";
+  const VERSION = "1.1.0";
+  // Photo of the charger, served next to this script by the integration.
+  const CHARGER_IMG = document.currentScript && document.currentScript.src
+    ? new URL("charger.webp", document.currentScript.src).href
+    : "/easee_smart/charger.webp";
 
   const I18N = {
     en: {
@@ -251,9 +255,8 @@
           </header>
 
           <section class="hero">
-            <div class="post" aria-hidden="true">
+            <div class="post" aria-hidden="true" style="background-image:url('${CHARGER_IMG}')">
               <div class="strip ${led.anim}"><i></i></div>
-              <div class="socket"></div>
             </div>
             <div class="readout">
               <div class="status">${esc(t.status[status] || status)}</div>
@@ -523,23 +526,22 @@
     .online { width:9px; height:9px; border-radius:50%; background:#59616D; }
     .online.on { background:#45D69A; box-shadow:0 0 0 3px rgba(69,214,154,.15); }
 
-    .hero { display:grid; grid-template-columns:86px 1fr; gap:20px; align-items:center; padding:6px 0 18px; }
+    .hero { display:grid; grid-template-columns:118px 1fr; gap:20px; align-items:center; padding:6px 0 18px; }
     .post {
-      position:relative; height:176px; width:76px; justify-self:center;
-      background:linear-gradient(160deg,#2B313B 0%,#1A1F26 70%); border-radius:22px;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 10px 24px rgba(0,0,0,.35);
+      position:relative; width:118px; aspect-ratio:301 / 405; justify-self:center;
+      background:center / contain no-repeat;
+      filter:drop-shadow(0 12px 18px rgba(0,0,0,.45));
     }
+    /* sits exactly on the light strip of the photo */
     .strip {
-      position:absolute; left:50%; top:22px; bottom:52px; width:6px; transform:translateX(-50%);
-      border-radius:6px; background:var(--led); box-shadow:0 0 14px var(--led), 0 0 30px color-mix(in srgb, var(--led) 40%, transparent);
+      position:absolute; left:50%; top:28.4%; height:24.2%; width:1.8%; min-width:2px; transform:translateX(-50%);
+      border-radius:3px; background:var(--led); box-shadow:0 0 8px var(--led), 0 0 20px color-mix(in srgb, var(--led) 45%, transparent);
       overflow:hidden;
     }
     .strip i { position:absolute; left:0; right:0; height:40%; background:linear-gradient(to top, transparent, rgba(255,255,255,.85), transparent); opacity:0; }
     .strip.flow i { opacity:1; animation:flow 1.8s linear infinite; }
     .strip.breathe { animation:breathe 3.2s ease-in-out infinite; }
     .strip.blink { animation:blink 1s steps(2) infinite; }
-    .socket { position:absolute; left:50%; bottom:16px; width:26px; height:26px; transform:translateX(-50%); border-radius:50%;
-      background:radial-gradient(circle at 50% 45%, #0F1216 55%, #2C333D 57%); }
     @keyframes flow { from { bottom:-40%; } to { bottom:100%; } }
     @keyframes breathe { 0%,100% { opacity:.45; } 50% { opacity:1; } }
     @keyframes blink { 50% { opacity:.25; } }
@@ -625,8 +627,8 @@
     .sessions b { font-weight:500; }
 
     @container (max-width: 420px) {
-      .hero { grid-template-columns:64px 1fr; gap:14px; }
-      .post { width:58px; height:140px; border-radius:18px; }
+      .hero { grid-template-columns:88px 1fr; gap:14px; }
+      .post { width:88px; }
       .big { font-size:2.5rem; }
       .controls { grid-template-columns:1fr 1fr; }
       .controls .ctl:last-child { grid-column:1 / -1; }

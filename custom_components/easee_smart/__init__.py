@@ -21,7 +21,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
-    CARD_FILE,
+    CARD_BASE,
     CARD_URL,
     DOMAIN,
     EASEE_DOMAIN,
@@ -105,10 +105,11 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def _async_register_card(hass: HomeAssistant) -> None:
     """Serve the card and load it in the frontend (no dashboard changes needed)."""
-    path = Path(__file__).parent / "frontend" / CARD_FILE
+    folder = Path(__file__).parent / "frontend"
     try:
+        # serves the card script and the charger image from one folder
         await hass.http.async_register_static_paths(
-            [StaticPathConfig(CARD_URL, str(path), cache_headers=False)]
+            [StaticPathConfig(CARD_BASE, str(folder), cache_headers=False)]
         )
     except RuntimeError:
         # already registered (e.g. after a reload)

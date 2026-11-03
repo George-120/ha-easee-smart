@@ -6,10 +6,10 @@ from typing import Final
 
 DOMAIN: Final = "easee_smart"
 EASEE_DOMAIN: Final = "easee"
-VERSION: Final = "1.0.0"
+VERSION: Final = "1.1.0"
 
-CARD_URL: Final = "/easee_smart/easee-smart-card.js"
-CARD_FILE: Final = "easee-smart-card.js"
+CARD_BASE: Final = "/easee_smart"
+CARD_URL: Final = f"{CARD_BASE}/easee-smart-card.js"
 
 # ---- config entry keys -------------------------------------------------------
 CONF_CHARGER_DEVICE: Final = "charger_device"
