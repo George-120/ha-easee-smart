@@ -1,10 +1,20 @@
 {
   "domain": "easee_smart",
   "name": "Easee Smart",
-  "after_dependencies": ["easee"],
-  "codeowners": ["@George-120"],
+  "after_dependencies": [
+    "easee"
+  ],
+  "categories": [
+    "energy.ev_charging"
+  ],
+  "codeowners": [
+    "@George-120"
+  ],
   "config_flow": true,
-  "dependencies": ["frontend", "http"],
+  "dependencies": [
+    "frontend",
+    "http"
+  ],
   "documentation": "https://github.com/George-120/ha-easee-smart",
   "integration_type": "device",
   "iot_class": "calculated",
