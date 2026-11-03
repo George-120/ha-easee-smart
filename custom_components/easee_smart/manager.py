@@ -106,9 +106,10 @@ def easee_product_id(device: dr.DeviceEntry | None) -> str | None:
     """Return the Easee product id (serial) of an easee device."""
     if device is None:
         return None
-    for domain, ident in device.identifiers:
-        if domain == EASEE_DOMAIN:
-            return str(ident)
+    for ident in device.identifiers:
+        # identifiers are normally (domain, id); some integrations store longer tuples
+        if len(ident) >= 2 and ident[0] == EASEE_DOMAIN:
+            return str(ident[1])
     return None
 
 
