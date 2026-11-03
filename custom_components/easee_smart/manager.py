@@ -203,6 +203,7 @@ class Snapshot:
     price: float | None = None
     prices: list[PriceSlot] = field(default_factory=list)
     plan: ChargePlan | None = None
+    plan_preview: ChargePlan | None = None
     smart_state: str = SMART_IDLE
     target_current: int | None = None
     energy_needed: float | None = None
@@ -780,6 +781,7 @@ class EaseeSmartManager:
         now = dt_util.now()
         mode = self.settings.mode
         self._apply_solar_settings()
+        snap.plan_preview = self._preview_plan(snap, now)
 
         if mode == MODE_NORMAL and not self.settings.boost:
             snap.smart_state = SMART_IDLE
@@ -848,6 +850,28 @@ class EaseeSmartManager:
         snap.target_current = want
         await self._async_apply(want, now)
         async_dispatcher_send(self.hass, SIGNAL_UPDATE.format(self.entry.entry_id))
+
+    def _preview_plan(self, snap: Snapshot, now: datetime) -> ChargePlan | None:
+        """What smart charging would plan right now (shown even in normal mode or unplugged)."""
+        needed = snap.energy_needed or 0.0
+        if needed <= 0 or not snap.prices:
+            return None
+        try:
+            return plan_cheapest(
+                snap.prices,
+                now,
+                next_departure(now, _parse_time(self.settings.departure)),
+                needed,
+                power_for_amps(self.max_current, self.phases, self.voltage),
+                self.settings.price_threshold,
+            )
+        except (TypeError, ValueError):
+            return None
+
+    @property
+    def solar_start_kw(self) -> float:
+        """Surplus needed before solar charging starts (min. current + buffer)."""
+        return round(power_for_amps(self.min_current, self.phases, self.voltage) + self.solar_buffer_kw, 2)
 
     async def _async_apply(self, want: int, now: datetime) -> None:
         changed = want != self._last_sent
@@ -1060,7 +1084,7 @@ class EaseeSmartManager:
 
     def card_payload(self) -> dict[str, Any]:
         snap = self.snapshot
-        plan = snap.plan
+        plan = snap.plan or snap.plan_preview
         now = dt_util.now()
         horizon = now - timedelta(hours=1)
         return {
@@ -1109,6 +1133,8 @@ class EaseeSmartManager:
                 {"start": s.start.isoformat(), "end": s.end.isoformat(), "price": s.price}
                 for s in (plan.slots if plan else [])
             ],
+            "plan_preview": bool(plan is not None and snap.plan is None),
+            "solar_start_kw": self.solar_start_kw,
             "plan_cost": plan.estimated_cost if plan else None,
             "plan_avg_price": plan.average_price if plan else None,
             "next_start": plan.next_start.isoformat() if plan and plan.next_start else None,

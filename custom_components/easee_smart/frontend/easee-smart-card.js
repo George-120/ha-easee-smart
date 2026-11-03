@@ -1,6 +1,6 @@
 /* Easee Smart Charging card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.5.2";
+  const VERSION = "1.5.3";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -34,7 +34,7 @@
       headroom: "headroom", surplus: "Solar surplus", phase: "Phase", noGrid: "No Equalizer or main connection set. Add your meter under Configure → Main connection.",
       month: "This month", prev: "Previous months", reimb: "Reimbursement", sessions: "Recent sessions",
       export: "Export last month (CSV)", exported: "Report written", today: "Today", none: "No sessions yet.",
-      kwh: "kWh", avg: "avg.", amps: "Charge current", planned: "Planned charging", refresh: "Refresh car data", priceNow: "Power now", carsTitle: "Cars", noCars: "No cars linked yet. Add them under Configure → Cars.", pluggedIn: "Plugged in", notPlugged: "Not plugged in", ere: "ERE", year: "This year", total: "Total", range: "range",
+      kwh: "kWh", avg: "avg.", amps: "Charge current", planned: "Planned charging", preview: "Preview: this is how Smart would plan it. Choose Smart (or Solar + smart) to use it.", solarStart: "starts from", solarNone: "No surplus right now", solarAvail: "Solar available", refresh: "Refresh car data", priceNow: "Power now", carsTitle: "Cars", noCars: "No cars linked yet. Add them under Configure → Cars.", pluggedIn: "Plugged in", notPlugged: "Not plugged in", ere: "ERE", year: "This year", total: "Total", range: "range",
     },
     nl: {
       tabs: { charge: "Laden", plan: "Planning", grid: "Equalizer", meter: "Aansluiting", history: "Historie" },
@@ -63,7 +63,7 @@
       headroom: "ruimte", surplus: "Zonne-overschot", phase: "Fase", noGrid: "Geen Equalizer of hoofdaansluiting ingesteld. Voeg je meter toe via Configureren → Hoofdaansluiting.",
       month: "Deze maand", prev: "Vorige maanden", reimb: "Vergoeding", sessions: "Recente sessies",
       export: "Vorige maand exporteren (CSV)", exported: "Rapport opgeslagen", today: "Vandaag", none: "Nog geen sessies.",
-      kwh: "kWh", avg: "gem.", amps: "Laadstroom", planned: "Gepland laden", refresh: "Gegevens auto verversen", priceNow: "Stroom nu", carsTitle: "Auto's", noCars: "Nog geen auto's gekoppeld. Voeg ze toe via Configureren → Auto's.", pluggedIn: "Aangesloten", notPlugged: "Niet aangesloten", ere: "ERE", year: "Dit jaar", total: "Totaal", range: "actieradius",
+      kwh: "kWh", avg: "gem.", amps: "Laadstroom", planned: "Gepland laden", preview: "Voorbeeld: zo plant Slim laden het. Kies Slim (of Zon + slim) om dit te gebruiken.", solarStart: "start vanaf", solarNone: "Nu geen overschot", solarAvail: "Zon beschikbaar", refresh: "Gegevens auto verversen", priceNow: "Stroom nu", carsTitle: "Auto's", noCars: "Nog geen auto's gekoppeld. Voeg ze toe via Configureren → Auto's.", pluggedIn: "Aangesloten", notPlugged: "Niet aangesloten", ere: "ERE", year: "Dit jaar", total: "Totaal", range: "actieradius",
     },
     de: {
       tabs: { charge: "Laden", plan: "Planung", grid: "Equalizer", meter: "Anschluss", history: "Verlauf" },
@@ -92,7 +92,7 @@
       headroom: "Reserve", surplus: "Solarüberschuss", phase: "Phase", noGrid: "Kein Equalizer oder Hausanschluss eingerichtet. Zähler unter Konfigurieren → Hausanschluss hinzufügen.",
       month: "Dieser Monat", prev: "Vormonate", reimb: "Erstattung", sessions: "Letzte Ladevorgänge",
       export: "Letzten Monat exportieren (CSV)", exported: "Bericht gespeichert", today: "Heute", none: "Noch keine Ladevorgänge.",
-      kwh: "kWh", avg: "Ø", amps: "Ladestrom", planned: "Geplantes Laden", refresh: "Autodaten aktualisieren", priceNow: "Strom jetzt", carsTitle: "Autos", noCars: "Noch keine Autos verbunden. Unter Konfigurieren → Autos hinzufügen.", pluggedIn: "Angeschlossen", notPlugged: "Nicht angeschlossen", ere: "ERE", year: "Dieses Jahr", total: "Gesamt", range: "Reichweite",
+      kwh: "kWh", avg: "Ø", amps: "Ladestrom", planned: "Geplantes Laden", preview: "Vorschau: so würde Smart planen. Wähle Smart (oder Solar + Smart), um es zu nutzen.", solarStart: "startet ab", solarNone: "Gerade kein Überschuss", solarAvail: "Solar verfügbar", refresh: "Autodaten aktualisieren", priceNow: "Strom jetzt", carsTitle: "Autos", noCars: "Noch keine Autos verbunden. Unter Konfigurieren → Autos hinzufügen.", pluggedIn: "Angeschlossen", notPlugged: "Nicht angeschlossen", ere: "ERE", year: "Dieses Jahr", total: "Gesamt", range: "Reichweite",
     },
   };
 
@@ -288,9 +288,10 @@
           <div class="modes" role="radiogroup">
             ${["normal", "smart", "solar", "solar_smart"]
               .filter((m) => a.has_surplus_source || !m.startsWith("solar"))
-              .map((m) => `<button class="mode ${a.mode === m ? "sel" : ""}" data-act="mode" data-mode="${m}" role="radio" aria-checked="${a.mode === m}">${t.modes[m]}</button>`)
+              .map((m) => `<button class="mode m-${m} ${a.mode === m ? "sel" : ""}" data-act="mode" data-mode="${m}" role="radio" aria-checked="${a.mode === m}">${t.modes[m]}</button>`)
               .join("")}
           </div>
+          ${String(a.mode || "").startsWith("solar") ? this._solarStrip(a, t) : ""}
 
           <nav class="tabs">
             ${tabs
@@ -329,13 +330,16 @@
 
     _viewCharger({ a, t, status, smart, led, power, name }) {
       const kw = power !== null && status === "charging" ? this._num(power, 1) : this._num(0, 1);
-      const top = a.ere ? `${t.ere} ${t.month.toLowerCase()}: ${this._money(a.ere.month, a.currency)}` : `${t.today}: ${this._money(a.today && a.today.cost, a.currency)}`;
+      const solarOn = String(a.mode || "").startsWith("solar") && a.surplus_kw !== null && a.surplus_kw !== undefined;
+      const top = solarOn
+        ? `☀ ${t.surplus}: ${this._num(Math.max(0, Number(a.surplus_kw) || 0), 2)} kW`
+        : a.ere ? `${t.ere} ${t.month.toLowerCase()}: ${this._money(a.ere.month, a.currency)}` : `${t.today}: ${this._money(a.today && a.today.cost, a.currency)}`;
       const car = a.car;
       const statusText = CONNECTED.has(status) ? (car ? `${car.name}${car.soc !== null && car.soc !== undefined ? " · " + this._num(car.soc, 0) + "%" : ""}` : t.status[status] || status) : t.status[status] || status;
       return `
         <div class="bighead"><b>${esc(name)}</b><span>${esc(a.model || "")} · ${esc(t.smart[smart] || "")}</span></div>
         <div class="bigpost" style="background-image:url('${CHARGER_IMG}')">
-          <span class="pill ptop">${top}</span>
+          <span class="pill ptop ${solarOn ? "sun" : ""}">${top}</span>
           <div class="bigkw">${kw}<small> kW</small></div>
           <div class="strip big ${led.anim}"><i></i></div>
           <span class="pill pstatus"><i class="dot"></i>${esc(statusText)}</span>
@@ -354,14 +358,30 @@
       };
       const modes = ["normal", "smart", "solar", "solar_smart"].filter((m) => a.has_surplus_source || !m.startsWith("solar"));
       return `
-        <div class="bigmodes">
-          ${modes.map((m) => `<button class="bigmode ${a.mode === m ? "sel" : ""}" data-act="mode" data-mode="${m}"><svg viewBox="0 0 24 24">${icons[m]}</svg><span>${t.modes[m]}</span></button>`).join("")}
+        <div class="bigmodes" style="grid-template-columns:repeat(${modes.length},1fr)">
+          ${modes.map((m) => `<button class="bigmode m-${m} ${a.mode === m ? "sel" : ""}" data-act="mode" data-mode="${m}"><svg viewBox="0 0 24 24">${icons[m]}</svg><span>${t.modes[m]}</span></button>`).join("")}
         </div>
         <div class="actions">
           <button class="act primary" data-act="${charging ? "pause" : "resume"}" ${charging || canStart ? "" : "disabled"}>${charging ? t.pause : t.resume}</button>
           <button class="act ${a.boost ? "on" : ""}" data-act="boost" ${CONNECTED.has(status) ? "" : "disabled"}>${t.boost}</button>
         </div>
+        ${this._solarStrip(a, t)}
         <p class="note">${esc(t.smart[a.smart_state] || "")}</p>`;
+    }
+
+    _solarStrip(a, t) {
+      if (!a.has_surplus_source || a.surplus_kw === null || a.surplus_kw === undefined) return "";
+      const kw = Math.max(0, Number(a.surplus_kw) || 0);
+      const need = Number(a.solar_start_kw) || 0;
+      const pct = need > 0 ? Math.min(100, (kw / need) * 100) : 0;
+      const active = String(a.mode || "").startsWith("solar");
+      return `
+        <div class="solar ${active ? "on" : ""} ${kw >= need && need > 0 ? "ok" : ""}">
+          <div class="srow"><svg viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM11 1h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM4.2 5.6l1.4-1.4 2.1 2.1-1.4 1.4zm12.1 12.1 1.4-1.4 2.1 2.1-1.4 1.4zM4.2 18.4l2.1-2.1 1.4 1.4-2.1 2.1zM16.3 6.3l2.1-2.1 1.4 1.4-2.1 2.1z"/></svg>
+            <span>${kw > 0.05 ? t.solarAvail : t.solarNone}</span><b>${this._num(kw, 2)} kW</b></div>
+          <div class="sbar"><i style="width:${pct.toFixed(0)}%"></i></div>
+          <div class="sfoot">${t.solarStart} ${this._num(need, 1)} kW</div>
+        </div>`;
     }
 
     _viewCars(a, t) {
@@ -434,7 +454,7 @@
       const unit = useSoc ? "%" : t.kwh;
       const chart = this._priceChart(a, t);
       const summary = a.plan && a.plan.length
-        ? `<div class="plansum">
+        ? `${a.plan_preview ? `<p class="note preview">${t.preview}</p>` : ""}<div class="plansum ${a.plan_preview ? "preview" : ""}">
              <div><span>${t.planStart}</span><b>${this._time(a.next_start)}</b></div>
              <div><span>${t.planEnd}</span><b>${this._time(a.complete_by)}</b></div>
              <div><span>${t.planCost}</span><b>${this._money(a.plan_cost, a.currency)}</b></div>
@@ -478,7 +498,7 @@
         const s = new Date(p.start).getTime(), e = new Date(p.end).getTime();
         if (now >= s && now < e) nowX = i * bw + ((now - s) / (e - s)) * bw;
         const top = Math.min(y(p.price), zero), h = Math.max(1.5, Math.abs(zero - y(p.price)));
-        const cls = inPlan(p) || planned.has(s) ? "bar plan" : "bar";
+        const cls = inPlan(p) || planned.has(s) ? (a.plan_preview ? "bar plan pv" : "bar plan") : "bar";
         return `<rect class="${cls}" x="${(i * bw + pad / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${Math.max(1, bw - pad).toFixed(1)}" height="${h.toFixed(1)}" rx="1.5"><title>${this._time(p.start)} · ${this._num(p.price, 3)}</title></rect>`;
       }).join("");
       const ticks = prices.map((p, i) => {
@@ -638,7 +658,7 @@
     :host { display:block; container-type:inline-size; }
     ha-card {
       display:block;
-      --bg:#14181E; --panel:#1C2129; --line:#2A303A; --text:#EDF0F4; --muted:#8C95A2; --accent:#5AA9FF;
+      --bg:#14181E; --panel:#1C2129; --line:#2A303A; --text:#EDF0F4; --muted:#8C95A2; --accent:#5AA9FF; --sun:#F5C542;
       background:var(--bg); color:var(--text); border-radius:var(--ha-card-border-radius,16px);
       padding:18px 18px 16px; font-family:var(--ha-font-family-body, "Roboto", system-ui, sans-serif);
       overflow:hidden; border:1px solid var(--line);
@@ -674,6 +694,23 @@
     .bigmode svg { width:22px; height:22px; fill:currentColor; }
     .bigmode.sel { color:var(--text); border-color:var(--accent); }
     .bigmode.sel svg { fill:var(--accent); }
+    .bigmode.m-solar.sel, .bigmode.m-solar_smart.sel { border-color:var(--sun); background:rgba(245,197,66,.10); }
+    .bigmode.m-solar.sel svg, .bigmode.m-solar_smart.sel svg { fill:var(--sun); }
+    .mode.m-solar.sel, .mode.m-solar_smart.sel { background:rgba(245,197,66,.18); color:var(--sun); }
+    ha-card.light .mode.m-solar.sel, ha-card.light .mode.m-solar_smart.sel { color:#9A6B00; }
+    .solar { background:var(--panel); border-radius:12px; padding:10px 12px; margin-top:10px; border:1px solid transparent; }
+    .solar.on { border-color:rgba(245,197,66,.45); }
+    .solar .srow { display:flex; align-items:center; gap:8px; font-size:.86rem; color:var(--muted); }
+    .solar .srow svg { width:18px; height:18px; fill:var(--muted); }
+    .solar.on .srow svg, .solar.ok .srow svg { fill:var(--sun); }
+    .solar .srow b { margin-left:auto; color:var(--text); font-weight:600; font-size:1rem; }
+    .solar .sbar { height:6px; border-radius:3px; background:var(--line); margin:8px 0 4px; overflow:hidden; }
+    .solar .sbar i { display:block; height:100%; background:var(--sun); border-radius:3px; }
+    .solar .sfoot { font-size:.72rem; color:var(--muted); }
+    .pill.ptop.sun { background:var(--sun); color:#2A2000; }
+    .bar.plan.pv { fill:var(--accent); opacity:.45; }
+    .note.preview { color:var(--accent); }
+    .plansum.preview b { opacity:.75; }
 
     /* cars view */
     .cars { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px; }
