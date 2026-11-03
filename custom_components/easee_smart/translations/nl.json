@@ -24,7 +24,7 @@
       },
       "grid": {
         "title": "Hoofdaansluiting",
-        "description": "Laat Easee Smart je hoofdaansluiting zien, zodat hij weet wanneer er zonnestroom over is. Gevonden: {found}",
+        "description": "Laat Easee Smart Charging je hoofdaansluiting zien, zodat hij weet wanneer er zonnestroom over is. Gevonden: {found}",
         "data": {
           "grid_import_entity": "Afname van het net (vermogen)",
           "grid_export_entity": "Teruglevering aan het net (vermogen)",
@@ -89,7 +89,7 @@
         },
         "data_description": {
           "image": "Zet een foto in /config/www/ en vul /local/naam.png in, of plak een webadres.",
-          "plug": "Hiermee ziet Easee Smart welke auto aan de laadpaal hangt.",
+          "plug": "Hiermee ziet Easee Smart Charging welke auto aan de laadpaal hangt.",
           "start_entity": "Wordt aangezet als de auto niet vanzelf begint met laden (slapende auto's).",
           "limit_entity": "Je 'laden tot'-doel wordt ook in de auto gezet."
         }
@@ -123,7 +123,7 @@
       },
       "grid": {
         "title": "Hoofdaansluiting",
-        "description": "Laat Easee Smart je hoofdaansluiting zien, zodat hij weet wanneer er zonnestroom over is. Gevonden: {found}",
+        "description": "Laat Easee Smart Charging je hoofdaansluiting zien, zodat hij weet wanneer er zonnestroom over is. Gevonden: {found}",
         "data": {
           "grid_import_entity": "Afname van het net (vermogen)",
           "grid_export_entity": "Teruglevering aan het net (vermogen)",
@@ -200,7 +200,7 @@
         },
         "data_description": {
           "image": "Zet een foto in /config/www/ en vul /local/naam.png in, of plak een webadres.",
-          "plug": "Hiermee ziet Easee Smart welke auto aan de laadpaal hangt.",
+          "plug": "Hiermee ziet Easee Smart Charging welke auto aan de laadpaal hangt.",
           "start_entity": "Wordt aangezet als de auto niet vanzelf begint met laden (slapende auto's).",
           "limit_entity": "Je 'laden tot'-doel wordt ook in de auto gezet."
         }

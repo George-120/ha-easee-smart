@@ -127,9 +127,9 @@ def build(lang):
     }
     grid_step = {
      "title": t(T("Main connection","Hoofdaansluiting","Hausanschluss")),
-     "description": t(T("Tell Easee Smart where to see your grid connection, so it knows when solar power is left over. Found: {found}",
-                        "Laat Easee Smart je hoofdaansluiting zien, zodat hij weet wanneer er zonnestroom over is. Gevonden: {found}",
-                        "Zeige Easee Smart deinen Hausanschluss, damit erkannt wird, wann Solarstrom übrig ist. Gefunden: {found}")),
+     "description": t(T("Tell Easee Smart Charging where to see your grid connection, so it knows when solar power is left over. Found: {found}",
+                        "Laat Easee Smart Charging je hoofdaansluiting zien, zodat hij weet wanneer er zonnestroom over is. Gevonden: {found}",
+                        "Zeige Easee Smart Charging deinen Hausanschluss, damit erkannt wird, wann Solarstrom übrig ist. Gefunden: {found}")),
      "data": {k: t(v) for k, v in grid_fields.items()},
      "data_description": {k: t(v) for k, v in grid_desc.items()},
     }
@@ -160,7 +160,7 @@ def build(lang):
     }
     car_detail_desc = {
      "image": T("Put a photo in /config/www/ and use /local/name.png, or paste a web address.","Zet een foto in /config/www/ en vul /local/naam.png in, of plak een webadres.","Foto in /config/www/ ablegen und /local/name.png eintragen, oder eine Webadresse."),
-     "plug": T("Lets Easee Smart see which car is connected.","Hiermee ziet Easee Smart welke auto aan de laadpaal hangt.","Damit erkennt Easee Smart, welches Auto angeschlossen ist."),
+     "plug": T("Lets Easee Smart Charging see which car is connected.","Hiermee ziet Easee Smart Charging welke auto aan de laadpaal hangt.","Damit erkennt Easee Smart Charging, welches Auto angeschlossen ist."),
      "start_entity": T("Turned on when the car does not start charging by itself (sleeping cars).","Wordt aangezet als de auto niet vanzelf begint met laden (slapende auto's).","Wird eingeschaltet, wenn das Auto nicht von selbst lädt."),
      "limit_entity": T("Your 'charge to' target is also set in the car.","Je 'laden tot'-doel wordt ook in de auto gezet.","Dein Ladeziel wird auch im Auto gesetzt."),
     }
@@ -250,7 +250,7 @@ def build(lang):
      "options": {
       "step": {
        "init": {
-        "title": t(T("Easee Smart settings","Easee Smart-instellingen","Easee Smart-Einstellungen")),
+        "title": t(T("Easee Smart Charging settings","Easee Smart-instellingen","Easee Smart-Einstellungen")),
         "menu_options": {
          "charger": t(T("Charger","Laadpaal","Wallbox")),
          "grid": t(T("Main connection","Hoofdaansluiting","Hausanschluss")),
@@ -316,7 +316,7 @@ def build(lang):
       },
      },
      "exceptions": {
-      "no_charger": {"message": t(T("No Easee Smart charger is set up.","Er is geen Easee Smart-laadpaal ingesteld.","Keine Easee Smart-Wallbox eingerichtet."))},
+      "no_charger": {"message": t(T("No Easee Smart Charging charger is set up.","Er is geen Easee Smart-laadpaal ingesteld.","Keine Easee Smart-Wallbox eingerichtet."))},
       "easee_not_loaded": {"message": t(T("The Easee integration is not loaded yet.","De Easee-integratie is nog niet geladen.","Die Easee-Integration ist noch nicht geladen."))},
       "charger_not_found": {"message": t(T("The charger was not found in the Easee integration.","De laadpaal is niet gevonden in de Easee-integratie.","Die Wallbox wurde in der Easee-Integration nicht gefunden."))},
      },

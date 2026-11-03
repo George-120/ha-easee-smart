@@ -24,7 +24,7 @@
       },
       "grid": {
         "title": "Hausanschluss",
-        "description": "Zeige Easee Smart deinen Hausanschluss, damit erkannt wird, wann Solarstrom übrig ist. Gefunden: {found}",
+        "description": "Zeige Easee Smart Charging deinen Hausanschluss, damit erkannt wird, wann Solarstrom übrig ist. Gefunden: {found}",
         "data": {
           "grid_import_entity": "Netzbezug (Leistung)",
           "grid_export_entity": "Netzeinspeisung (Leistung)",
@@ -89,7 +89,7 @@
         },
         "data_description": {
           "image": "Foto in /config/www/ ablegen und /local/name.png eintragen, oder eine Webadresse.",
-          "plug": "Damit erkennt Easee Smart, welches Auto angeschlossen ist.",
+          "plug": "Damit erkennt Easee Smart Charging, welches Auto angeschlossen ist.",
           "start_entity": "Wird eingeschaltet, wenn das Auto nicht von selbst lädt.",
           "limit_entity": "Dein Ladeziel wird auch im Auto gesetzt."
         }
@@ -123,7 +123,7 @@
       },
       "grid": {
         "title": "Hausanschluss",
-        "description": "Zeige Easee Smart deinen Hausanschluss, damit erkannt wird, wann Solarstrom übrig ist. Gefunden: {found}",
+        "description": "Zeige Easee Smart Charging deinen Hausanschluss, damit erkannt wird, wann Solarstrom übrig ist. Gefunden: {found}",
         "data": {
           "grid_import_entity": "Netzbezug (Leistung)",
           "grid_export_entity": "Netzeinspeisung (Leistung)",
@@ -200,7 +200,7 @@
         },
         "data_description": {
           "image": "Foto in /config/www/ ablegen und /local/name.png eintragen, oder eine Webadresse.",
-          "plug": "Damit erkennt Easee Smart, welches Auto angeschlossen ist.",
+          "plug": "Damit erkennt Easee Smart Charging, welches Auto angeschlossen ist.",
           "start_entity": "Wird eingeschaltet, wenn das Auto nicht von selbst lädt.",
           "limit_entity": "Dein Ladeziel wird auch im Auto gesetzt."
         }

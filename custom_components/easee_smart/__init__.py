@@ -1,4 +1,4 @@
-"""Easee Smart: smart charging, Equalizer insight, costs and an app-style card on top of the Easee integration."""
+"""Easee Smart Charging: smart charging, Equalizer insight, costs and an app-style card on top of the Easee integration."""
 
 from __future__ import annotations
 

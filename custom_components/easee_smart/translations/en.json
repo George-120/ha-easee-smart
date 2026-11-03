@@ -24,7 +24,7 @@
       },
       "grid": {
         "title": "Main connection",
-        "description": "Tell Easee Smart where to see your grid connection, so it knows when solar power is left over. Found: {found}",
+        "description": "Tell Easee Smart Charging where to see your grid connection, so it knows when solar power is left over. Found: {found}",
         "data": {
           "grid_import_entity": "Grid import power (from grid)",
           "grid_export_entity": "Grid export power (to grid)",
@@ -89,7 +89,7 @@
         },
         "data_description": {
           "image": "Put a photo in /config/www/ and use /local/name.png, or paste a web address.",
-          "plug": "Lets Easee Smart see which car is connected.",
+          "plug": "Lets Easee Smart Charging see which car is connected.",
           "start_entity": "Turned on when the car does not start charging by itself (sleeping cars).",
           "limit_entity": "Your 'charge to' target is also set in the car."
         }
@@ -104,7 +104,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Easee Smart settings",
+        "title": "Easee Smart Charging settings",
         "menu_options": {
           "charger": "Charger",
           "grid": "Main connection",
@@ -123,7 +123,7 @@
       },
       "grid": {
         "title": "Main connection",
-        "description": "Tell Easee Smart where to see your grid connection, so it knows when solar power is left over. Found: {found}",
+        "description": "Tell Easee Smart Charging where to see your grid connection, so it knows when solar power is left over. Found: {found}",
         "data": {
           "grid_import_entity": "Grid import power (from grid)",
           "grid_export_entity": "Grid export power (to grid)",
@@ -200,7 +200,7 @@
         },
         "data_description": {
           "image": "Put a photo in /config/www/ and use /local/name.png, or paste a web address.",
-          "plug": "Lets Easee Smart see which car is connected.",
+          "plug": "Lets Easee Smart Charging see which car is connected.",
           "start_entity": "Turned on when the car does not start charging by itself (sleeping cars).",
           "limit_entity": "Your 'charge to' target is also set in the car."
         }
@@ -468,7 +468,7 @@
   },
   "exceptions": {
     "no_charger": {
-      "message": "No Easee Smart charger is set up."
+      "message": "No Easee Smart Charging charger is set up."
     },
     "easee_not_loaded": {
       "message": "The Easee integration is not loaded yet."

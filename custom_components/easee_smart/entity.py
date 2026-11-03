@@ -25,7 +25,7 @@ class EaseeSmartEntity(Entity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, manager.charger_id or manager.entry.entry_id)},
             name=f"{manager.name} Smart",
-            manufacturer="Easee Smart (community)",
+            manufacturer="Easee Smart Charging (community)",
             model=manager.model,
             sw_version=VERSION,
             via_device=(EASEE_DOMAIN, manager.charger_id) if manager.charger_id else None,

@@ -1,6 +1,6 @@
 {
   "domain": "easee_smart",
-  "name": "Easee Smart",
+  "name": "Easee Smart Charging",
   "after_dependencies": [
     "easee"
   ],

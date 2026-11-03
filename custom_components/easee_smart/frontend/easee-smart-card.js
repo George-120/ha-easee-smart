@@ -1,4 +1,4 @@
-/* Easee Smart card — app-style view of an Easee charger, served by the easee_smart integration. */
+/* Easee Smart Charging card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
   const VERSION = "1.4.0";
   // Photo of the charger, served next to this script by the integration.
@@ -224,7 +224,7 @@
       const entityId = this._entityId();
       const st = entityId && this._hass.states[entityId];
       if (!st) {
-        this.shadowRoot.innerHTML = `<style>${CSS}</style><ha-card><div class="empty">Easee Smart: ${esc(entityId || "no charger found")}</div></ha-card>`;
+        this.shadowRoot.innerHTML = `<style>${CSS}</style><ha-card><div class="empty">Easee Smart Charging: ${esc(entityId || "no charger found")}</div></ha-card>`;
         return;
       }
       const a = st.attributes;
@@ -833,7 +833,7 @@
       if (!this._hass || !this._config) return;
       if (!this._form) {
         this._form = document.createElement("ha-form");
-        this._form.computeLabel = (s) => ({ entity: "Easee Smart status", name: "Name", title: "Title / Titel", theme: "Theme / Thema", tab: "Start tab", language: "Language / Taal / Sprache" }[s.name] || s.name);
+        this._form.computeLabel = (s) => ({ entity: "Easee Smart Charging status", name: "Name", title: "Title / Titel", theme: "Theme / Thema", tab: "Start tab", language: "Language / Taal / Sprache" }[s.name] || s.name);
         this._form.addEventListener("value-changed", (ev) => {
           this._config = ev.detail.value;
           this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
@@ -887,7 +887,7 @@
   if (!window.customCards.some((c) => c.type === "easee-smart-card")) {
     window.customCards.push({
       type: "easee-smart-card",
-      name: "Easee Smart",
+      name: "Easee Smart Charging",
       description: "Charger, smart charging, Equalizer and costs in one card.",
       preview: true,
       documentationURL: "https://github.com/George-120/ha-easee-smart",
@@ -896,7 +896,7 @@
   for (const [view, label, description] of EXTRA) {
     const type = `easee-smart-${view}-card`;
     if (!window.customCards.some((c) => c.type === type)) {
-      window.customCards.push({ type, name: `Easee Smart – ${label}`, description, preview: true, documentationURL: "https://github.com/George-120/ha-easee-smart" });
+      window.customCards.push({ type, name: `Easee Smart Charging – ${label}`, description, preview: true, documentationURL: "https://github.com/George-120/ha-easee-smart" });
     }
   }
   console.info(`%c EASEE-SMART-CARD %c ${VERSION} `, "background:#5AA9FF;color:#06121F;font-weight:600", "background:#14181E;color:#EDF0F4");
