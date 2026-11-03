@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -13,42 +12,46 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import device_registry as dr, selector
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import selector
 
 from .const import (
     CONF_BATTERY_CAPACITY,
+    CONF_BIDDING_ZONE,
     CONF_CHARGER_DEVICE,
     CONF_ENABLE_ENTITIES,
+    CONF_ENERGY_TAX,
     CONF_EQUALIZER_DEVICE,
-    CONF_FIXED_PRICE,
-    CONF_GRID_POWER_ENTITY,
     CONF_GRID_EXPORT_ENTITY,
     CONF_GRID_IMPORT_ENTITY,
+    CONF_GRID_POWER_ENTITY,
     CONF_GRID_POWER_INVERTED,
     CONF_MAIN_FUSE,
+    CONF_MARKUP,
     CONF_MAX_CURRENT,
     CONF_MODEL,
     CONF_PHASES,
-    CONF_PRICE_ENTITY,
     CONF_REIMBURSEMENT,
     CONF_SOC_ENTITY,
+    CONF_VAT,
     DEFAULT_BATTERY_CAPACITY,
     DEFAULT_MAIN_FUSE,
     DEFAULT_MAX_CURRENT,
-    GRID_KEYS,
-    MAIN_FUSE_SIZES,
-    PHASE_ENTITY_KEYS,
     DEFAULT_PHASES,
     DOMAIN,
     EASEE_DOMAIN,
     EASEE_MODELS,
     EQUALIZER_MODEL,
+    GRID_KEYS,
+    MAIN_FUSE_SIZES,
     MODEL_MAX_CURRENT,
+    PHASE_ENTITY_KEYS,
     REQUIRED_CHARGER_KEYS,
     REQUIRED_EQUALIZER_KEYS,
 )
 from .grid_detect import suggest_grid_sensors
 from .manager import easee_product_id, enable_disabled_entities, resolve_entities
+from .prices import BIDDING_ZONES, default_zone, zone_defaults
 
 NO_EQUALIZER = "none"
 
@@ -97,21 +100,31 @@ def _detect_model(device: dr.DeviceEntry | None) -> str:
 
 def _energy_schema(hass: HomeAssistant, defaults: dict[str, Any]) -> dict:
     currency = hass.config.currency
+    zone = defaults.get(CONF_BIDDING_ZONE) or default_zone(hass)
+    zd = zone_defaults(zone)
+
+    def money(key: str, default: float, maximum: float = 1.0) -> tuple:
+        value = defaults.get(key)
+        return (
+            vol.Optional(key, default=value if value is not None else default),
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0, max=maximum, step=0.0001, unit_of_measurement=f"{currency}/kWh",
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            ),
+        )
+
     schema: dict = {
-        vol.Optional(
-            CONF_PRICE_ENTITY,
-            description={"suggested_value": defaults.get(CONF_PRICE_ENTITY)},
-        ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
-        vol.Optional(
-            CONF_FIXED_PRICE,
-            description={"suggested_value": defaults.get(CONF_FIXED_PRICE)},
-        ): selector.NumberSelector(
-            selector.NumberSelectorConfig(
-                min=0, max=2, step=0.001, unit_of_measurement=f"{currency}/kWh",
-                mode=selector.NumberSelectorMode.BOX,
-            )
+        vol.Required(CONF_BIDDING_ZONE, default=zone): selector.SelectSelector(
+            selector.SelectSelectorConfig(options=BIDDING_ZONES, mode=selector.SelectSelectorMode.DROPDOWN)
         ),
     }
+    schema.update(dict([money(CONF_MARKUP, 0.0), money(CONF_ENERGY_TAX, zd["energy_tax"])]))
+    vat = defaults.get(CONF_VAT)
+    schema[vol.Optional(CONF_VAT, default=vat if vat is not None else zd["vat"])] = selector.NumberSelector(
+        selector.NumberSelectorConfig(min=0, max=30, step=0.5, unit_of_measurement="%", mode=selector.NumberSelectorMode.BOX)
+    )
     schema.update(
         {
             vol.Optional(
@@ -366,5 +379,5 @@ class EaseeSmartOptionsFlow(OptionsFlow):
 
     async def async_step_energy(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
-            return self._save(user_input, [CONF_PRICE_ENTITY, CONF_FIXED_PRICE, CONF_SOC_ENTITY, CONF_REIMBURSEMENT])
+            return self._save(user_input, [CONF_SOC_ENTITY, CONF_REIMBURSEMENT])
         return self.async_show_form(step_id="energy", data_schema=vol.Schema(_energy_schema(self.hass, self._current())))

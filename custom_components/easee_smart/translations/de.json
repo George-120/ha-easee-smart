@@ -43,16 +43,20 @@
       },
       "energy": {
         "title": "Preise, Auto und Kosten",
-        "description": "Alles optional. Ohne Preissensor lädt Smart-Laden sofort.",
+        "description": "Preise werden automatisch abgerufen. Trage den Aufschlag deines Vertrags ein, damit die Kosten stimmen.",
         "data": {
-          "price_entity": "Preissensor (dynamischer Tarif)",
-          "fixed_price": "Festpreis (ohne Preissensor)",
+          "bidding_zone": "Preiszone (Day-Ahead / EPEX)",
+          "price_markup": "Aufschlag Lieferant",
+          "energy_tax": "Energiesteuer (ohne MwSt.)",
+          "vat_percent": "MwSt.",
           "soc_entity": "Akkustand-Sensor des Autos (optional)",
           "battery_capacity": "Akkukapazität Auto",
           "reimbursement_per_kwh": "Erstattungssatz (Leasing/Arbeitgeber)"
         },
         "data_description": {
-          "price_entity": "Nordpool, Tibber, ENTSO-e… Preise für heute/morgen werden automatisch gelesen.",
+          "bidding_zone": "Day-Ahead-Börsenpreise (EPEX SPOT) werden automatisch je Viertelstunde für heute und morgen abgerufen. Kein Konto nötig.",
+          "price_markup": "Pro kWh, ohne MwSt., aus deinem dynamischen Vertrag.",
+          "energy_tax": "Pro kWh, ohne MwSt. Preis = (Börse + Aufschlag + Steuer) × (1 + MwSt.).",
           "reimbursement_per_kwh": "Wird für den Monatsbericht des Heimladens genutzt."
         }
       }
@@ -102,16 +106,20 @@
       },
       "energy": {
         "title": "Preise, Auto und Kosten",
-        "description": "Alles optional. Ohne Preissensor lädt Smart-Laden sofort.",
+        "description": "Preise werden automatisch abgerufen. Trage den Aufschlag deines Vertrags ein, damit die Kosten stimmen.",
         "data": {
-          "price_entity": "Preissensor (dynamischer Tarif)",
-          "fixed_price": "Festpreis (ohne Preissensor)",
+          "bidding_zone": "Preiszone (Day-Ahead / EPEX)",
+          "price_markup": "Aufschlag Lieferant",
+          "energy_tax": "Energiesteuer (ohne MwSt.)",
+          "vat_percent": "MwSt.",
           "soc_entity": "Akkustand-Sensor des Autos (optional)",
           "battery_capacity": "Akkukapazität Auto",
           "reimbursement_per_kwh": "Erstattungssatz (Leasing/Arbeitgeber)"
         },
         "data_description": {
-          "price_entity": "Nordpool, Tibber, ENTSO-e… Preise für heute/morgen werden automatisch gelesen.",
+          "bidding_zone": "Day-Ahead-Börsenpreise (EPEX SPOT) werden automatisch je Viertelstunde für heute und morgen abgerufen. Kein Konto nötig.",
+          "price_markup": "Pro kWh, ohne MwSt., aus deinem dynamischen Vertrag.",
+          "energy_tax": "Pro kWh, ohne MwSt. Preis = (Börse + Aufschlag + Steuer) × (1 + MwSt.).",
           "reimbursement_per_kwh": "Wird für den Monatsbericht des Heimladens genutzt."
         }
       }
@@ -175,7 +183,7 @@
           "charging_boost": "Boost: lädt jetzt",
           "charging_fallback": "Lädt (zu wenig Preisdaten)",
           "target_reached": "Ziel erreicht",
-          "no_prices": "Lädt (kein Preissensor)"
+          "no_prices": "Lädt (keine Preise verfügbar)"
         }
       },
       "target_current": {

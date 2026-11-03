@@ -102,6 +102,12 @@ GENERAL: tuple[EaseeSmartSensorDescription, ...] = (
         per_kwh=True,
         suggested_display_precision=3,
         value_fn=lambda m: m.snapshot.price,
+        attr_fn=lambda m: {
+            "market_price": m.market_price(),
+            "bidding_zone": m.zone,
+            "prices_tomorrow": m.day_ahead.has_tomorrow,
+            "source": "Energy-Charts (EPEX SPOT day-ahead)",
+        },
     ),
     EaseeSmartSensorDescription(
         key="session_cost",

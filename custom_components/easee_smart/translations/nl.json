@@ -43,16 +43,20 @@
       },
       "energy": {
         "title": "Prijzen, auto en kosten",
-        "description": "Alles optioneel. Zonder prijssensor laadt slim laden gewoon direct.",
+        "description": "De prijzen worden automatisch opgehaald. Vul de opslag van je contract in, dan kloppen de kosten met je rekening.",
         "data": {
-          "price_entity": "Prijssensor (dynamisch tarief)",
-          "fixed_price": "Vaste prijs (als er geen prijssensor is)",
+          "bidding_zone": "Prijszone (day-ahead / APX)",
+          "price_markup": "Opslag leverancier",
+          "energy_tax": "Energiebelasting (excl. btw)",
+          "vat_percent": "Btw",
           "soc_entity": "Accuniveau-sensor van de auto (optioneel)",
           "battery_capacity": "Accucapaciteit auto",
           "reimbursement_per_kwh": "Vergoedingstarief (lease/werkgever)"
         },
         "data_description": {
-          "price_entity": "Nordpool, Tibber, Frank Energie, Zonneplan, ENTSO-e… De prijzen voor vandaag/morgen worden automatisch gelezen.",
+          "bidding_zone": "De day-ahead beursprijzen (EPEX SPOT, voorheen APX) worden automatisch per kwartier opgehaald voor vandaag en morgen. Geen account nodig.",
+          "price_markup": "Per kWh, excl. btw, uit je dynamische contract.",
+          "energy_tax": "Per kWh, excl. btw. De prijs wordt (beurs + opslag + belasting) × (1 + btw).",
           "reimbursement_per_kwh": "Wordt gebruikt voor het maandrapport van thuisladen."
         }
       }
@@ -102,16 +106,20 @@
       },
       "energy": {
         "title": "Prijzen, auto en kosten",
-        "description": "Alles optioneel. Zonder prijssensor laadt slim laden gewoon direct.",
+        "description": "De prijzen worden automatisch opgehaald. Vul de opslag van je contract in, dan kloppen de kosten met je rekening.",
         "data": {
-          "price_entity": "Prijssensor (dynamisch tarief)",
-          "fixed_price": "Vaste prijs (als er geen prijssensor is)",
+          "bidding_zone": "Prijszone (day-ahead / APX)",
+          "price_markup": "Opslag leverancier",
+          "energy_tax": "Energiebelasting (excl. btw)",
+          "vat_percent": "Btw",
           "soc_entity": "Accuniveau-sensor van de auto (optioneel)",
           "battery_capacity": "Accucapaciteit auto",
           "reimbursement_per_kwh": "Vergoedingstarief (lease/werkgever)"
         },
         "data_description": {
-          "price_entity": "Nordpool, Tibber, Frank Energie, Zonneplan, ENTSO-e… De prijzen voor vandaag/morgen worden automatisch gelezen.",
+          "bidding_zone": "De day-ahead beursprijzen (EPEX SPOT, voorheen APX) worden automatisch per kwartier opgehaald voor vandaag en morgen. Geen account nodig.",
+          "price_markup": "Per kWh, excl. btw, uit je dynamische contract.",
+          "energy_tax": "Per kWh, excl. btw. De prijs wordt (beurs + opslag + belasting) × (1 + btw).",
           "reimbursement_per_kwh": "Wordt gebruikt voor het maandrapport van thuisladen."
         }
       }
@@ -175,7 +183,7 @@
           "charging_boost": "Boost: nu laden",
           "charging_fallback": "Laden (te weinig prijsdata)",
           "target_reached": "Doel bereikt",
-          "no_prices": "Laden (geen prijssensor)"
+          "no_prices": "Laden (prijzen niet beschikbaar)"
         }
       },
       "target_current": {

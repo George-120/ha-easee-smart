@@ -46,7 +46,7 @@ class Hass:
     def __init__(self, tmp):
         self.states = States()
         self.services = Services()
-        self.config = types.SimpleNamespace(currency="EUR", path=lambda *p: str(Path(tmp, *p)))
+        self.config = types.SimpleNamespace(currency="EUR", country="NL", path=lambda *p: str(Path(tmp, *p)))
         self.tasks = []
 
     def async_create_task(self, coro):
@@ -101,7 +101,10 @@ def install_stubs():
     _mod("homeassistant.helpers.event", async_track_state_change_event=lambda *a: (lambda: None),
          async_track_time_interval=lambda *a: (lambda: None))
     _mod("homeassistant.helpers.storage", Store=Store)
-    dt = _mod("homeassistant.util.dt", now=lambda: CLOCK["now"], utcnow=lambda: CLOCK["now"])
+    _mod("homeassistant.helpers.aiohttp_client", async_get_clientsession=lambda h: None)
+    if "aiohttp" not in sys.modules:
+        _mod("aiohttp", ClientError=Exception, ClientTimeout=lambda **k: None)
+    dt = _mod("homeassistant.util.dt", now=lambda: CLOCK["now"], utcnow=lambda: CLOCK["now"], as_local=lambda d: d.astimezone(TZ))
     _mod("homeassistant.util", dt=dt)
     sys.modules["homeassistant"].helpers = sys.modules["homeassistant.helpers"]
     sys.modules["homeassistant.helpers"].device_registry = sys.modules["homeassistant.helpers.device_registry"]
@@ -126,7 +129,7 @@ def make(tmp, options=None, equalizer=True, extra=None):
     for k in ["import_power", "export_power", "current", "voltage", "max_continuous_limit"]:
         REG[f"QP1_{k}"] = f"sensor.eq_{k}"
     hass = Hass(tmp)
-    data = {"charger_device": "dev1", "phases": 3, "max_current": 16, "price_entity": "sensor.price", "reimbursement_per_kwh": 0.23}
+    data = {"charger_device": "dev1", "phases": 3, "max_current": 16, "reimbursement_per_kwh": 0.23}
     if equalizer:
         data["equalizer_device"] = "dev2"
     data.update(extra or {})
@@ -139,11 +142,13 @@ def setstate(hass, eid, state, **attrs):
     hass.states[eid] = State(eid, str(state), attrs)
 
 
-def prices(hass):
+def prices(hass, m):
+    """Feed built-in day-ahead market prices (EUR/kWh) with zero taxes so values stay readable."""
     base = CLOCK["now"].replace(minute=0)
-    raw = [{"start": (base + timedelta(hours=i)).isoformat(), "end": (base + timedelta(hours=i + 1)).isoformat(),
-            "value": 0.30 if i < 5 else 0.05 if i < 8 else 0.40} for i in range(14)]
-    setstate(hass, "sensor.price", 0.30, raw_today=raw)
+    m.day_ahead.points = [(base + timedelta(hours=i), 0.30 if i < 5 else 0.05 if i < 8 else 0.40) for i in range(14)]
+    m.day_ahead.last_fetch = CLOCK["now"] + timedelta(days=1)  # no network in tests
+    m.entry.options.update({"price_markup": 0.0, "energy_tax": 0.0, "vat_percent": 0.0})
+    m._rebuild_prices()
 
 
 def last_limit(hass):
@@ -163,7 +168,7 @@ def test_smart_waits_then_charges(tmp_path):
         setstate(hass, "sensor.eq_export_power", 0)
         setstate(hass, "sensor.eq_current", 3, state_currentL1=12.0, state_currentL2=4.0, state_currentL3=6.5)
         setstate(hass, "sensor.eq_max_continuous_limit", 25)
-        prices(hass)
+        prices(hass, m)
         await m.async_set_setting("target_energy", 30)
         await m.async_set_setting("mode", "smart")
         assert m.snapshot.smart_state == "waiting_cheap"
@@ -205,7 +210,7 @@ def test_sessions_costs_and_report(tmp_path):
     async def run():
         hass, m = make(tmp_path)
         await m.async_setup()
-        prices(hass)
+        prices(hass, m)
         setstate(hass, "sensor.c_lifetime_energy", 1000)
         m._recompute()
         m._account_energy()
@@ -291,3 +296,44 @@ def test_detects_zonneplan_and_dsmr_meters(tmp_path):
     envoy = run([entry("sensor.envoy_1_current_net_power_consumption", "enphase_envoy", "power"),
                  entry("sensor.envoy_1_current_power_production", "enphase_envoy", "power")])
     assert envoy == {"grid_power_entity": "sensor.envoy_1_current_net_power_consumption"}
+
+
+def test_homewizard_p1_wins_over_zonneplan(tmp_path):
+    install_stubs()
+    sys.modules.pop("easee_smart.grid_detect", None)
+    gd = importlib.import_module("easee_smart.grid_detect")
+
+    def entry(eid, uid, platform, dc):
+        return types.SimpleNamespace(entity_id=eid, platform=platform, domain="sensor", disabled_by=None,
+                                     unique_id=uid, device_class=None, original_device_class=dc)
+
+    entries = [
+        entry("sensor.connect_energiemeter_electricity_consumption", "zp1", "zonneplan_one", "power"),
+        entry("sensor.connect_energiemeter_electricity_production", "zp2", "zonneplan_one", "power"),
+        entry("sensor.energysocket_5c2f_actueel_vermogen", "HWE-SKT_5c2f_active_power_w", "homewizard", "power"),
+        entry("sensor.p1_meter_5c2f_actueel_vermogen", "HWE-P1_5c2f_active_power_w", "homewizard", "power"),
+        entry("sensor.p1_meter_5c2f_actueel_vermogen_fase_1", "HWE-P1_5c2f_active_power_l1_w", "homewizard", "power"),
+        *[entry(f"sensor.p1_meter_5c2f_actuele_stroom_fase_{n}", f"HWE-P1_5c2f_active_current_l{n}_a", "homewizard", "current") for n in (1, 2, 3)],
+    ]
+    reg = types.SimpleNamespace(entities={e.entity_id: e for e in entries})
+    sys.modules["homeassistant.helpers.entity_registry"].async_get = lambda h: reg
+    found = gd.suggest_grid_sensors(types.SimpleNamespace(states=States()))
+    assert found == {
+        "grid_power_entity": "sensor.p1_meter_5c2f_actueel_vermogen",
+        "phase_l1_entity": "sensor.p1_meter_5c2f_actuele_stroom_fase_1",
+        "phase_l2_entity": "sensor.p1_meter_5c2f_actuele_stroom_fase_2",
+        "phase_l3_entity": "sensor.p1_meter_5c2f_actuele_stroom_fase_3",
+    }
+
+
+def test_energy_charts_prices_all_in(tmp_path):
+    install_stubs()
+    sys.modules.pop("easee_smart.prices", None)
+    pr = importlib.import_module("easee_smart.prices")
+    data = {"unix_seconds": [1793746800, 1793747700, 1793748600], "price": [200.13, None, 160.79], "unit": "EUR / MWh"}
+    pts = pr.parse_energy_charts(data)
+    assert len(pts) == 2 and pts[0][1] == 0.20013
+    slots = pr.to_slots(pts, 0.0165, 0.0916, 21)
+    assert slots[0].price == round((0.20013 + 0.0165 + 0.0916) * 1.21, 5)
+    assert slots[0].end - slots[0].start == timedelta(minutes=15) * 1 or slots[0].end - slots[0].start == timedelta(minutes=30)
+    assert pr.default_zone(types.SimpleNamespace(config=types.SimpleNamespace(country="DE"))) == "DE-LU"

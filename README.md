@@ -12,8 +12,8 @@ Slim laden, Equalizer-inzicht, laadkosten en een app-achtige dashboardkaart voor
 ## Wat het doet
 
 - **Kies gewoon je laadpaal.** De integratie vindt je Easee-laadpalen en Equalizer zelf en herkent het model (Home, Charge, Charge Lite, Max, Up, Core, Pro, One).
-- **Slim laden op dynamische prijzen.** Je stelt een vertrektijd en hoeveel je wilt laden in (kWh, of accupercentage als je auto een accusensor heeft). De integratie kiest de goedkoopste uren of kwartieren daarvoor. Werkt met Nordpool, Tibber, Frank Energie, Zonneplan, ENTSO-e en andere sensoren die een prijsverwachting als attribuut hebben.
-- **Laden op zonne-overschot.** Met een Easee Equalizer gebruikt de integratie automatisch de gemeten afname en teruglevering. Zonder Equalizer voeg je je **hoofdaansluiting** toe: je slimme meter (P1) wordt automatisch herkend (DSMR, HomeWizard, P1 Monitor, Zonneplan Connect, Tibber, Enphase), en je kiest je hoofdzekering (bijv. 3×25 A). Achteraf wijzigen kan altijd via *Configureren → Hoofdaansluiting*. Start- en stopvertraging voorkomen pendelen.
+- **Slim laden op dynamische prijzen.** De day-ahead beursprijzen (EPEX SPOT, voorheen APX) worden automatisch per kwartier opgehaald voor vandaag en morgen, voor elke Europese prijszone — zonder account of extra integratie. Vul de opslag van je contract in, dan rekent hij met (beurs + opslag + energiebelasting) × (1 + btw). Je stelt een vertrektijd en hoeveel je wilt laden in (kWh, of accupercentage als je auto een accusensor heeft) en de integratie kiest de goedkoopste kwartieren.
+- **Laden op zonne-overschot.** Met een Easee Equalizer gebruikt de integratie automatisch de gemeten afname en teruglevering. Zonder Equalizer voeg je je **hoofdaansluiting** toe: je slimme meter (P1) wordt automatisch herkend — HomeWizard P1 heeft voorrang omdat die het nauwkeurigst is, daarna DSMR, P1 Monitor, Zonneplan Connect, Tibber en Enphase, en je kiest je hoofdzekering (bijv. 3×25 A). Achteraf wijzigen kan altijd via *Configureren → Hoofdaansluiting*. Start- en stopvertraging voorkomen pendelen.
 - **Zon + slim.** Laadt overdag van de zon en vult het tekort aan in de goedkoopste uren vóór vertrek.
 - **Boost.** Eén knop om direct op vol vermogen te laden, tot je de stekker eruit haalt.
 - **Equalizer uitgelezen.** Netvermogen, stroom per fase (L1/L2/L3), spanning, belasting en resterende ruimte op je hoofdzekering, plus afname/teruglevering in kWh.
@@ -29,7 +29,7 @@ Load balancing doet de Easee Equalizer zelf; deze integratie grijpt daar niet in
 1. Zorg dat de **Easee-integratie** draait ([nordicopen/easee_hass](https://github.com/nordicopen/easee_hass) via HACS).
 2. Installeer **Easee Smart** via HACS (knop hierboven) en herstart Home Assistant.
 3. Ga naar *Instellingen → Apparaten & diensten → Integratie toevoegen → Easee Smart* (of gebruik de tweede knop).
-4. Kies je laadpaal (en Equalizer), controleer het herkende model, check je hoofdaansluiting (als je geen Equalizer hebt) en kies eventueel een prijssensor. Klaar.
+4. Kies je laadpaal (en Equalizer), controleer het herkende model, check je hoofdaansluiting (als je geen Equalizer hebt) en vul eventueel de opslag van je energiecontract in. Klaar.
 
 Alle instellingen pas je later aan via *Configureren* op de integratie: laadpaal, hoofdaansluiting, en prijzen/auto/kosten.
 
@@ -79,13 +79,17 @@ Dit is een communityproject en geen officieel product van Easee.
 
 Smart charging, Equalizer insight, charging costs and an app-style dashboard card for Easee chargers, built on top of the existing Easee integration (no second login).
 
-Pick your charger, set a departure time and how much energy you need, and Easee Smart charges in the cheapest hours (works with Nordpool, Tibber, ENTSO-e and other price sensors exposing a forecast), on solar surplus (via the Equalizer or any grid power sensor), or both. It reads all Equalizer values (grid power, per-phase current and voltage, main fuse load and headroom), tracks costs per session/day/month and exports a monthly CSV with optional reimbursement. The dynamic limit is always set with a 15-minute time-to-live, so the charger returns to normal if Home Assistant stops. Translated into English, Dutch and German.
+Pick your charger, set a departure time and how much energy you need, and Easee Smart charges in the cheapest quarter hours (day-ahead EPEX SPOT prices for every European bidding zone are fetched automatically, no account needed), on solar surplus (via the Equalizer or any grid power sensor), or both. It reads all Equalizer values (grid power, per-phase current and voltage, main fuse load and headroom), tracks costs per session/day/month and exports a monthly CSV with optional reimbursement. The dynamic limit is always set with a 15-minute time-to-live, so the charger returns to normal if Home Assistant stops. Translated into English, Dutch and German.
 
 Install: Easee integration first, then this repository via HACS, restart, add the *Easee Smart* integration. The card (`custom:easee-smart-card`) is loaded automatically.
 
 ## Deutsch
 
 Smartes Laden, Equalizer-Werte, Ladekosten und eine App-ähnliche Karte für Easee-Wallboxen, aufbauend auf der bestehenden Easee-Integration. Laden zu den günstigsten Stunden vor der Abfahrt, mit Solarüberschuss oder beides; alle Equalizer-Werte inklusive Phasenströme und Auslastung der Hauptsicherung; Kosten pro Ladevorgang und Monat mit CSV-Export. Installation: zuerst die Easee-Integration, dann dieses Repository über HACS.
+
+## Bronnen
+
+Prijsdata: [Energy-Charts](https://energy-charts.info) (Fraunhofer ISE), licentie CC BY 4.0.
 
 ## Licentie
 

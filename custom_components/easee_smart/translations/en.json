@@ -43,16 +43,20 @@
       },
       "energy": {
         "title": "Prices, car and costs",
-        "description": "All optional. Without a price sensor smart charging just charges right away.",
+        "description": "Prices are fetched automatically. Fill in your contract's markup so costs match your bill.",
         "data": {
-          "price_entity": "Price sensor (dynamic tariff)",
-          "fixed_price": "Fixed price (if no price sensor)",
+          "bidding_zone": "Price zone (day-ahead / APX)",
+          "price_markup": "Supplier markup",
+          "energy_tax": "Energy tax (excl. VAT)",
+          "vat_percent": "VAT",
           "soc_entity": "Car battery level sensor (optional)",
           "battery_capacity": "Car battery capacity",
           "reimbursement_per_kwh": "Reimbursement rate (lease/employer)"
         },
         "data_description": {
-          "price_entity": "Nordpool, Tibber, Frank Energie, Zonneplan, ENTSO-e… Prices for today/tomorrow are read automatically.",
+          "bidding_zone": "Day-ahead market prices (EPEX SPOT, formerly APX) are fetched automatically for this zone, per quarter hour, for today and tomorrow. No account needed.",
+          "price_markup": "Per kWh, excl. VAT, from your dynamic contract.",
+          "energy_tax": "Per kWh, excl. VAT. The consumer price is (market + markup + tax) × (1 + VAT).",
           "reimbursement_per_kwh": "Used for the monthly report of home charging."
         }
       }
@@ -102,16 +106,20 @@
       },
       "energy": {
         "title": "Prices, car and costs",
-        "description": "All optional. Without a price sensor smart charging just charges right away.",
+        "description": "Prices are fetched automatically. Fill in your contract's markup so costs match your bill.",
         "data": {
-          "price_entity": "Price sensor (dynamic tariff)",
-          "fixed_price": "Fixed price (if no price sensor)",
+          "bidding_zone": "Price zone (day-ahead / APX)",
+          "price_markup": "Supplier markup",
+          "energy_tax": "Energy tax (excl. VAT)",
+          "vat_percent": "VAT",
           "soc_entity": "Car battery level sensor (optional)",
           "battery_capacity": "Car battery capacity",
           "reimbursement_per_kwh": "Reimbursement rate (lease/employer)"
         },
         "data_description": {
-          "price_entity": "Nordpool, Tibber, Frank Energie, Zonneplan, ENTSO-e… Prices for today/tomorrow are read automatically.",
+          "bidding_zone": "Day-ahead market prices (EPEX SPOT, formerly APX) are fetched automatically for this zone, per quarter hour, for today and tomorrow. No account needed.",
+          "price_markup": "Per kWh, excl. VAT, from your dynamic contract.",
+          "energy_tax": "Per kWh, excl. VAT. The consumer price is (market + markup + tax) × (1 + VAT).",
           "reimbursement_per_kwh": "Used for the monthly report of home charging."
         }
       }
@@ -175,7 +183,7 @@
           "charging_boost": "Boost: charging now",
           "charging_fallback": "Charging (not enough price data)",
           "target_reached": "Target reached",
-          "no_prices": "Charging (no price sensor)"
+          "no_prices": "Charging (prices not available)"
         }
       },
       "target_current": {

@@ -8,6 +8,7 @@ spec = importlib.util.spec_from_file_location(
 )
 logic = importlib.util.module_from_spec(spec)
 import sys
+
 sys.modules["logic"] = logic
 spec.loader.exec_module(logic)
 

@@ -29,6 +29,6 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install pytest ruff
-      - run: ruff check --select F,E9,B,UP --ignore UP040,B008 custom_components tests
+      - run: ruff check --select F,E9,B,UP,I001 --ignore UP040,B008 custom_components tests
       - run: python -m pytest -q tests
       - run: node --check custom_components/easee_smart/frontend/easee-smart-card.js

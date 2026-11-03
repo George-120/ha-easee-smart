@@ -42,7 +42,7 @@ SMART = {
  "charging_boost": T("Boost: charging now","Boost: nu laden","Boost: lädt jetzt"),
  "charging_fallback": T("Charging (not enough price data)","Laden (te weinig prijsdata)","Lädt (zu wenig Preisdaten)"),
  "target_reached": T("Target reached","Doel bereikt","Ziel erreicht"),
- "no_prices": T("Charging (no price sensor)","Laden (geen prijssensor)","Lädt (kein Preissensor)"),
+ "no_prices": T("Charging (prices not available)","Laden (prijzen niet beschikbaar)","Lädt (keine Preise verfügbar)"),
 }
 MODES = {
  "normal": T("Normal","Normaal","Normal"),
@@ -82,19 +82,22 @@ MODELS = ["Easee Home","Easee Charge","Charge Lite","Charge Max","Charge Up","Ch
 def build(lang):
     t = lambda x: x[lang]
     cfg_fields_energy = {
-     "price_entity": T("Price sensor (dynamic tariff)","Prijssensor (dynamisch tarief)","Preissensor (dynamischer Tarif)"),
-     "fixed_price": T("Fixed price (if no price sensor)","Vaste prijs (als er geen prijssensor is)","Festpreis (ohne Preissensor)"),
-     "grid_power_entity": T("Grid power sensor (for solar surplus)","Netvermogen-sensor (voor zonne-overschot)","Netzleistungssensor (für Solarüberschuss)"),
-     "grid_power_inverted": T("Sensor is positive when exporting","Sensor is positief bij teruglevering","Sensor ist positiv bei Einspeisung"),
+     "bidding_zone": T("Price zone (day-ahead / APX)","Prijszone (day-ahead / APX)","Preiszone (Day-Ahead / EPEX)"),
+     "price_markup": T("Supplier markup","Opslag leverancier","Aufschlag Lieferant"),
+     "energy_tax": T("Energy tax (excl. VAT)","Energiebelasting (excl. btw)","Energiesteuer (ohne MwSt.)"),
+     "vat_percent": T("VAT","Btw","MwSt."),
      "soc_entity": T("Car battery level sensor (optional)","Accuniveau-sensor van de auto (optioneel)","Akkustand-Sensor des Autos (optional)"),
      "battery_capacity": T("Car battery capacity","Accucapaciteit auto","Akkukapazität Auto"),
      "reimbursement_per_kwh": T("Reimbursement rate (lease/employer)","Vergoedingstarief (lease/werkgever)","Erstattungssatz (Leasing/Arbeitgeber)"),
     }
     cfg_desc_energy = {
-     "price_entity": T("Nordpool, Tibber, Frank Energie, Zonneplan, ENTSO-e… Prices for today/tomorrow are read automatically.",
-                       "Nordpool, Tibber, Frank Energie, Zonneplan, ENTSO-e… De prijzen voor vandaag/morgen worden automatisch gelezen.",
-                       "Nordpool, Tibber, ENTSO-e… Preise für heute/morgen werden automatisch gelesen."),
-     "grid_power_entity": T("Only needed without an Easee Equalizer. Normally positive = import.","Alleen nodig zonder Easee Equalizer. Normaal positief = afname.","Nur ohne Easee Equalizer nötig. Normalerweise positiv = Bezug."),
+     "bidding_zone": T("Day-ahead market prices (EPEX SPOT, formerly APX) are fetched automatically for this zone, per quarter hour, for today and tomorrow. No account needed.",
+                       "De day-ahead beursprijzen (EPEX SPOT, voorheen APX) worden automatisch per kwartier opgehaald voor vandaag en morgen. Geen account nodig.",
+                       "Day-Ahead-Börsenpreise (EPEX SPOT) werden automatisch je Viertelstunde für heute und morgen abgerufen. Kein Konto nötig."),
+     "price_markup": T("Per kWh, excl. VAT, from your dynamic contract.","Per kWh, excl. btw, uit je dynamische contract.","Pro kWh, ohne MwSt., aus deinem dynamischen Vertrag."),
+     "energy_tax": T("Per kWh, excl. VAT. The consumer price is (market + markup + tax) × (1 + VAT).",
+                     "Per kWh, excl. btw. De prijs wordt (beurs + opslag + belasting) × (1 + btw).",
+                     "Pro kWh, ohne MwSt. Preis = (Börse + Aufschlag + Steuer) × (1 + MwSt.)."),
      "reimbursement_per_kwh": T("Used for the monthly report of home charging.","Wordt gebruikt voor het maandrapport van thuisladen.","Wird für den Monatsbericht des Heimladens genutzt."),
     }
     cfg_fields_charger = {
@@ -127,11 +130,11 @@ def build(lang):
     }
     energy_step = {
      "title": t(T("Prices, car and costs","Prijzen, auto en kosten","Preise, Auto und Kosten")),
-     "description": t(T("All optional. Without a price sensor smart charging just charges right away.",
-                        "Alles optioneel. Zonder prijssensor laadt slim laden gewoon direct.",
-                        "Alles optional. Ohne Preissensor lädt Smart-Laden sofort.")),
-     "data": {k: t(v) for k, v in cfg_fields_energy.items() if k not in ("grid_power_entity", "grid_power_inverted")},
-     "data_description": {k: t(v) for k, v in cfg_desc_energy.items() if k != "grid_power_entity"},
+     "description": t(T("Prices are fetched automatically. Fill in your contract's markup so costs match your bill.",
+                        "De prijzen worden automatisch opgehaald. Vul de opslag van je contract in, dan kloppen de kosten met je rekening.",
+                        "Preise werden automatisch abgerufen. Trage den Aufschlag deines Vertrags ein, damit die Kosten stimmen.")),
+     "data": {k: t(v) for k, v in cfg_fields_energy.items()},
+     "data_description": {k: t(v) for k, v in cfg_desc_energy.items()},
     }
     charger_opts = {
      "title": t(T("Charger","Laadpaal","Wallbox")),

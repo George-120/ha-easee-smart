@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import math
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
-import math
 from statistics import median
 from typing import Any
-from collections.abc import Iterable
 
 START_KEYS = ("start", "start_date", "from", "start_time", "startsAt", "starts_at", "time", "datetime", "date", "hour", "readingDate")
 END_KEYS = ("end", "end_date", "till", "to", "end_time", "endsAt", "ends_at", "until")

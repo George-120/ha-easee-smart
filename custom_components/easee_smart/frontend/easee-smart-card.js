@@ -1,6 +1,6 @@
 /* Easee Smart card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.2.0";
+  const VERSION = "1.3.0";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -23,13 +23,13 @@
         waiting_cheap: "Waiting for the cheapest moment", charging_cheap: "Charging at a cheap moment",
         charging_solar: "Charging on solar surplus", waiting_solar: "Waiting for solar surplus",
         charging_boost: "Boost: charging at full power", charging_fallback: "Charging now, not enough price data",
-        target_reached: "Target reached", no_prices: "No price sensor, charging now",
+        target_reached: "Target reached", no_prices: "Prices not available, charging now",
       },
       pause: "Pause", resume: "Resume", start: "Start", boost: "Boost", lock: "Lock cable", unlock: "Cable unlocked",
       session: "this session", cost: "cost", duration: "time",
       departure: "Ready at", target: "Add", targetSoc: "Charge to", needed: "still needed",
       planStart: "Starts", planEnd: "Ready", planCost: "Estimated", noPlan: "No plan needed right now.",
-      noPrices: "No price forecast available. Choose a price sensor in the integration settings.",
+      noPrices: "Prices could not be fetched yet. They update automatically.",
       now: "now", grid: "Grid", importing: "Importing", exporting: "Exporting", fuse: "Main fuse",
       headroom: "headroom", surplus: "Solar surplus", phase: "Phase", noGrid: "No Equalizer or main connection set. Add your meter under Configure → Main connection.",
       month: "This month", prev: "Previous months", reimb: "Reimbursement", sessions: "Recent sessions",
@@ -52,13 +52,13 @@
         waiting_cheap: "Wacht op het goedkoopste moment", charging_cheap: "Laden op een goedkoop moment",
         charging_solar: "Laden op zonne-overschot", waiting_solar: "Wacht op zonne-overschot",
         charging_boost: "Boost: laden op vol vermogen", charging_fallback: "Nu laden, te weinig prijsdata",
-        target_reached: "Doel bereikt", no_prices: "Geen prijssensor, nu laden",
+        target_reached: "Doel bereikt", no_prices: "Prijzen niet beschikbaar, nu laden",
       },
       pause: "Pauzeren", resume: "Hervatten", start: "Starten", boost: "Boost", lock: "Kabel vast", unlock: "Kabel los",
       session: "deze sessie", cost: "kosten", duration: "tijd",
       departure: "Klaar om", target: "Laden", targetSoc: "Laden tot", needed: "nog nodig",
       planStart: "Start", planEnd: "Klaar", planCost: "Verwacht", noPlan: "Er is nu geen planning nodig.",
-      noPrices: "Geen prijsverwachting beschikbaar. Kies een prijssensor in de instellingen van de integratie.",
+      noPrices: "De prijzen konden nog niet worden opgehaald. Ze worden vanzelf bijgewerkt.",
       now: "nu", grid: "Net", importing: "Afname", exporting: "Teruglevering", fuse: "Hoofdzekering",
       headroom: "ruimte", surplus: "Zonne-overschot", phase: "Fase", noGrid: "Geen Equalizer of hoofdaansluiting ingesteld. Voeg je meter toe via Configureren → Hoofdaansluiting.",
       month: "Deze maand", prev: "Vorige maanden", reimb: "Vergoeding", sessions: "Recente sessies",
@@ -81,13 +81,13 @@
         waiting_cheap: "Wartet auf den günstigsten Zeitpunkt", charging_cheap: "Lädt zum günstigen Zeitpunkt",
         charging_solar: "Lädt mit Solarüberschuss", waiting_solar: "Wartet auf Solarüberschuss",
         charging_boost: "Boost: lädt mit voller Leistung", charging_fallback: "Lädt jetzt, zu wenig Preisdaten",
-        target_reached: "Ziel erreicht", no_prices: "Kein Preissensor, lädt jetzt",
+        target_reached: "Ziel erreicht", no_prices: "Keine Preise verfügbar, lädt jetzt",
       },
       pause: "Pausieren", resume: "Fortsetzen", start: "Starten", boost: "Boost", lock: "Kabel verriegelt", unlock: "Kabel frei",
       session: "dieser Ladevorgang", cost: "Kosten", duration: "Dauer",
       departure: "Fertig um", target: "Laden", targetSoc: "Laden bis", needed: "noch nötig",
       planStart: "Start", planEnd: "Fertig", planCost: "Erwartet", noPlan: "Derzeit ist keine Planung nötig.",
-      noPrices: "Keine Preisprognose verfügbar. Wähle einen Preissensor in den Einstellungen der Integration.",
+      noPrices: "Preise konnten noch nicht abgerufen werden. Sie werden automatisch aktualisiert.",
       now: "jetzt", grid: "Netz", importing: "Bezug", exporting: "Einspeisung", fuse: "Hauptsicherung",
       headroom: "Reserve", surplus: "Solarüberschuss", phase: "Phase", noGrid: "Kein Equalizer oder Hausanschluss eingerichtet. Zähler unter Konfigurieren → Hausanschluss hinzufügen.",
       month: "Dieser Monat", prev: "Vormonate", reimb: "Erstattung", sessions: "Letzte Ladevorgänge",

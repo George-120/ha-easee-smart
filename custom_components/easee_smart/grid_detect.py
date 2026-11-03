@@ -18,9 +18,9 @@ from .const import (
 
 # Integrations that read the grid meter itself, best first.
 METER_PLATFORMS = (
+    "homewizard",  # most accurate: reads the P1 port every second
     "dsmr",
     "dsmr_reader",
-    "homewizard",
     "p1_monitor",
     "zonneplan_one",
     "tibber",
@@ -46,12 +46,14 @@ EXPORT_PATTERNS = (
     r"active_power_export",
 )
 NET_PATTERNS = (
+    r"active_power_w$",  # HomeWizard P1: positive = import
     r"net_power_consumption$",  # Enphase consumption CT: positive = import
     r"p1.*_power$",
     r"active_power$",
     r"_power$",
 )
 PHASE_PATTERNS = (
+    r"active_current_l{n}_a$",  # HomeWizard P1
     r"current_phase_l{n}$",
     r"active_current_l{n}",
     r"phase_currently_delivered_l{n}_a",
@@ -77,6 +79,10 @@ def suggest_grid_sensors(hass: HomeAssistant) -> dict[str, str]:
         entries = by_platform.get(platform)
         if not entries:
             continue
+        # Platforms with several device types (HomeWizard sockets, kWh meters): prefer the P1 meter.
+        p1 = [e for e in entries if "p1" in e.entity_id.lower() or "p1" in str(e.unique_id).lower()]
+        if p1:
+            entries = p1
         power = [e for e in entries if _device_class(hass, e) == "power"]
         current = [e for e in entries if _device_class(hass, e) == "current"]
         found: dict[str, str] = {}
@@ -86,7 +92,7 @@ def suggest_grid_sensors(hass: HomeAssistant) -> dict[str, str]:
             found[CONF_GRID_IMPORT_ENTITY] = imp
             found[CONF_GRID_EXPORT_ENTITY] = exp
         else:
-            net = _first(power, NET_PATTERNS if platform != "enphase_envoy" else NET_PATTERNS[:1])
+            net = _first(power, NET_PATTERNS if platform != "enphase_envoy" else (r"net_power_consumption$",))
             if net:
                 found[CONF_GRID_POWER_ENTITY] = net
         for n, key in ((1, CONF_PHASE_L1_ENTITY), (2, CONF_PHASE_L2_ENTITY), (3, CONF_PHASE_L3_ENTITY)):

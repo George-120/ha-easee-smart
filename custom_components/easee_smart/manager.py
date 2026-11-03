@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import csv
-from dataclasses import dataclass, field
-from datetime import datetime, time, timedelta
 import io
 import logging
 import os
+from dataclasses import dataclass, field
+from datetime import datetime, time, timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -19,7 +19,8 @@ from homeassistant.const import (
     STATE_UNKNOWN,
 )
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
     async_track_state_change_event,
@@ -31,20 +32,22 @@ from homeassistant.util import dt as dt_util
 from .const import (
     CHARGER_KEYS,
     CONF_BATTERY_CAPACITY,
+    CONF_BIDDING_ZONE,
     CONF_CHARGER_DEVICE,
+    CONF_ENERGY_TAX,
     CONF_EQUALIZER_DEVICE,
-    CONF_FIXED_PRICE,
-    CONF_GRID_POWER_ENTITY,
     CONF_GRID_EXPORT_ENTITY,
     CONF_GRID_IMPORT_ENTITY,
+    CONF_GRID_POWER_ENTITY,
     CONF_GRID_POWER_INVERTED,
     CONF_MAIN_FUSE,
+    CONF_MARKUP,
     CONF_MAX_CURRENT,
     CONF_MODEL,
     CONF_PHASES,
-    CONF_PRICE_ENTITY,
     CONF_REIMBURSEMENT,
     CONF_SOC_ENTITY,
+    CONF_VAT,
     CONF_VOLTAGE,
     CONNECTED_STATUSES,
     CONTROL_INTERVAL_S,
@@ -93,11 +96,11 @@ from .logic import (
     SolarRegulator,
     month_key,
     next_departure,
-    parse_price_forecast,
     plan_cheapest,
     power_for_amps,
     price_at,
 )
+from .prices import DayAheadPrices, default_zone, to_slots, zone_defaults
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -237,6 +240,7 @@ class EaseeSmartManager:
         )
         self.charger_id = easee_product_id(self.charger_device)
         self.equalizer_id = easee_product_id(self.equalizer_device)
+        self.day_ahead = DayAheadPrices(hass, self.zone)
         self.charger_entities: dict[str, str] = {}
         self.equalizer_entities: dict[str, str] = {}
         self.own_entities: dict[str, str] = {}
@@ -270,8 +274,22 @@ class EaseeSmartManager:
         return int(self._opt(CONF_MAX_CURRENT, DEFAULT_MAX_CURRENT))
 
     @property
-    def price_entity(self) -> str | None:
-        return self._opt(CONF_PRICE_ENTITY) or None
+    def zone(self) -> str:
+        return self._opt(CONF_BIDDING_ZONE) or default_zone(self.hass)
+
+    def _price_parts(self) -> tuple[float, float, float]:
+        defaults = zone_defaults(self.zone)
+        markup = self._opt(CONF_MARKUP)
+        tax = self._opt(CONF_ENERGY_TAX)
+        vat = self._opt(CONF_VAT)
+        return (
+            float(markup) if markup not in (None, "") else 0.0,
+            float(tax) if tax not in (None, "") else defaults["energy_tax"],
+            float(vat) if vat not in (None, "") else defaults["vat"],
+        )
+
+    def _rebuild_prices(self) -> None:
+        self.snapshot.prices = to_slots(self.day_ahead.points, *self._price_parts())
 
     @property
     def grid_entity(self) -> str | None:
@@ -343,7 +361,6 @@ class EaseeSmartManager:
         tracked += [
             e
             for e in (
-                self.price_entity,
                 self.grid_entity,
                 self.grid_import_entity,
                 self.grid_export_entity,
@@ -363,6 +380,11 @@ class EaseeSmartManager:
         )
         self._recompute()
         self.hass.async_create_task(self._async_tick(dt_util.utcnow()))
+
+    async def _async_refresh_prices(self) -> None:
+        if await self.day_ahead.async_refresh():
+            self._rebuild_prices()
+            self._recompute()
 
     async def async_unload(self) -> None:
         for unsub in self._unsubs:
@@ -437,17 +459,17 @@ class EaseeSmartManager:
 
     def current_price(self, now: datetime | None = None) -> float | None:
         now = now or dt_util.now()
-        if self.price_entity:
-            price = price_at(self.snapshot.prices, now) if self.snapshot.prices else None
-            if price is not None:
-                return price
-            value = self._float(self.price_entity)
-            if value is not None:
-                return value / 100 if abs(value) > 5 else value
-        fixed = self._opt(CONF_FIXED_PRICE)
-        if fixed not in (None, ""):
-            return float(fixed)
+        price = price_at(self.snapshot.prices, now) if self.snapshot.prices else None
+        if price is not None:
+            return price
         return self.charger_value("cost_per_kwh")
+
+    def market_price(self, now: datetime | None = None) -> float | None:
+        now = now or dt_util.now()
+        for start, value in reversed(self.day_ahead.points):
+            if start <= now:
+                return round(value, 5)
+        return None
 
     # -------------------------------------------------------------- recompute
     @callback
@@ -478,8 +500,6 @@ class EaseeSmartManager:
         snap.session_energy = self.charger_value("session_energy")
         snap.lifetime_energy = self.charger_value("lifetime_energy")
 
-        price_state = self._state(self.price_entity)
-        snap.prices = parse_price_forecast(dict(price_state.attributes), now) if price_state else []
         snap.price = self.current_price(now)
 
         # Equalizer / grid
@@ -647,6 +667,8 @@ class EaseeSmartManager:
 
     # ----------------------------------------------------------------- control
     async def _async_tick(self, _now: datetime) -> None:
+        if self.day_ahead.needs_refresh(dt_util.now()):
+            await self._async_refresh_prices()
         self._recompute()
         await self._async_control()
 
@@ -696,7 +718,7 @@ class EaseeSmartManager:
                 if needed <= 0:
                     snap.plan = None
                     state = SMART_TARGET_REACHED
-                elif not snap.prices and not self.price_entity:
+                elif not snap.prices:
                     want_smart, state = self.max_current, SMART_NO_PRICES
                 else:
                     departure = next_departure(now, _parse_time(self.settings.departure))
@@ -888,6 +910,9 @@ class EaseeSmartManager:
             "equalizer": self.equalizer_entities,
             "entities": self.own_entities,
             "price": snap.price,
+            "market_price": self.market_price(),
+            "zone": self.zone,
+            "price_parts": dict(zip(("markup", "energy_tax", "vat"), self._price_parts(), strict=True)),
             "prices": [
                 {"start": s.start.isoformat(), "end": s.end.isoformat(), "price": s.price}
                 for s in snap.prices
