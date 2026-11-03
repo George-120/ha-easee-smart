@@ -422,3 +422,38 @@ def test_detect_car_entities_any_brand(tmp_path):
     assert found["start_entity"] == "switch.e_niro_ev_charging"
     assert found["limit_entity"] == "number.e_niro_ac_charging_limit"
     assert found["range_entity"] == "sensor.e_niro_ev_range"
+
+
+def test_suggest_only_real_cars_and_read_capacity(tmp_path):
+    install_stubs()
+    sys.modules.pop("easee_smart.cars", None)
+    cars = importlib.import_module("easee_smart.cars")
+
+    def e(eid, dev, dc=None, unit=None, name=None):
+        return types.SimpleNamespace(entity_id=eid, domain=eid.split(".")[0], disabled_by=None, device_id=dev,
+                                     original_device_class=dc, device_class=None, original_name=name,
+                                     translation_key=None, unit_of_measurement=unit)
+
+    entries = [
+        # Victron AC system: a state of charge but nothing car-like
+        e("sensor.ac_system_0_state_of_charge", "acsys", "battery", "%"),
+        e("sensor.ac_system_0_power", "acsys", "power", "W"),
+        # Inster via Victron: state of charge + range + capacity
+        e("sensor.hyundai_inster_state_of_charge", "inster", "battery", "%"),
+        e("sensor.hyundai_inster_range_to_go", "inster", "distance", "km"),
+        e("sensor.hyundai_inster_battery_capacity", "inster", None, "kWh"),
+    ]
+    er_mod = sys.modules["homeassistant.helpers.entity_registry"]
+    er_mod.async_get = lambda h: types.SimpleNamespace(entities={x.entity_id: x for x in entries})
+    er_mod.async_entries_for_device = lambda reg, dev: [x for x in entries if x.device_id == dev]
+    names = {"acsys": "AC system (0)", "inster": "Electric Vehicle (ID: 41)"}
+    sys.modules["homeassistant.helpers.device_registry"].async_get = lambda h: types.SimpleNamespace(
+        async_get=lambda i: types.SimpleNamespace(name=names[i], name_by_user=None, model=None))
+    hass = types.SimpleNamespace(states=States())
+    for x in entries:
+        setstate(hass, x.entity_id, "46" if "capacity" in x.entity_id else "60",
+                 device_class=x.original_device_class, unit_of_measurement=x.unit_of_measurement)
+    assert cars.suggest_car_devices(hass) == ["inster"]
+    found = cars.detect_car_entities(hass, "inster")
+    assert found["capacity"] == 46
+    assert found["soc"] == "sensor.hyundai_inster_state_of_charge"

@@ -89,7 +89,8 @@ def cars_from_options(opts: dict[str, Any]) -> list[Car]:
 NOT_A_CAR = re.compile(
     r"iphone|ipad|phone|pixel|galaxy_s|watch|tablet|laptop|macbook|airpods|remote|"
     r"door|window|motion|thermostat|smoke|bms|powerwall|home_battery|thuisaccu|victron|"
-    r"inverter|ups|energysocket|p1_meter",
+    r"inverter|ups|energysocket|p1_meter|ac_system|multiplus|quattro|cerbo|solarcharger|"
+    r"battery_monitor|smartshunt|bmv|vebus|ve_bus|zonneplan|homewizard",
     re.I,
 )
 SOC_HINT = re.compile(r"ev_battery_level|state_of_charge|\bsoc\b|_soc|battery_level|charge_level|accuniveau|battery", re.I)
@@ -100,6 +101,8 @@ START_EXCLUDE = re.compile(r"climate|heat|defrost|seat|window|steering|port|sche
 REFRESH_HINT = re.compile(r"force_update|refresh|update_data|request_update|wake|ververs|poll|sync", re.I)
 LIMIT_HINT = re.compile(r"charge_limit|charging_limit|target_soc|target_state_of_charge|ac_charging_limit|charge_target|max_soc|laadlimiet|laaddoel", re.I)
 RANGE_HINT = re.compile(r"range|actieradius|bereik", re.I)
+CAR_HINT = re.compile(r"odometer|kilometerstand|mileage|\bvin\b|_vin$|range|actieradius|plug|stekker|charging_state|laadstatus", re.I)
+CAPACITY_HINT = re.compile(r"battery_capacity|capacity|capaciteit|kapazit", re.I)
 
 
 def _dc(hass: HomeAssistant, entry: er.RegistryEntry) -> str | None:
@@ -175,6 +178,17 @@ def detect_car_entities(hass: HomeAssistant, device_id: str) -> dict[str, Any]:
     if rng:
         out[F_RANGE] = rng
 
+    for e in sensors:  # usable battery size, e.g. Victron "Battery capacity"
+        if CAPACITY_HINT.search(f"{e.entity_id} {e.original_name or ''}") and not re.search(r"soh|health|%", str(_unit(hass, e) or "")):
+            state = hass.states.get(e.entity_id)
+            try:
+                value = float(state.state) if state else None
+            except (TypeError, ValueError):
+                value = None
+            if value and 5 <= value <= 250:
+                out[F_CAPACITY] = round(value, 1)
+                break
+
     for e in entries:  # a picture the integration already provides (Tesla, VW, Mercedes …)
         state = hass.states.get(e.entity_id)
         if state is not None and state.attributes.get("entity_picture"):
@@ -183,12 +197,30 @@ def detect_car_entities(hass: HomeAssistant, device_id: str) -> dict[str, Any]:
     return out
 
 
+def _car_score(hass: HomeAssistant, ent_reg: er.EntityRegistry, device_id: str) -> int:
+    """How much a device looks like a car besides having a battery level."""
+    score = 0
+    for e in er.async_entries_for_device(ent_reg, device_id):
+        if e.disabled_by:
+            continue
+        text = f"{e.entity_id} {e.original_name or ''} {e.translation_key or ''}"
+        if e.domain == "device_tracker":
+            score += 1
+        elif e.domain == "binary_sensor" and (_dc(hass, e) == "plug" or PLUG_HINT.search(text)):
+            score += 2
+        elif e.domain == "sensor" and (_dc(hass, e) == "distance" or CAR_HINT.search(text)):
+            score += 2
+        elif e.domain in ("switch", "button", "number") and (LIMIT_HINT.search(text) or START_HINT.search(e.entity_id)):
+            score += 1
+    return score
+
+
 def suggest_car_devices(hass: HomeAssistant, exclude: set[str] | None = None) -> list[str]:
-    """Devices that look like a car: they have an EV battery level sensor."""
+    """Devices that look like a car: an EV battery level plus range, plug, odometer or similar."""
     ent_reg = er.async_get(hass)
     dev_reg = dr.async_get(hass)
     exclude = exclude or set()
-    found: list[str] = []
+    found: dict[str, int] = {}
     for e in ent_reg.entities.values():
         if (
             e.domain != "sensor"
@@ -207,5 +239,7 @@ def suggest_car_devices(hass: HomeAssistant, exclude: set[str] | None = None) ->
         label = f"{device.name_by_user or device.name or ''} {device.model or ''}" if device else ""
         if NOT_A_CAR.search(label):
             continue
-        found.append(e.device_id)
-    return found
+        score = _car_score(hass, ent_reg, e.device_id)
+        if score >= 2:  # a battery alone is not enough (home batteries, phones …)
+            found[e.device_id] = score
+    return sorted(found, key=lambda d: -found[d])
