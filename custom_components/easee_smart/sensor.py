@@ -295,7 +295,7 @@ class EaseeSmartSensor(EaseeSmartEntity, SensorEntity):
             "next_start", "complete_by", "energy_needed", "target_current",
             "surplus_kw", "grid_power_kw", "phase_currents", "phase_voltages",
             "main_fuse", "phase_headroom", "session", "today", "month", "months",
-            "sessions", "reimbursement_per_kwh", "has_surplus_source", "has_soc", "uses_meter", "meter", "car", "cars", "active_car_setting", "ere", "language",
+            "sessions", "reimbursement_per_kwh", "has_surplus_source", "has_soc", "uses_meter", "meter", "car", "cars", "active_car_setting", "ere", "language", "cars_detail",
         }
     )
 

@@ -34,7 +34,7 @@
       headroom: "headroom", surplus: "Solar surplus", phase: "Phase", noGrid: "No Equalizer or main connection set. Add your meter under Configure → Main connection.",
       month: "This month", prev: "Previous months", reimb: "Reimbursement", sessions: "Recent sessions",
       export: "Export last month (CSV)", exported: "Report written", today: "Today", none: "No sessions yet.",
-      kwh: "kWh", avg: "avg.", amps: "Charge current", planned: "Planned charging", refresh: "Refresh car data", ere: "ERE revenue", year: "This year", total: "Total", range: "range",
+      kwh: "kWh", avg: "avg.", amps: "Charge current", planned: "Planned charging", refresh: "Refresh car data", priceNow: "Power now", carsTitle: "Cars", noCars: "No cars linked yet. Add them under Configure → Cars.", pluggedIn: "Plugged in", notPlugged: "Not plugged in", ere: "ERE", year: "This year", total: "Total", range: "range",
     },
     nl: {
       tabs: { charge: "Laden", plan: "Planning", grid: "Equalizer", meter: "Aansluiting", history: "Historie" },
@@ -63,7 +63,7 @@
       headroom: "ruimte", surplus: "Zonne-overschot", phase: "Fase", noGrid: "Geen Equalizer of hoofdaansluiting ingesteld. Voeg je meter toe via Configureren → Hoofdaansluiting.",
       month: "Deze maand", prev: "Vorige maanden", reimb: "Vergoeding", sessions: "Recente sessies",
       export: "Vorige maand exporteren (CSV)", exported: "Rapport opgeslagen", today: "Vandaag", none: "Nog geen sessies.",
-      kwh: "kWh", avg: "gem.", amps: "Laadstroom", planned: "Gepland laden", refresh: "Gegevens auto verversen", ere: "ERE-opbrengst", year: "Dit jaar", total: "Totaal", range: "actieradius",
+      kwh: "kWh", avg: "gem.", amps: "Laadstroom", planned: "Gepland laden", refresh: "Gegevens auto verversen", priceNow: "Stroom nu", carsTitle: "Auto's", noCars: "Nog geen auto's gekoppeld. Voeg ze toe via Configureren → Auto's.", pluggedIn: "Aangesloten", notPlugged: "Niet aangesloten", ere: "ERE", year: "Dit jaar", total: "Totaal", range: "actieradius",
     },
     de: {
       tabs: { charge: "Laden", plan: "Planung", grid: "Equalizer", meter: "Anschluss", history: "Verlauf" },
@@ -92,7 +92,7 @@
       headroom: "Reserve", surplus: "Solarüberschuss", phase: "Phase", noGrid: "Kein Equalizer oder Hausanschluss eingerichtet. Zähler unter Konfigurieren → Hausanschluss hinzufügen.",
       month: "Dieser Monat", prev: "Vormonate", reimb: "Erstattung", sessions: "Letzte Ladevorgänge",
       export: "Letzten Monat exportieren (CSV)", exported: "Bericht gespeichert", today: "Heute", none: "Noch keine Ladevorgänge.",
-      kwh: "kWh", avg: "Ø", amps: "Ladestrom", planned: "Geplantes Laden", refresh: "Autodaten aktualisieren", ere: "ERE-Erlös", year: "Dieses Jahr", total: "Gesamt", range: "Reichweite",
+      kwh: "kWh", avg: "Ø", amps: "Ladestrom", planned: "Geplantes Laden", refresh: "Autodaten aktualisieren", priceNow: "Strom jetzt", carsTitle: "Autos", noCars: "Noch keine Autos verbunden. Unter Konfigurieren → Autos hinzufügen.", pluggedIn: "Angeschlossen", notPlugged: "Nicht angeschlossen", ere: "ERE", year: "Dieses Jahr", total: "Gesamt", range: "Reichweite",
     },
   };
 
@@ -125,7 +125,7 @@
     }
 
     setConfig(config) {
-      this._config = { tab: "charge", ...config };
+      this._config = { tab: "charge", ...(config || {}) };
       this._tab = this._tab || this._config.tab;
       this._sig = null;
       if (!this.shadowRoot) {
@@ -145,6 +145,7 @@
 
     set hass(hass) {
       this._hass = hass;
+      if (!this._config) return; // preview: hass can arrive before setConfig
       const entityId = this._entityId();
       const st = entityId && hass.states[entityId];
       const a = st ? st.attributes : null;
@@ -246,9 +247,19 @@
         duration = `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, "0")}`;
       }
 
+      const view = this._config.view || this.constructor.VIEW || "full";
+      if (view !== "full") {
+        this.shadowRoot.innerHTML = `
+          <style>${CSS}</style>
+          <ha-card class="${this._themeClass()} v-${view}" style="--led:${led.color}">
+            ${this._renderView(view, { a, t, status, smart, led, power, name, isOnline, duration })}
+          </ha-card>`;
+        return;
+      }
+
       this.shadowRoot.innerHTML = `
         <style>${CSS}</style>
-        <ha-card style="--led:${led.color}">
+        <ha-card class="${this._themeClass()}" style="--led:${led.color}">
           <header>
             <div class="title">
               <span class="name">${esc(name)}</span>
@@ -291,6 +302,85 @@
         </ha-card>`;
     }
 
+    _themeClass() {
+      const theme = (this._config && this._config.theme) || "auto";
+      if (theme === "dark" || theme === "light") return theme;
+      const dark = this._hass && this._hass.themes && this._hass.themes.darkMode;
+      return dark === false ? "light" : "dark";
+    }
+
+    _section(title) {
+      return title ? `<div class="sectitle">${esc(title)}</div>` : "";
+    }
+
+    _renderView(view, c) {
+      const { a, t } = c;
+      const title = this._config.title;
+      switch (view) {
+        case "charger": return this._viewCharger(c);
+        case "modes": return this._section(title) + this._viewModes(c);
+        case "cars": return this._section(title || t.carsTitle) + this._viewCars(a, t);
+        case "plan": return this._section(title || t.tabs.plan) + this._tabPlan(a, t);
+        case "grid": return this._section(title || (a.equalizer && Object.keys(a.equalizer).length ? t.tabs.grid : t.tabs.meter)) + this._tabGrid(a, t);
+        case "costs": return this._section(title || t.tabs.history) + this._tabHistory(a, t);
+        default: return "";
+      }
+    }
+
+    _viewCharger({ a, t, status, smart, led, power, name }) {
+      const kw = power !== null && status === "charging" ? this._num(power, 1) : this._num(0, 1);
+      const top = a.ere ? `${t.ere} ${t.month.toLowerCase()}: ${this._money(a.ere.month, a.currency)}` : `${t.today}: ${this._money(a.today && a.today.cost, a.currency)}`;
+      const car = a.car;
+      const statusText = CONNECTED.has(status) ? (car ? `${car.name}${car.soc !== null && car.soc !== undefined ? " · " + this._num(car.soc, 0) + "%" : ""}` : t.status[status] || status) : t.status[status] || status;
+      return `
+        <div class="bighead"><b>${esc(name)}</b><span>${esc(a.model || "")} · ${esc(t.smart[smart] || "")}</span></div>
+        <div class="bigpost" style="background-image:url('${CHARGER_IMG}')">
+          <span class="pill ptop">${top}</span>
+          <div class="bigkw">${kw}<small> kW</small></div>
+          <div class="strip big ${led.anim}"><i></i></div>
+          <span class="pill pstatus"><i class="dot"></i>${esc(statusText)}</span>
+          <span class="pill pprice">${t.priceNow}: ${this._money(a.price, a.currency).replace(/(\d)$/, "$1")}/kWh</span>
+        </div>`;
+    }
+
+    _viewModes({ a, t, status }) {
+      const charging = status === "charging";
+      const canStart = CONNECTED.has(status) && !charging && status !== "completed";
+      const icons = {
+        normal: '<path d="M7 2v11h3v9l7-12h-4l4-8z"/>',
+        smart: '<path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/>',
+        solar: '<path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM2 13h2a1 1 0 0 0 0-2H2a1 1 0 0 0 0 2zm18 0h2a1 1 0 0 0 0-2h-2a1 1 0 0 0 0 2zM11 2v2a1 1 0 0 0 2 0V2a1 1 0 0 0-2 0zm0 18v2a1 1 0 0 0 2 0v-2a1 1 0 0 0-2 0zM5.99 4.58a1 1 0 0 0-1.41 1.41l1.06 1.06a1 1 0 0 0 1.41-1.41L5.99 4.58zm12.37 12.37a1 1 0 0 0-1.41 1.41l1.06 1.06a1 1 0 0 0 1.41-1.41l-1.06-1.06zm1.06-10.96a1 1 0 0 0-1.41-1.41l-1.06 1.06a1 1 0 0 0 1.41 1.41l1.06-1.06zM7.05 18.36a1 1 0 0 0-1.41-1.41l-1.06 1.06a1 1 0 0 0 1.41 1.41l1.06-1.06z"/>',
+        solar_smart: '<path d="M12 7a5 5 0 1 0 5 5h-5V7zM2 13h2a1 1 0 0 0 0-2H2a1 1 0 0 0 0 2zM11 2v2a1 1 0 0 0 2 0V2a1 1 0 0 0-2 0zm0 18v2a1 1 0 0 0 2 0v-2a1 1 0 0 0-2 0zM14 9h8l-4 6h-4z"/>',
+      };
+      const modes = ["normal", "smart", "solar", "solar_smart"].filter((m) => a.has_surplus_source || !m.startsWith("solar"));
+      return `
+        <div class="bigmodes">
+          ${modes.map((m) => `<button class="bigmode ${a.mode === m ? "sel" : ""}" data-act="mode" data-mode="${m}"><svg viewBox="0 0 24 24">${icons[m]}</svg><span>${t.modes[m]}</span></button>`).join("")}
+        </div>
+        <div class="actions">
+          <button class="act primary" data-act="${charging ? "pause" : "resume"}" ${charging || canStart ? "" : "disabled"}>${charging ? t.pause : t.resume}</button>
+          <button class="act ${a.boost ? "on" : ""}" data-act="boost" ${CONNECTED.has(status) ? "" : "disabled"}>${t.boost}</button>
+        </div>
+        <p class="note">${esc(t.smart[a.smart_state] || "")}</p>`;
+    }
+
+    _viewCars(a, t) {
+      const cars = a.cars_detail || [];
+      if (!cars.length) return `<p class="note">${t.noCars}</p>`;
+      const active = a.car && a.car.name;
+      return `<div class="cars">${cars.map((c) => {
+        const soc = c.soc === null || c.soc === undefined ? null : Number(c.soc);
+        const img = c.image ? `<img src="${esc(c.image)}" alt="" loading="lazy">` : `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>`;
+        return `
+          <button class="cartile ${c.name === active ? "active" : ""}" data-act="car" data-name="${esc(c.name)}">
+            <div class="cimg">${img}<span class="chip ${c.plugged ? "on" : ""}"><i class="dot"></i>${soc === null ? "–" : this._num(soc, 0) + "%"}</span></div>
+            <div class="chead"><b>${esc(c.name)}</b><span>${this._num(c.capacity, 0)} kWh</span></div>
+            <div class="socbar"><i style="width:${soc === null ? 0 : Math.max(0, Math.min(100, soc))}%"></i><em style="left:${Math.min(100, Number(c.target || 0))}%"></em></div>
+            <div class="cfoot">${c.plugged ? t.pluggedIn : t.notPlugged}${c.range_km ? ` · ${this._num(c.range_km, 0)} km` : ""} · ${t.target} ${this._num(c.target, 0)}%</div>
+          </button>`;
+      }).join("")}</div>`;
+    }
+
     _carRow(a, t) {
       const car = a.car;
       if (!car) return "";
@@ -304,7 +394,7 @@
         <div class="car">
           ${img}
           <div class="carinfo">
-            <div class="carhead"><b>${esc(car.name)}</b><span>${soc === null ? "–" : this._num(soc, 0) + "%"} → ${this._num(target, 0)}%${car.range_km ? ` · ${this._num(car.range_km, 0)} km ${t.range}` : ""}</span></div>
+            <div class="carhead"><b>${esc(car.name)}</b><span>${soc === null ? "–" : this._num(soc, 0) + "%"} → ${this._num(target, 0)}%${car.range_km ? ` · ${this._num(car.range_km, 0)} km` : ""}</span></div>
             <div class="socbar"><i style="width:${pct}%"></i><em style="left:${Math.min(100, target)}%"></em></div>
           </div>
           ${car.can_refresh ? `<button class="iconbtn" data-act="refresh" title="${t.refresh}" aria-label="${t.refresh}"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>` : ""}
@@ -454,9 +544,9 @@
             : `<div class="tile"><span>${t.today}</span><b>${this._num(a.today && a.today.energy, 1)} ${t.kwh}</b><small>${this._money(a.today && a.today.cost, a.currency)}</small></div>`}
         </div>
         ${a.ere ? `<div class="grid3 ere">
-            <div class="tile"><span>${t.ere} · ${t.month.toLowerCase()}</span><b>${this._money(a.ere.month, a.currency)}</b><small>${this._num(a.ere.rate, 3)}/${t.kwh}</small></div>
-            <div class="tile"><span>${t.ere} · ${t.year.toLowerCase()}</span><b>${this._money(a.ere.year, a.currency)}</b><small>&nbsp;</small></div>
-            <div class="tile"><span>${t.ere} · ${t.total.toLowerCase()}</span><b>${this._money(a.ere.total, a.currency)}</b><small>&nbsp;</small></div>
+            <div class="tile"><span>${t.ere} ${t.month.toLowerCase()}</span><b>${this._money(a.ere.month, a.currency)}</b><small>${this._num(a.ere.rate, 3)}/${t.kwh}</small></div>
+            <div class="tile"><span>${t.ere} ${t.year.toLowerCase()}</span><b>${this._money(a.ere.year, a.currency)}</b><small>&nbsp;</small></div>
+            <div class="tile"><span>${t.ere} ${t.total.toLowerCase()}</span><b>${this._money(a.ere.total, a.currency)}</b><small>&nbsp;</small></div>
           </div>` : ""}
         ${months.length > 1 ? `<div class="months">${months.map((x) => `
             <div class="mcol" title="${esc(x.month)}: ${this._num(x.energy, 1)} kWh · ${this._money(x.cost, a.currency)}">
@@ -515,6 +605,9 @@
           if (id) await call("number", "set_value", { entity_id: id, value: next });
           return;
         }
+        case "car":
+          if (ent.active_car) await call("select", "select_option", { entity_id: ent.active_car, option: btn.dataset.name });
+          return;
         case "refresh":
           if (ent.refresh_car) await call("button", "press", { entity_id: ent.refresh_car });
           return;
@@ -550,7 +643,51 @@
       padding:18px 18px 16px; font-family:var(--ha-font-family-body, "Roboto", system-ui, sans-serif);
       overflow:hidden; border:1px solid var(--line);
     }
+    ha-card.light { --bg:#FFFFFF; --panel:#F2F4F7; --line:#E3E7EC; --text:#14181E; --muted:#6B7480; --accent:#2F7FE0; box-shadow:0 2px 10px rgba(20,24,30,.06); }
+    ha-card.light .mode.sel, ha-card.light .bigmode.sel { background:#FFFFFF; box-shadow:0 1px 4px rgba(20,24,30,.12); }
+    ha-card.light .bar { fill:#D5DAE1; }
+    ha-card.light .nowline { stroke:#14181E; }
+    ha-card.light .socbar { background:#E3E7EC; }
+    ha-card.light .act.primary { color:#FFFFFF; }
+    ha-card.light .mcol i { background:#D5DAE1; }
     .empty { padding:16px; color:var(--muted); }
+    .sectitle { font-size:.95rem; font-weight:600; margin:0 2px 12px; }
+
+    /* big charger view */
+    ha-card.v-charger { padding:14px 14px 22px; }
+    .bighead { display:flex; flex-direction:column; gap:2px; margin:0 2px 10px; }
+    .bighead b { font-size:1.15rem; font-weight:600; }
+    .bighead span { font-size:.8rem; color:var(--muted); }
+    .bigpost { position:relative; width:min(100%, 380px); margin:0 auto; aspect-ratio:301 / 405; background:center / contain no-repeat; container-type:inline-size; filter:drop-shadow(0 16px 22px rgba(0,0,0,.35)); }
+    .bigkw { position:absolute; top:13%; left:0; right:0; text-align:center; color:#fff; font-size:13cqw; font-weight:600; letter-spacing:-.02em; line-height:1; text-shadow:0 2px 10px rgba(0,0,0,.35); font-variant-numeric:tabular-nums; }
+    .bigkw small { font-size:.6em; font-weight:500; }
+    .strip.big { width:1.6%; box-shadow:0 0 10px var(--led), 0 0 26px color-mix(in srgb, var(--led) 50%, transparent); }
+    .pill { position:absolute; left:50%; transform:translateX(-50%); white-space:nowrap; font-size:3.6cqw; font-weight:600; padding:.55em 1.1em; border-radius:999px; background:#FFFFFF; color:#14181E; box-shadow:0 2px 8px rgba(0,0,0,.18); }
+    .pill.ptop { top:1.5%; }
+    .pill.pstatus { bottom:7.5%; background:#1C2129; color:#EDF0F4; display:flex; align-items:center; gap:.5em; }
+    .pill.pprice { bottom:-3%; }
+    .dot { width:.6em; height:.6em; border-radius:50%; background:var(--led); display:inline-block; }
+
+    /* modes view */
+    .bigmodes { display:grid; grid-template-columns:repeat(auto-fit, minmax(90px, 1fr)); gap:8px; margin-bottom:12px; }
+    .bigmode { background:var(--panel); border:1px solid transparent; border-radius:14px; padding:14px 6px 12px; display:flex; flex-direction:column; align-items:center; gap:6px; color:var(--muted); font:inherit; font-size:.86rem; cursor:pointer; }
+    .bigmode svg { width:22px; height:22px; fill:currentColor; }
+    .bigmode.sel { color:var(--text); border-color:var(--accent); }
+    .bigmode.sel svg { fill:var(--accent); }
+
+    /* cars view */
+    .cars { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px; }
+    .cartile { background:var(--panel); border:1px solid transparent; border-radius:16px; padding:12px; text-align:left; color:var(--text); font:inherit; cursor:pointer; display:flex; flex-direction:column; gap:8px; }
+    .cartile.active { border-color:var(--accent); }
+    .cimg { position:relative; height:110px; display:flex; align-items:center; justify-content:center; color:var(--muted); }
+    .cimg img { max-width:100%; max-height:110px; object-fit:contain; }
+    .cimg svg { width:56px; height:56px; }
+    .chip { position:absolute; top:0; right:0; background:#1C2129; color:#EDF0F4; border-radius:999px; padding:3px 9px; font-size:.75rem; font-weight:600; display:flex; align-items:center; gap:5px; }
+    .chip .dot { background:#E5484D; }
+    .chip.on .dot { background:#45D69A; }
+    .chead { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+    .chead b { font-weight:600; }
+    .chead span, .cfoot { font-size:.76rem; color:var(--muted); }
     header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
     .title { display:flex; flex-direction:column; gap:2px; }
     .name { font-size:1.05rem; font-weight:600; letter-spacing:.01em; }
@@ -594,9 +731,9 @@
     .carimg.placeholder { display:flex; align-items:center; justify-content:center; color:var(--muted); }
     .carimg.placeholder svg { width:30px; height:30px; }
     .carinfo { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
-    .carhead { display:flex; justify-content:space-between; gap:8px; font-size:.86rem; }
-    .carhead b { font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .carhead span { color:var(--muted); white-space:nowrap; }
+    .carhead { display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:.86rem; min-width:0; }
+    .carhead b { font-weight:600; flex:none; }
+    .carhead span { color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
     .socbar { position:relative; height:6px; border-radius:3px; background:#2A303A; }
     .socbar i { display:block; height:100%; border-radius:3px; background:var(--led); transition:width .6s ease; }
     .socbar em { position:absolute; top:-3px; width:2px; height:12px; background:var(--text); opacity:.7; transform:translateX(-1px); }
@@ -696,7 +833,7 @@
       if (!this._hass || !this._config) return;
       if (!this._form) {
         this._form = document.createElement("ha-form");
-        this._form.computeLabel = (s) => ({ entity: "Easee Smart status", name: "Name", tab: "Start tab", language: "Language / Taal / Sprache" }[s.name] || s.name);
+        this._form.computeLabel = (s) => ({ entity: "Easee Smart status", name: "Name", title: "Title / Titel", theme: "Theme / Thema", tab: "Start tab", language: "Language / Taal / Sprache" }[s.name] || s.name);
         this._form.addEventListener("value-changed", (ev) => {
           this._config = ev.detail.value;
           this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
@@ -708,6 +845,9 @@
       this._form.schema = [
         { name: "entity", selector: { entity: { integration: "easee_smart", domain: "sensor" } } },
         { name: "name", selector: { text: {} } },
+        { name: "title", selector: { text: {} } },
+        { name: "theme", selector: { select: { mode: "dropdown", options: [
+          { value: "auto", label: "Auto" }, { value: "dark", label: "Dark / Donker" }, { value: "light", label: "Light / Licht" } ] } } },
         { name: "tab", selector: { select: { mode: "dropdown", options: ["charge", "plan", "grid", "history"] } } },
         {
           name: "language",
@@ -727,7 +867,21 @@
     }
   }
 
+  const EXTRA = [
+    ["charger", "Laadpaal / Charger", "Big charger with power, status and price."],
+    ["modes", "Laadmodus / Charge mode", "Charge mode buttons, boost and pause."],
+    ["cars", "Auto's / Cars", "All linked cars with battery level; tap to choose."],
+    ["plan", "Planning", "Departure time, target and price chart."],
+    ["grid", "Aansluiting / Grid", "Grid power, phases and main fuse."],
+    ["costs", "Kosten / Costs", "Costs, ERE, sessions and report."],
+  ];
   if (!customElements.get("easee-smart-card")) customElements.define("easee-smart-card", EaseeSmartCard);
+  for (const [view] of EXTRA) {
+    const tag = `easee-smart-${view}-card`;
+    if (!customElements.get(tag)) {
+      customElements.define(tag, class extends EaseeSmartCard { static get VIEW() { return view; } });
+    }
+  }
   if (!customElements.get("easee-smart-card-editor")) customElements.define("easee-smart-card-editor", EaseeSmartCardEditor);
   window.customCards = window.customCards || [];
   if (!window.customCards.some((c) => c.type === "easee-smart-card")) {
@@ -738,6 +892,12 @@
       preview: true,
       documentationURL: "https://github.com/George-120/ha-easee-smart",
     });
+  }
+  for (const [view, label, description] of EXTRA) {
+    const type = `easee-smart-${view}-card`;
+    if (!window.customCards.some((c) => c.type === type)) {
+      window.customCards.push({ type, name: `Easee Smart – ${label}`, description, preview: true, documentationURL: "https://github.com/George-120/ha-easee-smart" });
+    }
   }
   console.info(`%c EASEE-SMART-CARD %c ${VERSION} `, "background:#5AA9FF;color:#06121F;font-weight:600", "background:#14181E;color:#EDF0F4");
 })();

@@ -1074,6 +1074,18 @@ class EaseeSmartManager:
             "target_soc": self.car_target(self.active_car()),
             "car": self._car_payload(),
             "cars": [c.name for c in self.cars],
+            "cars_detail": [
+                {
+                    "name": c.name,
+                    "image": c.image,
+                    "soc": self.car_soc(c),
+                    "target": self.car_target(c),
+                    "capacity": c.capacity,
+                    "plugged": self._plugged(c),
+                    "range_km": self._float(c.range_entity),
+                }
+                for c in self.cars
+            ],
             "active_car_setting": self.settings.active_car,
             "boost": self.settings.boost,
             "smart_state": snap.smart_state,

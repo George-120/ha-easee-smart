@@ -49,6 +49,21 @@ tab: charge                         # charge | plan | grid | history
 language: auto                      # auto | nl | en | de
 ```
 
+### Losse kaarten
+
+Naast de complete kaart zijn er losse kaarten om je dashboard zelf in te delen (allemaal in de kaartkiezer onder *Easee Smart*):
+
+| Kaart | Inhoud |
+| --- | --- |
+| `custom:easee-smart-charger-card` | Grote laadpaal met vermogen, lichtstrip-status, ERE/kosten en stroomprijs |
+| `custom:easee-smart-modes-card` | Laadmodus, Boost en pauzeren/hervatten |
+| `custom:easee-smart-cars-card` | Alle auto's met foto en accuniveau; tik om de actieve auto te kiezen |
+| `custom:easee-smart-plan-card` | Vertrektijd, laaddoel en prijsgrafiek |
+| `custom:easee-smart-grid-card` | Hoofdaansluiting of Equalizer |
+| `custom:easee-smart-costs-card` | Kosten, ERE, sessies en export |
+
+Elke kaart volgt je licht/donker thema (`theme: auto | light | dark`) en heeft een optionele `title`.
+
 ## Entiteiten
 
 | Entiteit | Wat |
