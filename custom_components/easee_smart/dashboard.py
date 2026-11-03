@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 
-from .const import DOMAIN
+from .const import CARD_BASE, DOMAIN
 
 if TYPE_CHECKING:
     from .manager import EaseeSmartManager
@@ -29,18 +29,21 @@ TEXT = {
         "charger": "Laadpaal", "control": "Bediening", "plan": "Planning", "grid": "Aansluiting",
         "costs": "Kosten", "history": "Laatste 24 uur", "price": "Prijs vandaag", "power": "Laadvermogen",
         "month": "Deze maand", "sub": "Slim laden met je Easee",
+        "b_mode": "Modus", "b_price": "Stroomprijs", "b_surplus": "Zon over", "b_grid": "Net", "b_today": "Geladen vandaag", "b_cost": "Kosten maand", "b_ere": "ERE maand",
     },
     "en": {
         "title": "Easee Smart", "charge": "Charging", "energy": "Energy & costs", "all": "All in one",
         "charger": "Charger", "control": "Controls", "plan": "Planning", "grid": "Grid connection",
         "costs": "Costs", "history": "Last 24 hours", "price": "Price today", "power": "Charging power",
         "month": "This month", "sub": "Smart charging with your Easee",
+        "b_mode": "Mode", "b_price": "Price", "b_surplus": "Solar surplus", "b_grid": "Grid", "b_today": "Charged today", "b_cost": "Costs month", "b_ere": "ERE month",
     },
     "de": {
         "title": "Easee Smart", "charge": "Laden", "energy": "Energie & Kosten", "all": "Alles in einem",
         "charger": "Ladestation", "control": "Steuerung", "plan": "Planung", "grid": "Netzanschluss",
         "costs": "Kosten", "history": "Letzte 24 Stunden", "price": "Preis heute", "power": "Ladeleistung",
         "month": "Dieser Monat", "sub": "Intelligent laden mit deiner Easee",
+        "b_mode": "Modus", "b_price": "Strompreis", "b_surplus": "PV-Überschuss", "b_grid": "Netz", "b_today": "Heute geladen", "b_cost": "Kosten Monat", "b_ere": "ERE Monat",
     },
 }
 
@@ -78,31 +81,25 @@ def build_dashboard(manager: EaseeSmartManager) -> dict[str, Any]:
         return out
 
     badges = [
-        badge("smart_status"),
-        badge("current_price"),
-        badge("surplus_power") or badge("grid_power"),
-        badge("energy_today"),
-        badge("cost_month"),
-        badge("ere_month") if manager.ere_rate else None,
+        badge("smart_status", name=t["b_mode"]),
+        badge("current_price", name=t["b_price"]),
+        badge("surplus_power", name=t["b_surplus"]) or badge("grid_power", name=t["b_grid"]),
+        badge("energy_today", name=t["b_today"]),
+        badge("cost_month", name=t["b_cost"]),
+        badge("ere_month", name=t["b_ere"]) if manager.ere_rate else None,
     ]
     for car in manager.cars:
         if car.soc_entity:
             badges.append(badge("", entity=car.soc_entity, name=car.name))
     badges = [b for b in badges if b]
 
-    history_entities = [e for e in (power, own.get("grid_power"), own.get("target_current")) if e]
+    history_entities = [e for e in (power, own.get("grid_power")) if e]
     energy_cards: list[dict[str, Any]] = [heading(t["history"], "mdi:chart-line")]
     if history_entities:
         energy_cards.append({"type": "history-graph", "title": t["power"], "hours_to_show": 24, "entities": history_entities})
     if own.get("current_price"):
         energy_cards.append({"type": "history-graph", "title": t["price"], "hours_to_show": 24,
                              "entities": [own["current_price"]]})
-
-    month_tiles = [
-        {"type": "tile", "entity": own[k], "vertical": True, "grid_options": {"columns": 6}}
-        for k in ("energy_month", "cost_month", "average_price_month", "ere_month", "ere_year", "ere_total")
-        if own.get(k) and (not k.startswith("ere") or manager.ere_rate)
-    ]
 
     sections = [
         {"type": "grid", "cards": [heading(t["charger"], "mdi:ev-station"), card("charger")]},
@@ -111,15 +108,17 @@ def build_dashboard(manager: EaseeSmartManager) -> dict[str, Any]:
     ]
     energy_sections = [
         {"type": "grid", "cards": [heading(t["grid"], "mdi:transmission-tower"), card("grid")]},
-        {"type": "grid", "cards": [heading(t["costs"], "mdi:cash-multiple"), card("costs"),
-                                   *([heading(t["month"], "mdi:calendar-month"), *month_tiles] if month_tiles else [])]},
+        {"type": "grid", "cards": [heading(t["costs"], "mdi:cash-multiple"), card("costs")]},
         {"type": "grid", "cards": energy_cards},
     ]
     header = {
         "layout": "responsive",
         "badges_position": "bottom",
         "card": {"type": "markdown", "text_only": True,
-                 "content": f"# {manager.name}\n{t['sub']}"},
+                 "content": (
+                     f'<h1><img src="{CARD_BASE}/logo.png" width="44" height="44" align="absmiddle" alt=""> '
+                     f"Easee Smart Charging</h1>\n{manager.name}{' · ' + manager.model if manager.model else ''} — {t['sub']}"
+                 )},
     }
     return {
         "title": t["title"],

@@ -470,7 +470,7 @@ def test_dashboard_has_all_cards(tmp_path):
     own = {k: f"sensor.es_{k}" for k in ("charger_status", "smart_status", "current_price", "grid_power",
                                           "energy_today", "cost_month", "energy_month", "ere_month", "ere_total")}
     m = types.SimpleNamespace(own_entities=own, charger_entities={"power": "sensor.easee_power"}, cars=[car],
-                              ere_rate=0.13, name="Easee", _opt=lambda k, d=None: "nl",
+                              ere_rate=0.13, name="Easee", model="Charge Max", _opt=lambda k, d=None: "nl",
                               hass=types.SimpleNamespace(config=types.SimpleNamespace(language="nl")))
     cfg = dash.build_dashboard(m)
     text = json.dumps(cfg)
