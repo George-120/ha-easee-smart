@@ -109,7 +109,7 @@ def _energy_schema(hass: HomeAssistant, defaults: dict[str, Any]) -> dict:
             vol.Optional(key, default=value if value is not None else default),
             selector.NumberSelector(
                 selector.NumberSelectorConfig(
-                    min=0, max=maximum, step=0.0001, unit_of_measurement=f"{currency}/kWh",
+                    min=0, max=maximum, step="any", unit_of_measurement=f"{currency}/kWh",
                     mode=selector.NumberSelectorMode.BOX,
                 )
             ),

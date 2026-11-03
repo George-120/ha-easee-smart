@@ -43,6 +43,7 @@ De kaart wordt automatisch geladen; je hoeft niets aan je dashboard of resources
 type: custom:easee-smart-card
 entity: sensor.oprit_smart_status   # optioneel; zonder entity pakt hij de eerste laadpaal
 tab: charge                         # charge | plan | grid | history
+language: auto                      # auto | nl | en | de
 ```
 
 ## Entiteiten

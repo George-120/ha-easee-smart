@@ -1,6 +1,6 @@
 /* Easee Smart card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.3.0";
+  const VERSION = "1.3.1";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -149,7 +149,7 @@
       const st = entityId && hass.states[entityId];
       const a = st ? st.attributes : null;
       const ids = a ? [...Object.values(a.sources || {}), ...Object.values(a.equalizer || {}), ...Object.values(a.entities || {})] : [];
-      const sig = JSON.stringify([this._tab, st && st.last_updated, a, ids.map((id) => hass.states[id] && hass.states[id].state), hass.locale && hass.locale.language]);
+      const sig = JSON.stringify([this._config && this._config.language, this._tab, st && st.last_updated, a, ids.map((id) => hass.states[id] && hass.states[id].state), hass.locale && hass.locale.language]);
       if (sig === this._sig) return;
       this._sig = sig;
       this._render();
@@ -161,13 +161,14 @@
       return Object.keys(this._hass.states).find((id) => id.startsWith("sensor.") && this._hass.states[id].attributes.charger_id && this._hass.states[id].attributes.sources);
     }
 
-    get _t() {
-      const lang = ((this._hass && (this._hass.locale?.language || this._hass.language)) || "en").slice(0, 2);
-      return I18N[lang] || I18N.en;
+    get _lang() {
+      // Card option "language" (nl / en / de) overrides the Home Assistant profile language.
+      const forced = this._config && this._config.language && this._config.language !== "auto" ? this._config.language : null;
+      return forced || (this._hass && (this._hass.locale?.language || this._hass.language)) || "en";
     }
 
-    get _lang() {
-      return (this._hass && (this._hass.locale?.language || this._hass.language)) || "en";
+    get _t() {
+      return I18N[this._lang.slice(0, 2)] || I18N.en;
     }
 
     _num(v, digits = 1) {
@@ -650,7 +651,7 @@
       if (!this._hass || !this._config) return;
       if (!this._form) {
         this._form = document.createElement("ha-form");
-        this._form.computeLabel = (s) => ({ entity: "Easee Smart status", name: "Name", tab: "Start tab" }[s.name] || s.name);
+        this._form.computeLabel = (s) => ({ entity: "Easee Smart status", name: "Name", tab: "Start tab", language: "Language / Taal / Sprache" }[s.name] || s.name);
         this._form.addEventListener("value-changed", (ev) => {
           this._config = ev.detail.value;
           this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
@@ -663,6 +664,20 @@
         { name: "entity", selector: { entity: { integration: "easee_smart", domain: "sensor" } } },
         { name: "name", selector: { text: {} } },
         { name: "tab", selector: { select: { mode: "dropdown", options: ["charge", "plan", "grid", "history"] } } },
+        {
+          name: "language",
+          selector: {
+            select: {
+              mode: "dropdown",
+              options: [
+                { value: "auto", label: "Automatic (Home Assistant)" },
+                { value: "nl", label: "Nederlands" },
+                { value: "en", label: "English" },
+                { value: "de", label: "Deutsch" },
+              ],
+            },
+          },
+        },
       ];
     }
   }
