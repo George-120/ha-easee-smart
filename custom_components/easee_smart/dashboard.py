@@ -106,8 +106,8 @@ def build_dashboard(manager: EaseeSmartManager) -> dict[str, Any]:
         "badges_position": "bottom",
         "card": {"type": "markdown", "text_only": True,
                  "content": (
-                     f'<h1><img src="{CARD_BASE}/logo.png" width="44" height="44" align="absmiddle" alt=""> '
-                     f"Easee Smart Charging</h1>\n{manager.name}{' · ' + manager.model if manager.model else ''} — {t['sub']}"
+                     f'# <img src="{CARD_BASE}/logo.png" width="44" height="44" alt=""> Easee Smart Charging\n'
+                     f"{manager.name}{' · ' + manager.model if manager.model else ''} — {t['sub']}"
                  )},
     }
     return {
