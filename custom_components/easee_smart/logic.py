@@ -9,10 +9,12 @@ from statistics import median
 from typing import Any
 from collections.abc import Iterable
 
-START_KEYS = ("start", "from", "start_time", "startsAt", "starts_at", "time", "datetime", "date", "hour", "readingDate")
-END_KEYS = ("end", "till", "to", "end_time", "endsAt", "ends_at", "until")
+START_KEYS = ("start", "start_date", "from", "start_time", "startsAt", "starts_at", "time", "datetime", "date", "hour", "readingDate")
+END_KEYS = ("end", "end_date", "till", "to", "end_time", "endsAt", "ends_at", "until")
 PRICE_KEYS = (
     "value",
+    "price_tax_included",
+    "price_incl_tax",
     "price",
     "total",
     "price_per_kwh",
@@ -64,6 +66,12 @@ def _parse_dt(value: Any, tz) -> datetime | None:
 
 
 def _to_float(value: Any) -> float | None:
+    if isinstance(value, dict):
+        # nested amounts, e.g. Zonneplan: {"amount": 4553568}
+        for key in ("amount", "value", "price", "total"):
+            if key in value:
+                return _to_float(value[key])
+        return None
     if value is None or isinstance(value, bool):
         return None
     try:

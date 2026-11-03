@@ -58,14 +58,29 @@ def _easee_devices(hass: HomeAssistant) -> tuple[list[dr.DeviceEntry], list[dr.D
     registry = dr.async_get(hass)
     chargers: list[dr.DeviceEntry] = []
     equalizers: list[dr.DeviceEntry] = []
-    for device in registry.devices.values():
-        if not easee_product_id(device):
-            continue
-        if device.model == EQUALIZER_MODEL:
-            equalizers.append(device)
-        elif resolve_entities(hass, easee_product_id(device), ["status"]):
-            chargers.append(device)
+    seen: set[str] = set()
+    for entry in hass.config_entries.async_entries(EASEE_DOMAIN):
+        for device in dr.async_entries_for_config_entry(registry, entry.entry_id):
+            pid = easee_product_id(device)
+            if not pid or device.id in seen:
+                continue
+            seen.add(device.id)
+            if device.model == EQUALIZER_MODEL:
+                equalizers.append(device)
+            elif resolve_entities(hass, pid, ["status"]):
+                chargers.append(device)
     return chargers, equalizers
+
+
+def _easee_rated(hass: HomeAssistant, device: dr.DeviceEntry | None, attr: str) -> int | None:
+    """Read circuit/site fuse sizes that the Easee integration exposes on the status sensor."""
+    status = resolve_entities(hass, easee_product_id(device), ["status"]).get("status") if device else None
+    state = hass.states.get(status) if status else None
+    try:
+        value = int(float(state.attributes.get(attr))) if state else None
+    except (TypeError, ValueError):
+        return None
+    return value if value and value > 0 else None
 
 
 def _label(device: dr.DeviceEntry) -> str:
@@ -253,9 +268,10 @@ class EaseeSmartConfigFlow(ConfigFlow, domain=DOMAIN):
                 return await self.async_step_energy()
             return await self.async_step_grid()
         model = _detect_model(self._charger)
+        circuit = _easee_rated(self.hass, self._charger, "circuit_ratedCurrent")
         defaults = {
             CONF_MODEL: model,
-            CONF_MAX_CURRENT: min(DEFAULT_MAX_CURRENT, MODEL_MAX_CURRENT.get(model, 32)),
+            CONF_MAX_CURRENT: max(6, min(circuit or DEFAULT_MAX_CURRENT, MODEL_MAX_CURRENT.get(model, 32))),
         }
         return self.async_show_form(
             step_id="charger",
@@ -273,6 +289,9 @@ class EaseeSmartConfigFlow(ConfigFlow, domain=DOMAIN):
             return await self.async_step_energy()
         suggested = suggest_grid_sensors(self.hass)
         found = ", ".join(suggested.values()) or "—"
+        site_fuse = _easee_rated(self.hass, self._charger, "site_ratedCurrent")
+        if site_fuse:
+            suggested[CONF_MAIN_FUSE] = site_fuse
         return self.async_show_form(
             step_id="grid",
             data_schema=vol.Schema(_grid_schema(suggested)),

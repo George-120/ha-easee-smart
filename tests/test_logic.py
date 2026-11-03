@@ -105,3 +105,13 @@ def test_solar_regulator_hysteresis():
 def test_amps_power_roundtrip():
     assert round(logic.power_for_amps(16, 3, 230), 2) == 11.04
     assert round(logic.amps_for_power(11.04, 3, 230)) == 16
+
+
+def test_parse_zonneplan_quarter_hours():
+    items = [
+        {"start_date": (NOW + timedelta(minutes=15 * i)).isoformat(), "end_date": (NOW + timedelta(minutes=15 * (i + 1))).isoformat(),
+         "price_tax_included": {"amount": 4553568}, "price_tax_excluded": {"amount": 3445087}, "sustainability_score": {"permille": 455}}
+        for i in range(8)
+    ]
+    slots = logic.parse_price_forecast({"forecast": items}, NOW)
+    assert len(slots) == 8 and slots[0].price == 0.45536 and slots[0].hours == 0.25
