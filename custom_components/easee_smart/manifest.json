@@ -2,7 +2,8 @@
   "domain": "easee_smart",
   "name": "Easee Smart Charging",
   "after_dependencies": [
-    "easee"
+    "easee",
+    "lovelace"
   ],
   "categories": [
     "energy.ev_charging"
