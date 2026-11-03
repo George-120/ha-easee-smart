@@ -81,12 +81,14 @@
     },
     "button": {
       "export_report": { "default": "mdi:file-delimited-outline" },
+      "create_dashboard": { "default": "mdi:view-dashboard-edit-outline" },
       "refresh_car": { "default": "mdi:car-sync" },
       "start_car": { "default": "mdi:car-electric-outline" }
     }
   },
   "services": {
     "export_report": { "service": "mdi:file-delimited-outline" },
-    "set_mode": { "service": "mdi:tune-variant" }
+    "set_mode": { "service": "mdi:tune-variant" },
+    "create_dashboard": { "service": "mdi:view-dashboard-edit-outline" }
   }
 }

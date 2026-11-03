@@ -110,8 +110,13 @@
           "grid": "Hausanschluss",
           "energy": "Preise und Kosten",
           "cars": "Autos",
-          "advanced": "Erweitert"
+          "advanced": "Erweitert",
+          "dashboard": "Dashboard erstellen"
         }
+      },
+      "dashboard": {
+        "title": "Dashboard erstellen",
+        "description": "Fügt ein fertiges **Easee Smart**-Dashboard mit allen Karten zur Seitenleiste hinzu. Deine eigenen Dashboards bleiben unverändert. Gibt es schon eins? Dann wird es mit deinen aktuellen Autos und Einstellungen aktualisiert."
       },
       "charger": {
         "title": "Wallbox",
@@ -225,6 +230,12 @@
           "car_refresh_minutes": "Nur wenn ein Auto angeschlossen ist."
         }
       }
+    },
+    "error": {
+      "dashboard_failed": "Das Dashboard konnte nicht erstellt werden. Details stehen im Protokoll."
+    },
+    "abort": {
+      "dashboard_created": "Fertig! Öffne **Easee Smart** in der Seitenleiste ({url})."
     }
   },
   "selector": {
@@ -433,6 +444,9 @@
       },
       "start_car": {
         "name": "Laden im Auto starten"
+      },
+      "create_dashboard": {
+        "name": "Dashboard erstellen"
       }
     }
   },
@@ -448,6 +462,16 @@
         "month": {
           "name": "Monat",
           "description": "JJJJ-MM, Standard: Vormonat."
+        }
+      }
+    },
+    "create_dashboard": {
+      "name": "Dashboard erstellen",
+      "description": "Fügt das fertige Easee Smart-Dashboard mit allen Karten zur Seitenleiste hinzu (oder aktualisiert es).",
+      "fields": {
+        "config_entry_id": {
+          "name": "Wallbox",
+          "description": "Leer lassen bei einer Wallbox."
         }
       }
     },
@@ -467,6 +491,9 @@
     }
   },
   "exceptions": {
+    "dashboard_failed": {
+      "message": "Das Dashboard konnte nicht erstellt werden: {error}"
+    },
     "no_charger": {
       "message": "Keine Easee Smart-Wallbox eingerichtet."
     },

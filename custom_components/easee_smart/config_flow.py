@@ -12,6 +12,7 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import selector
 
@@ -491,10 +492,27 @@ class EaseeSmartOptionsFlow(OptionsFlow):
         return self.async_create_entry(data=data)
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        menu = ["charger", "energy", "cars", "advanced"]
+        menu = ["charger", "energy", "cars", "advanced", "dashboard"]
         if CONF_EQUALIZER_DEVICE not in self.config_entry.data:
             menu.insert(1, "grid")
         return self.async_show_menu(step_id="init", menu_options=menu)
+
+    async def async_step_dashboard(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Put the ready-made dashboard in the sidebar (or refresh it)."""
+        from .dashboard import async_create_dashboard
+
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            manager = getattr(self.config_entry, "runtime_data", None)
+            try:
+                if manager is None:
+                    raise HomeAssistantError("not loaded")
+                url = await async_create_dashboard(manager)
+            except HomeAssistantError:
+                errors["base"] = "dashboard_failed"
+            else:
+                return self.async_abort(reason="dashboard_created", description_placeholders={"url": f"/{url}"})
+        return self.async_show_form(step_id="dashboard", data_schema=vol.Schema({}), errors=errors)
 
     async def async_step_charger(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:

@@ -24,3 +24,11 @@ set_mode:
             - smart
             - solar
             - solar_smart
+
+create_dashboard:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: easee_smart

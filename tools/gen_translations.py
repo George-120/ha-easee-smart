@@ -1,5 +1,6 @@
 """Generate translations/en|nl|de.json and strings.json from one table."""
-import json, pathlib
+import json
+import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[1] / "custom_components" / "easee_smart"
 L = ("en", "nl", "de")
@@ -257,7 +258,14 @@ def build(lang):
          "energy": t(T("Prices and costs","Prijzen en kosten","Preise und Kosten")),
          "cars": t(T("Cars","Auto's","Autos")),
          "advanced": t(T("Advanced","Geavanceerd","Erweitert")),
+         "dashboard": t(T("Create dashboard","Dashboard aanmaken","Dashboard erstellen")),
         },
+       },
+       "dashboard": {
+        "title": t(T("Create dashboard","Dashboard aanmaken","Dashboard erstellen")),
+        "description": t(T("Adds a ready-made **Easee Smart** dashboard with all cards to your sidebar. Your own dashboards are not touched. Already there? Then it is refreshed with your current cars and settings.",
+                           "Zet een kant-en-klaar **Easee Smart**-dashboard met alle kaarten in je zijbalk. Je eigen dashboards blijven ongemoeid. Bestaat het al? Dan wordt het bijgewerkt met je huidige auto's en instellingen.",
+                           "Fügt ein fertiges **Easee Smart**-Dashboard mit allen Karten zur Seitenleiste hinzu. Deine eigenen Dashboards bleiben unverändert. Gibt es schon eins? Dann wird es mit deinen aktuellen Autos und Einstellungen aktualisiert.")),
        },
        "charger": charger_opts,
        "grid": grid_step,
@@ -267,6 +275,12 @@ def build(lang):
        "car_pick": car_pick_step,
        "car_details": car_details_step,
        "advanced": adv_step,
+      },
+      "error": {
+       "dashboard_failed": t(T("The dashboard could not be created. Check the log for details.","Het dashboard kon niet worden aangemaakt. Kijk in het logboek voor details.","Das Dashboard konnte nicht erstellt werden. Details stehen im Protokoll.")),
+      },
+      "abort": {
+       "dashboard_created": t(T("Done! Open **Easee Smart** in the sidebar ({url}).","Klaar! Open **Easee Smart** in de zijbalk ({url}).","Fertig! Öffne **Easee Smart** in der Seitenleiste ({url}).")),
       },
      },
      "selector": {
@@ -295,6 +309,7 @@ def build(lang):
        "export_report": {"name": t(T("Export last month report","Maandrapport vorige maand exporteren","Bericht letzter Monat exportieren"))},
        "refresh_car": {"name": t(T("Refresh car data","Gegevens auto verversen","Autodaten aktualisieren"))},
        "start_car": {"name": t(T("Start charging in car","Laden starten in auto","Laden im Auto starten"))},
+       "create_dashboard": {"name": t(T("Create dashboard","Dashboard aanmaken","Dashboard erstellen"))},
       },
      },
      "services": {
@@ -304,6 +319,13 @@ def build(lang):
        "fields": {
         "config_entry_id": {"name": t(T("Charger","Laadpaal","Wallbox")), "description": t(T("Leave empty when you have one charger.","Leeg laten bij één laadpaal.","Leer lassen bei einer Wallbox."))},
         "month": {"name": t(T("Month","Maand","Monat")), "description": t(T("YYYY-MM, default: previous month.","JJJJ-MM, standaard: vorige maand.","JJJJ-MM, Standard: Vormonat."))},
+       },
+      },
+      "create_dashboard": {
+       "name": t(T("Create dashboard","Dashboard aanmaken","Dashboard erstellen")),
+       "description": t(T("Adds (or refreshes) the ready-made Easee Smart dashboard with all cards to the sidebar.","Zet het kant-en-klare Easee Smart-dashboard met alle kaarten in de zijbalk (of werkt het bij).","Fügt das fertige Easee Smart-Dashboard mit allen Karten zur Seitenleiste hinzu (oder aktualisiert es).")),
+       "fields": {
+        "config_entry_id": {"name": t(T("Charger","Laadpaal","Wallbox")), "description": t(T("Leave empty when you have one charger.","Leeg laten bij één laadpaal.","Leer lassen bei einer Wallbox."))},
        },
       },
       "set_mode": {
@@ -316,6 +338,7 @@ def build(lang):
       },
      },
      "exceptions": {
+      "dashboard_failed": {"message": t(T("The dashboard could not be created: {error}","Het dashboard kon niet worden aangemaakt: {error}","Das Dashboard konnte nicht erstellt werden: {error}"))},
       "no_charger": {"message": t(T("No Easee Smart Charging charger is set up.","Er is geen Easee Smart-laadpaal ingesteld.","Keine Easee Smart-Wallbox eingerichtet."))},
       "easee_not_loaded": {"message": t(T("The Easee integration is not loaded yet.","De Easee-integratie is nog niet geladen.","Die Easee-Integration ist noch nicht geladen."))},
       "charger_not_found": {"message": t(T("The charger was not found in the Easee integration.","De laadpaal is niet gevonden in de Easee-integratie.","Die Wallbox wurde in der Easee-Integration nicht gefunden."))},

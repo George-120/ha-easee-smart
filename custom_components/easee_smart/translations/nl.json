@@ -110,8 +110,13 @@
           "grid": "Hoofdaansluiting",
           "energy": "Prijzen en kosten",
           "cars": "Auto's",
-          "advanced": "Geavanceerd"
+          "advanced": "Geavanceerd",
+          "dashboard": "Dashboard aanmaken"
         }
+      },
+      "dashboard": {
+        "title": "Dashboard aanmaken",
+        "description": "Zet een kant-en-klaar **Easee Smart**-dashboard met alle kaarten in je zijbalk. Je eigen dashboards blijven ongemoeid. Bestaat het al? Dan wordt het bijgewerkt met je huidige auto's en instellingen."
       },
       "charger": {
         "title": "Laadpaal",
@@ -225,6 +230,12 @@
           "car_refresh_minutes": "Alleen als er een auto aangesloten is. Gebruikt de verversen-entiteit van de auto."
         }
       }
+    },
+    "error": {
+      "dashboard_failed": "Het dashboard kon niet worden aangemaakt. Kijk in het logboek voor details."
+    },
+    "abort": {
+      "dashboard_created": "Klaar! Open **Easee Smart** in de zijbalk ({url})."
     }
   },
   "selector": {
@@ -433,6 +444,9 @@
       },
       "start_car": {
         "name": "Laden starten in auto"
+      },
+      "create_dashboard": {
+        "name": "Dashboard aanmaken"
       }
     }
   },
@@ -448,6 +462,16 @@
         "month": {
           "name": "Maand",
           "description": "JJJJ-MM, standaard: vorige maand."
+        }
+      }
+    },
+    "create_dashboard": {
+      "name": "Dashboard aanmaken",
+      "description": "Zet het kant-en-klare Easee Smart-dashboard met alle kaarten in de zijbalk (of werkt het bij).",
+      "fields": {
+        "config_entry_id": {
+          "name": "Laadpaal",
+          "description": "Leeg laten bij één laadpaal."
         }
       }
     },
@@ -467,6 +491,9 @@
     }
   },
   "exceptions": {
+    "dashboard_failed": {
+      "message": "Het dashboard kon niet worden aangemaakt: {error}"
+    },
     "no_charger": {
       "message": "Er is geen Easee Smart-laadpaal ingesteld."
     },

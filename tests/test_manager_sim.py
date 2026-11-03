@@ -1,6 +1,7 @@
 """Simulation of the manager with a minimal fake Home Assistant (no HA install needed)."""
 import asyncio
 import importlib
+import json
 import sys
 import types
 from dataclasses import dataclass, field
@@ -101,6 +102,8 @@ def install_stubs():
     _mod("homeassistant.helpers.event", async_track_state_change_event=lambda *a: (lambda: None),
          async_track_time_interval=lambda *a: (lambda: None))
     _mod("homeassistant.helpers.storage", Store=Store)
+    _mod("homeassistant.exceptions", HomeAssistantError=Exception)
+    _mod("homeassistant.components")
     _mod("homeassistant.helpers.aiohttp_client", async_get_clientsession=lambda h: None)
     if "aiohttp" not in sys.modules:
         _mod("aiohttp", ClientError=Exception, ClientTimeout=lambda **k: None)
@@ -457,3 +460,41 @@ def test_suggest_only_real_cars_and_read_capacity(tmp_path):
     found = cars.detect_car_entities(hass, "inster")
     assert found["capacity"] == 46
     assert found["soc"] == "sensor.hyundai_inster_state_of_charge"
+
+
+def test_dashboard_has_all_cards(tmp_path):
+    install_stubs()
+    sys.modules.pop("easee_smart.dashboard", None)
+    dash = importlib.import_module("easee_smart.dashboard")
+    car = types.SimpleNamespace(name="e-Niro", soc_entity="sensor.niro_soc")
+    own = {k: f"sensor.es_{k}" for k in ("charger_status", "smart_status", "current_price", "grid_power",
+                                          "energy_today", "cost_month", "energy_month", "ere_month", "ere_total")}
+    m = types.SimpleNamespace(own_entities=own, charger_entities={"power": "sensor.easee_power"}, cars=[car],
+                              ere_rate=0.13, name="Easee", _opt=lambda k, d=None: "nl",
+                              hass=types.SimpleNamespace(config=types.SimpleNamespace(language="nl")))
+    cfg = dash.build_dashboard(m)
+    text = json.dumps(cfg)
+    for view in ("charger", "modes", "cars", "plan", "grid", "costs"):
+        assert f"custom:easee-smart-{view}-card" in text
+    assert "custom:easee-smart-card" in text
+    assert cfg["views"][0]["title"] == "Laden"
+    assert any(b.get("name") == "e-Niro" for b in cfg["views"][0]["badges"])
+
+    class Owner:
+        storage_collection = "COLL"
+
+        def ws_create(self):
+            pass
+
+    import functools
+
+    def wrap(f):
+        @functools.wraps(f)
+        def inner(*a):
+            return f(*a)
+        return inner
+
+    ws = sys.modules.setdefault("homeassistant.components.websocket_api", types.ModuleType("homeassistant.components.websocket_api"))
+    ws.DOMAIN = "websocket_api"
+    hass = types.SimpleNamespace(data={"websocket_api": {"lovelace/dashboards/create": (wrap(wrap(Owner().ws_create)), None)}})
+    assert dash._dashboards_collection(hass) == "COLL"

@@ -15,7 +15,11 @@ from homeassistant.core import (
     ServiceResponse,
     SupportsResponse,
 )
-from homeassistant.exceptions import ConfigEntryNotReady, ServiceValidationError
+from homeassistant.exceptions import (
+    ConfigEntryNotReady,
+    HomeAssistantError,
+    ServiceValidationError,
+)
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
@@ -26,6 +30,7 @@ from .const import (
     EASEE_DOMAIN,
     VERSION,
 )
+from .dashboard import async_create_dashboard
 from .manager import EaseeSmartManager
 
 _LOGGER = logging.getLogger(__name__)
@@ -46,6 +51,7 @@ type EaseeSmartConfigEntry = ConfigEntry[EaseeSmartManager]
 
 SERVICE_EXPORT_REPORT = "export_report"
 SERVICE_SET_MODE = "set_mode"
+SERVICE_CREATE_DASHBOARD = "create_dashboard"
 ATTR_MONTH = "month"
 ATTR_CONFIG_ENTRY = "config_entry_id"
 ATTR_MODE = "mode"
@@ -86,6 +92,23 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 vol.Optional(ATTR_MONTH): vol.Match(r"^\d{4}-\d{2}$"),
             }
         ),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    async def _create_dashboard(call: ServiceCall) -> ServiceResponse:
+        manager = await _manager_for(call)
+        try:
+            url = await async_create_dashboard(manager)
+        except HomeAssistantError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="dashboard_failed", translation_placeholders={"error": str(err)}
+            ) from err
+        return {"url_path": url}
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_CREATE_DASHBOARD,
+        _create_dashboard,
+        schema=vol.Schema({vol.Optional(ATTR_CONFIG_ENTRY): cv.string}),
         supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(

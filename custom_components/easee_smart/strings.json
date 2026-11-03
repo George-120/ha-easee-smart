@@ -110,8 +110,13 @@
           "grid": "Main connection",
           "energy": "Prices and costs",
           "cars": "Cars",
-          "advanced": "Advanced"
+          "advanced": "Advanced",
+          "dashboard": "Create dashboard"
         }
+      },
+      "dashboard": {
+        "title": "Create dashboard",
+        "description": "Adds a ready-made **Easee Smart** dashboard with all cards to your sidebar. Your own dashboards are not touched. Already there? Then it is refreshed with your current cars and settings."
       },
       "charger": {
         "title": "Charger",
@@ -225,6 +230,12 @@
           "car_refresh_minutes": "Only while a car is connected. Uses the car's refresh entity."
         }
       }
+    },
+    "error": {
+      "dashboard_failed": "The dashboard could not be created. Check the log for details."
+    },
+    "abort": {
+      "dashboard_created": "Done! Open **Easee Smart** in the sidebar ({url})."
     }
   },
   "selector": {
@@ -433,6 +444,9 @@
       },
       "start_car": {
         "name": "Start charging in car"
+      },
+      "create_dashboard": {
+        "name": "Create dashboard"
       }
     }
   },
@@ -448,6 +462,16 @@
         "month": {
           "name": "Month",
           "description": "YYYY-MM, default: previous month."
+        }
+      }
+    },
+    "create_dashboard": {
+      "name": "Create dashboard",
+      "description": "Adds (or refreshes) the ready-made Easee Smart dashboard with all cards to the sidebar.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Charger",
+          "description": "Leave empty when you have one charger."
         }
       }
     },
@@ -467,6 +491,9 @@
     }
   },
   "exceptions": {
+    "dashboard_failed": {
+      "message": "The dashboard could not be created: {error}"
+    },
     "no_charger": {
       "message": "No Easee Smart Charging charger is set up."
     },

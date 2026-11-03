@@ -66,6 +66,16 @@ Naast de complete kaart zijn er losse kaarten om je dashboard zelf in te delen (
 
 Elke kaart volgt je licht/donker thema (`theme: auto | light | dark`) en heeft een optionele `title`.
 
+### Kant-en-klaar dashboard
+
+Eén druk op de knop en je hebt een compleet **Easee Smart**-dashboard in de zijbalk, met alle kaarten netjes ingedeeld (Laden, Energie & kosten, Alles in één). Je eigen dashboards blijven ongemoeid.
+
+- **Instellingen → Apparaten & diensten → Easee Smart Charging → Configureren → Dashboard aanmaken**, of
+- de knop **Dashboard aanmaken** op het apparaat, of
+- de actie `easee_smart.create_dashboard`.
+
+Nog een keer drukken werkt het dashboard bij met je huidige auto's en instellingen.
+
 ### Entiteiten
 
 | Entiteit | Wat |
@@ -144,6 +154,16 @@ theme: auto                          # auto | light | dark
 language: auto                       # auto | nl | en | de
 ```
 
+### Ready-made dashboard
+
+One press and you get a complete **Easee Smart** dashboard in the sidebar, with all cards neatly grouped (Charging, Energy & costs, All in one). Your own dashboards are not touched.
+
+- **Settings → Devices & services → Easee Smart Charging → Configure → Create dashboard**, or
+- the **Create dashboard** button on the device, or
+- the action `easee_smart.create_dashboard`.
+
+Press it again to refresh the dashboard with your current cars and settings.
+
 ### Good to know
 
 - Turn off Easee's own *smart charging* in the Easee app when you let this integration plan, otherwise two systems control the charger at once.
@@ -195,6 +215,16 @@ type: custom:easee-smart-card       # oder easee-smart-charger-card, -modes-, -c
 theme: auto                          # auto | light | dark
 language: auto                       # auto | nl | en | de
 ```
+
+### Fertiges Dashboard
+
+Ein Knopfdruck und du hast ein komplettes **Easee Smart**-Dashboard in der Seitenleiste, mit allen Karten übersichtlich gruppiert (Laden, Energie & Kosten, Alles in einem). Deine eigenen Dashboards bleiben unverändert.
+
+- **Einstellungen → Geräte & Dienste → Easee Smart Charging → Konfigurieren → Dashboard erstellen**, oder
+- die Taste **Dashboard erstellen** am Gerät, oder
+- die Aktion `easee_smart.create_dashboard`.
+
+Erneut drücken aktualisiert das Dashboard mit deinen aktuellen Autos und Einstellungen.
 
 ### Gut zu wissen
 
