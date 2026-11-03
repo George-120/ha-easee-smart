@@ -405,7 +405,7 @@
         <div class="flow ${exporting ? "out" : "in"}">
           <div><span>${exporting ? t.exporting : t.importing}</span><b>${this._num(Math.abs(grid), 2)} kW</b></div>
           ${a.surplus_kw !== null && a.surplus_kw !== undefined ? `<div><span>${t.surplus}</span><b>${this._num(Math.max(0, a.surplus_kw), 2)} kW</b></div>` : ""}
-          ${fuse ? `<div><span>${t.fuse}</span><b>${this._num(fuse, 0)} A</b><small>${this._num(a.phase_headroom, 1)} A ${t.headroom}</small></div>` : ""}
+          ${fuse ? `<div><span>${t.fuse}</span><b>${this._num(fuse, 0)} A</b>${a.phase_headroom !== null && a.phase_headroom !== undefined ? `<small>${this._num(a.phase_headroom, 1)} A ${t.headroom}</small>` : ""}</div>` : ""}
         </div>
         ${hasPhases ? `<div class="phases">${phases}</div>` : ""}
         ${imp !== null || exp !== null ? `<div class="grid3">
