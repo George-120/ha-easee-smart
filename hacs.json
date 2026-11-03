@@ -1,5 +1,6 @@
 {
   "name": "Easee Smart",
   "homeassistant": "2025.6.0",
+  "zip_release": false,
   "render_readme": true
 }
