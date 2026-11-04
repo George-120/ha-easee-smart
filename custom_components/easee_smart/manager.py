@@ -486,7 +486,11 @@ class EaseeSmartManager:
         self.last_lifetime = data.get("last_lifetime")
         self._phase_original = data.get("phase_original")
         self.house_profile = {int(k): float(v) for k, v in (data.get("house_profile") or {}).items()}
-        self.history = {k: [float(v[0]), float(v[1])] for k, v in (data.get("history") or {}).items() if isinstance(v, list) and len(v) == 2}
+        self.history = {
+            k: [float(x) for x in v][:3] + [0.0] * (3 - len(v))
+            for k, v in (data.get("history") or {}).items()
+            if isinstance(v, list) and 2 <= len(v) <= 3
+        }
         self.active_phases = data.get("active_phases")
         if self.active_phases in (1, 3):
             self.phase_switch.reset(self.active_phases)
@@ -982,22 +986,30 @@ class EaseeSmartManager:
         self.house_profile[now.hour] = round(house if old is None else old + (house - old) * 0.03, 3)
 
     def _record_history(self, snap: Snapshot) -> None:
-        """What was really charged per quarter hour, split in grid and sun (for the chart)."""
+        """Per quarter hour: kWh charged from the grid, from the sun, and what the panels made."""
         now = dt_util.utcnow()
         last, self._history_at = self._history_at, now
         if last is None:
             return
         seconds = min(120.0, (now - last).total_seconds())  # gaps (restart) are not filled in
-        power = max(snap.power_kw or 0.0, 0.0)
-        if seconds <= 0 or power < 0.05:
+        if seconds <= 0:
             return
-        grid_import = max(snap.grid_power_kw or 0.0, 0.0) if snap.grid_power_kw is not None else power
-        sun_kw = max(0.0, min(power, power - grid_import))
         hours = seconds / 3600
+        power = max(snap.power_kw or 0.0, 0.0)
+        pv = self.pv_now_kw()
+        if power < 0.05 and not pv:
+            return
         start = now.replace(minute=now.minute - now.minute % 15, second=0, microsecond=0)
-        row = self.history.setdefault(start.isoformat(), [0.0, 0.0])
-        row[0] = round(row[0] + (power - sun_kw) * hours, 4)
-        row[1] = round(row[1] + sun_kw * hours, 4)
+        row = self.history.setdefault(start.isoformat(), [0.0, 0.0, 0.0])
+        if len(row) < 3:
+            row.append(0.0)
+        if power >= 0.05:
+            grid_import = max(snap.grid_power_kw or 0.0, 0.0) if snap.grid_power_kw is not None else power
+            sun_kw = max(0.0, min(power, power - grid_import))
+            row[0] = round(row[0] + (power - sun_kw) * hours, 4)
+            row[1] = round(row[1] + sun_kw * hours, 4)
+        if pv:
+            row[2] = round(row[2] + pv * hours, 4)
         cutoff = (now - timedelta(hours=48)).isoformat()
         for key in [k for k in self.history if k < cutoff]:
             del self.history[key]
@@ -1079,6 +1091,12 @@ class EaseeSmartManager:
             "departure": departure.isoformat(),
             "error": fc.error if fc else None,
             "calibration": fc.calibration if fc else None,
+            "pv_hourly": [
+                {"start": start.isoformat(), "kw": round(kw, 3)}
+                for start, kw in sorted(self.pv_forecast_kw().items())
+                if start >= dt_util.as_utc(dt_util.start_of_local_day() - timedelta(days=1))
+                and start < dt_util.as_utc(dt_util.start_of_local_day() + timedelta(days=2))
+            ],
             "slots": [
                 {"start": x.start.isoformat(), "end": x.end.isoformat(), "pv": x.pv_kw, "house": x.house_kw, "charge": x.charge_kw}
                 for x in slots if x.end > now - timedelta(hours=1)
@@ -1427,7 +1445,7 @@ class EaseeSmartManager:
         snap = self.snapshot
         plan = snap.plan or snap.plan_preview
         now = dt_util.now()
-        horizon = now - timedelta(hours=6)  # the chart also shows what happened in the last hours
+        horizon = dt_util.start_of_local_day() - timedelta(days=1)  # the chart can show yesterday too
         return {
             "model": self.model,
             "name": self.name,
@@ -1463,9 +1481,9 @@ class EaseeSmartManager:
             "solar": self._solar_payload(now),
             "schedule": self._schedule_payload(now, plan),
             "history": [
-                {"start": k, "grid": round(v[0], 3), "sun": round(v[1], 3)}
+                {"start": k, "grid": round(v[0], 3), "sun": round(v[1], 3), "pv": round(v[2], 3) if len(v) > 2 else 0}
                 for k, v in sorted(self.history.items())
-                if k >= (dt_util.utcnow() - timedelta(hours=24)).isoformat()
+                if k >= dt_util.as_utc(dt_util.start_of_local_day() - timedelta(days=1)).isoformat()
             ],
             "max_current": self.max_current,
             "sources": self.charger_entities,
@@ -1483,7 +1501,7 @@ class EaseeSmartManager:
                 {"start": s.start.isoformat(), "end": s.end.isoformat(), "price": s.price}
                 for s in snap.prices
                 if s.end > horizon
-            ][:240],
+            ][:400],
             "plan": [
                 {"start": s.start.isoformat(), "end": s.end.isoformat(), "price": s.price}
                 for s in (plan.slots if plan else [])

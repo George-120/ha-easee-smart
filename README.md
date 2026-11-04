@@ -102,6 +102,7 @@ Acties: `easee_smart.export_report` (geeft de CSV terug als antwoord; er wordt n
 
 ### Goed om te weten
 
+- **Grafiek bladeren.** Met de pijltjes ‹ › boven de grafiek kijk je naar **Gisteren** (prijzen, wat er geladen is en hoeveel zon er echt was tegenover de verwachting) en **Morgen** (de zonverwachting, ook als de prijzen van morgen er nog niet zijn).
 - **Zonnepanelen en zonverwachting** (optioneel, standaard uit). Onder *Configureren → Zonnepanelen en zonverwachting* koppel je de vermogenssensor van je omvormer (elk merk). De integratie maakt dan zelf een zonverwachting zoals *Enphase Envoy Local*: Open-Meteo (drie weermodellen), en uit je eigen geschiedenis leert hij de stand van de panelen, de opbrengst, schaduw en het seizoen. Of je gebruikt een bestaande verwachtingssensor (bijv. Enphase Envoy Local). *Zon + slim* rekent dan op de verwachte zon vóór je vertrektijd en haalt minder van het net. De planningsgrafiek toont de verwachte zon als stippellijn. Onder de prijzen loopt per kwartier een strook naar beneden: blauw = van het net, geel = van de zon, op elkaar gestapeld; vol = wat er al geladen is (de laatste 6 uur), licht = wat er gaat gebeuren. Daaronder staat wat het systeem gaat doen: zon vandaag/morgen, zon tot vertrek en hoeveel van het net.
 - **Laadmodi.** *Normaal* laadt meteen op vol vermogen. *Slim* laadt in de goedkoopste uren, zodat de auto op je vertrektijd vol is. *Zon* laadt alleen met zonne-overschot. *Zon + slim* gebruikt eerst zonne-overschot en laadt wat dan nog nodig is in de goedkoopste uren. De kaarten laten altijd zien in welke stand hij staat, op hoeveel fasen, en kleuren de prijsgrafiek per modus.
 - **1 of 3 fasen.** Easee-laadpalen laden vanaf 6 A: 1,4 kW op 1 fase, 4,1 kW op 3 fasen. Bij zonneladen wisselt de integratie automatisch: weinig zon → 1 fase, genoeg zon → terug naar 3 fasen (met wachttijd, om de laadpaal te sparen). Uit te zetten onder *Configureren → Laadpaal*.
@@ -156,6 +157,7 @@ The cards are loaded automatically; you do not have to change your dashboard or 
 type: custom:easee-smart-card       # or easee-smart-charger-card, -modes-, -cars-, -plan-, -grid-, -costs-, -equalizer-card
 entity: sensor.driveway_smart_status  # optional; without it the first charger is used
 theme: auto                          # auto | light | dark
+mode_banner: false                   # charge-mode card: also show the mode bar (default off)
 language: auto                       # auto | nl | en | de
 ```
 
@@ -170,6 +172,7 @@ Creating it again only refreshes the dashboard this integration made itself.
 
 ### Good to know
 
+- **Browse the chart.** The arrows ‹ › above the chart show **Yesterday** (prices, what was charged, measured sun vs. the forecast) and **Tomorrow** (the solar forecast, also before tomorrow's prices are known).
 - **Solar panels and solar forecast** (optional, off by default). Under *Configure → Solar panels and solar forecast* you link the power sensor of your inverter (any brand). The integration then makes its own solar forecast like *Enphase Envoy Local*: Open-Meteo (three weather models), learning orientation, yield, shade and season from your own history. Or use an existing forecast sensor (e.g. Enphase Envoy Local). *Solar + smart* then counts on the sun expected before your departure and buys less from the grid. The planning chart shows the expected sun as a dotted line. Below the prices a strip runs downward per quarter hour: blue = from the grid, yellow = from the sun, stacked; solid = already charged (last 6 hours), light = what will happen. Below that: what the system will do: sun today/tomorrow, sun until departure and how much from the grid.
 - **Charge modes.** *Normal* charges right away at full power. *Smart* charges in the cheapest hours so the car is ready at your departure time. *Solar* charges only on solar surplus. *Solar + smart* uses solar surplus first and charges what is still needed in the cheapest hours. The cards always show the active mode and number of phases, and colour the price chart per mode.
 - **1 or 3 phases.** Easee chargers charge from 6 A: 1.4 kW on 1 phase, 4.1 kW on 3 phases. For solar charging the integration switches automatically: little sun → 1 phase, enough sun → back to 3 phases (with a delay to spare the charger). Can be turned off under *Configure → Charger*.
@@ -223,6 +226,7 @@ Die Karten werden automatisch geladen; du musst nichts an deinem Dashboard oder 
 ```yaml
 type: custom:easee-smart-card       # oder easee-smart-charger-card, -modes-, -cars-, -plan-, -grid-, -costs-card
 theme: auto                          # auto | light | dark
+mode_banner: false                   # charge-mode card: also show the mode bar (default off)
 language: auto                       # auto | nl | en | de
 ```
 
@@ -237,6 +241,7 @@ Erneut erstellen aktualisiert nur das Dashboard, das diese Integration selbst an
 
 ### Gut zu wissen
 
+- **Grafik blättern.** Mit den Pfeilen ‹ › über der Grafik siehst du **Gestern** (Preise, Geladenes, gemessene Sonne gegenüber der Prognose) und **Morgen** (die Solarprognose, auch bevor die Preise für morgen bekannt sind).
 - **Solaranlage und Solarprognose** (optional, standardmäßig aus). Unter *Konfigurieren → Solaranlage und Solarprognose* verbindest du den Leistungssensor deines Wechselrichters (jede Marke). Die Integration erstellt dann eine eigene Prognose wie *Enphase Envoy Local*: Open-Meteo (drei Wettermodelle), Ausrichtung, Ertrag, Schatten und Jahreszeit aus deinem eigenen Verlauf gelernt. Oder du nutzt einen vorhandenen Prognosesensor (z. B. Enphase Envoy Local). *Solar + Smart* rechnet dann mit der Sonne vor deiner Abfahrt und kauft weniger aus dem Netz. Die Planungsgrafik zeigt die erwartete Sonne als gestrichelte Linie. Unter den Preisen läuft je Viertelstunde ein Streifen nach unten: blau = aus dem Netz, gelb = von der Sonne, gestapelt; voll = bereits geladen (letzte 6 Stunden), hell = was passieren wird. Darunter, was das System tun wird.
 - **Lademodi.** *Normal* lädt sofort mit voller Leistung. *Smart* lädt in den günstigsten Stunden, damit das Auto zur Abfahrt voll ist. *Solar* lädt nur mit Solarüberschuss. *Solar + Smart* nutzt zuerst Solarüberschuss und lädt den Rest in den günstigsten Stunden. Die Karten zeigen immer den aktiven Modus und die Phasenzahl und färben die Preisgrafik je Modus.
 - **1 oder 3 Phasen.** Easee-Wallboxen laden ab 6 A: 1,4 kW einphasig, 4,1 kW dreiphasig. Beim Solarladen schaltet die Integration automatisch um: wenig Sonne → 1 Phase, genug Sonne → zurück auf 3 Phasen (mit Verzögerung, um die Wallbox zu schonen). Abschaltbar unter *Konfigurieren → Wallbox*.
