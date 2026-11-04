@@ -1,6 +1,6 @@
 /* Easee Smart Charging card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.11.1";
+  const VERSION = "1.11.2";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -603,7 +603,7 @@
     }
 
     _priceChart(a, t) {
-      const day = this._day || 0;                       // -1 yesterday, 0 now, 1 tomorrow
+      const day = Number(this._chartDay) || 0;                       // -1 yesterday, 0 now, 1 tomorrow
       const now = Date.now();
       const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
       const Q = 900e3;
@@ -684,10 +684,13 @@
         return `<g class="estrip${e.past ? "" : " plan"}">${hg > 0.2 ? `<rect class="eg" x="${x}" y="${top0}" width="${w}" height="${hg.toFixed(1)}" rx="1">${tip}</rect>` : ""}${hu > 0.2 ? `<rect class="eu" x="${x}" y="${(top0 + hg).toFixed(1)}" width="${w}" height="${hu.toFixed(1)}" rx="1">${tip}</rect>` : ""}</g>`;
       }).join("") : "";
       const tickY = hasStrip ? H + S + 16 : H + 14;
+      const vbH = tickY + 6;
+      // labels live in HTML on top of the svg: the svg is stretched (preserveAspectRatio none), text would be squeezed
+      const lbl = (cls, x, y, txt, end) => `<span class="clbl ${cls}${end ? " end" : ""}" style="${end ? "right" : "left"}:${(end ? 100 - (x / W) * 100 : (x / W) * 100).toFixed(2)}%;top:${(((y + 4) / vbH) * 100).toFixed(2)}%">${txt}</span>`;
       const every = day === 0 ? 6 : 3;
       const ticks = grid.map((g, i) => {
         const d = new Date(g.s);
-        return d.getMinutes() === 0 && d.getHours() % every === 0 ? `<text x="${(i * bw).toFixed(1)}" y="${tickY}">${String(d.getHours()).padStart(2, "0")}:00</text>` : "";
+        return d.getMinutes() === 0 && d.getHours() % every === 0 ? lbl(i === 0 ? "tick first" : "tick", i * bw, tickY, `${String(d.getHours()).padStart(2, "0")}:00`) : "";
       }).join("");
       const legend = [
         withPrice.length ? (mode === "solar_smart" && day >= 0
@@ -701,16 +704,18 @@
       return `
         ${this._dayNav(t, day)}
         <figure class="chart${hasStrip ? " withstrip" : ""}">
-          <svg viewBox="0 -4 ${W} ${tickY + 6}" preserveAspectRatio="none" role="img">
+          <div class="plot"><svg viewBox="0 -4 ${W} ${tickY + 6}" preserveAspectRatio="none" role="img">
             <line class="zero" x1="0" x2="${W}" y1="${zero.toFixed(1)}" y2="${zero.toFixed(1)}"></line>
             ${bars}
             ${sunLine}
             ${realLine}
-            ${fPts.length > 1 || rPts.length > 1 ? `<text class="sunmax" x="${W - 2}" y="8" text-anchor="end">☀ ${this._num(pvMax, 1)} kW</text>` : ""}
-            ${hasStrip ? `<line class="zero" x1="0" x2="${W}" y1="${top0}" y2="${top0}"></line>${strip}<text class="smax" x="${W - 2}" y="${(top0 + S - 2).toFixed(1)}" text-anchor="end">${this._num(eMax, 1)} kWh</text>` : ""}
+                        ${hasStrip ? `<line class="zero" x1="0" x2="${W}" y1="${top0}" y2="${top0}"></line>${strip}` : ""}
             ${nowX !== null ? `<line class="nowline" x1="${nowX.toFixed(1)}" x2="${nowX.toFixed(1)}" y1="0" y2="${hasStrip ? top0 + S : H}"></line>` : ""}
-            ${ticks}
           </svg>
+          ${ticks}
+          ${fPts.length > 1 || rPts.length > 1 ? lbl("sunmax", W - 2, 8, `☀ ${this._num(pvMax, 1)} kW`, true) : ""}
+          ${hasStrip ? lbl("smax", W - 2, top0 + S - 2, `${this._num(eMax, 1)} kWh`, true) : ""}
+          </div>
           <figcaption class="legend">${legend}</figcaption>
           ${hasStrip ? `<p class="stripkey"><span>↓ ${t.perQuarter}:</span><span><i class="key eg"></i>${t.fromGrid}</span><span><i class="key eu"></i>${t.fromSun}</span><span class="muted">${t.solidLight}</span></p>` : ""}
           ${note ? `<p class="note chartnote">${note}</p>` : ""}
@@ -862,7 +867,7 @@
           location.reload();
           return;
         case "day":
-          this._day = Math.max(-1, Math.min(1, (this._day || 0) + Number(btn.dataset.dir)));
+          this._chartDay = Math.max(-1, Math.min(1, (Number(this._chartDay) || 0) + Number(btn.dataset.dir)));
           this._sig = null;
           this._render();
           return;
@@ -1108,13 +1113,16 @@
     .bar.plan { fill:var(--accent); }
     .zero { stroke:var(--line); stroke-width:1; }
     .nowline { stroke:#fff; stroke-width:1.5; stroke-dasharray:3 3; opacity:.7; }
-    .chart text { fill:var(--muted); font-size:11px; }
+    .chart .plot { position:relative; }
+    .clbl { position:absolute; transform:translateY(-85%); font-size:11px; line-height:1; color:var(--muted); white-space:nowrap; pointer-events:none; font-variant-numeric:tabular-nums; letter-spacing:.01em; }
     figcaption { font-size:.74rem; color:var(--muted); display:flex; align-items:center; gap:6px; margin-top:2px; }
     .bar.sun { fill:var(--sun); }
     .sunplan { fill:var(--sun); opacity:.55; }
     .estrip .eg { fill:var(--accent); } .estrip .eu { fill:var(--sun); }
     .estrip.plan .eg, .estrip.plan .eu { opacity:.45; }
-    .smax { fill:var(--muted); font-size:9px; }
+    .clbl.smax { font-size:10px; }
+    .clbl.tick { transform:translate(-50%,-85%); }
+    .clbl.tick.first { transform:translateY(-85%); }
     .key.eg { width:10px; height:10px; border-radius:3px; background:var(--accent); display:inline-block; margin-left:4px; }
     .key.eu { width:10px; height:10px; border-radius:3px; background:var(--sun); display:inline-block; margin-left:6px; }
     .daynav { display:flex; align-items:center; justify-content:center; gap:10px; margin:6px 0 2px; font-size:.82rem; font-weight:600; }
@@ -1132,7 +1140,7 @@
     .bar.past { opacity:.45; }
     .chart.withstrip svg { height:180px; }
     .sunline { fill:none; stroke:var(--sun); stroke-width:2; stroke-dasharray:4 4; vector-effect:non-scaling-stroke; }
-    .sunmax { fill:var(--sun); font-size:10px; }
+    .clbl.sunmax { color:var(--sun); font-size:11px; }
     .key.dots { width:14px; height:0; border-top:2px dashed var(--sun); display:inline-block; vertical-align:middle; margin-left:6px; }
     .key.sunblk { width:10px; height:10px; border-radius:3px; background:var(--sun); opacity:.55; display:inline-block; margin-left:6px; }
     .sunsum { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px; }
