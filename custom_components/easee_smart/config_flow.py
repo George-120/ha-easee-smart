@@ -62,9 +62,15 @@ from .const import (
     CONF_MODEL,
     CONF_NO_PRICES,
     CONF_NUDGE,
+    CONF_PHASE_CONFIRM,
+    CONF_PHASE_INTERVAL,
     CONF_PHASE_SWITCHING,
     CONF_PHASES,
     CONF_PRICE_RESOLUTION,
+    CONF_PV_FORECAST,
+    CONF_PV_FORECAST_SENSOR,
+    CONF_PV_KWP,
+    CONF_PV_POWER,
     CONF_REIMBURSEMENT,
     CONF_SESSION_MODE,
     CONF_SHOW_EQUALIZER,
@@ -75,6 +81,8 @@ from .const import (
     DEFAULT_EFFICIENCY,
     DEFAULT_MAIN_FUSE,
     DEFAULT_MAX_CURRENT,
+    DEFAULT_PHASE_CONFIRM_MIN,
+    DEFAULT_PHASE_INTERVAL_MIN,
     DEFAULT_PHASES,
     DOMAIN,
     EASEE_DOMAIN,
@@ -90,6 +98,10 @@ from .const import (
     NO_PRICES_CHARGE,
     NO_PRICES_WAIT,
     PHASE_ENTITY_KEYS,
+    PV_FORECAST_NONE,
+    PV_FORECAST_OPTIONS,
+    PV_FORECAST_OWN,
+    PV_FORECAST_SENSOR,
     REQUIRED_CHARGER_KEYS,
     REQUIRED_EQUALIZER_KEYS,
     RESOLUTION_HOUR,
@@ -310,6 +322,8 @@ def _advanced_schema(defaults: dict[str, Any]) -> dict:
             num(CONF_SOLAR_BUFFER, 0.0, 0, 5, 0.05, "kW"),
             num(CONF_EFFICIENCY, DEFAULT_EFFICIENCY, 50, 100, 1, "%"),
             num(CONF_CAR_REFRESH_MIN, 0, 0, 240, 5, "min"),
+            num(CONF_PHASE_CONFIRM, DEFAULT_PHASE_CONFIRM_MIN, 1, 30, 1, "min"),
+            num(CONF_PHASE_INTERVAL, DEFAULT_PHASE_INTERVAL_MIN, 3, 120, 1, "min"),
         ]
     )
     schema[vol.Optional(CONF_LANGUAGE, default=defaults.get(CONF_LANGUAGE) or "auto")] = selector.SelectSelector(
@@ -318,6 +332,57 @@ def _advanced_schema(defaults: dict[str, Any]) -> dict:
     schema[vol.Optional(CONF_BOOST_RESET, default=defaults.get(CONF_BOOST_RESET, True))] = selector.BooleanSelector()
     schema[vol.Optional(CONF_NUDGE, default=defaults.get(CONF_NUDGE, True))] = selector.BooleanSelector()
     return schema
+
+
+PV_WORDS = ("pv", "solar", "zon", "productie", "production", "inverter", "omvormer", "envoy", "solaredge", "growatt", "fronius", "sma", "huawei", "goodwe", "victron")
+
+
+def suggest_pv_power(hass: HomeAssistant) -> str | None:
+    """A power sensor of the solar panels (production), if one can be recognised."""
+    best: tuple[int, str] | None = None
+    for state in hass.states.async_all("sensor"):
+        a = state.attributes
+        if a.get("device_class") != "power" or str(a.get("unit_of_measurement", "")).lower() not in ("w", "kw"):
+            continue
+        eid = state.entity_id.lower()
+        if not any(w in eid for w in PV_WORDS) or any(w in eid for w in ("net", "grid", "consum", "verbruik", "import", "export", "battery", "accu", "_dc", "max", "microinverter")):
+            continue
+        score = (2 if any(w in eid for w in ("productie", "production", "pv_power", "solar_power")) else 1)
+        if best is None or score > best[0]:
+            best = (score, state.entity_id)
+    return best[1] if best else None
+
+
+def suggest_pv_forecast(hass: HomeAssistant) -> str | None:
+    """A sensor with an hourly forecast attribute ([[hour end, Wh], ...]), e.g. Enphase Envoy Local."""
+    found: list[tuple[int, str]] = []
+    for state in hass.states.async_all("sensor"):
+        hourly = state.attributes.get("hourly")
+        if not (isinstance(hourly, list) and hourly and isinstance(hourly[0], (list, tuple)) and len(hourly[0]) == 2):
+            continue
+        eid = state.entity_id.lower()
+        found.append((0 if any(w in eid for w in ("today", "vandaag", "heute")) else 1, state.entity_id))
+    return min(found)[1] if found else None
+
+
+def _solar_schema(hass: HomeAssistant, current: dict[str, Any]) -> dict:
+    source = current.get(CONF_PV_FORECAST) or PV_FORECAST_NONE
+    pv = current.get(CONF_PV_POWER) or suggest_pv_power(hass)
+    fc = current.get(CONF_PV_FORECAST_SENSOR) or suggest_pv_forecast(hass)
+    return {
+        vol.Required(CONF_PV_FORECAST, default=source): selector.SelectSelector(
+            selector.SelectSelectorConfig(options=PV_FORECAST_OPTIONS, translation_key="pv_forecast", mode=selector.SelectSelectorMode.LIST)
+        ),
+        vol.Optional(CONF_PV_POWER, description={"suggested_value": pv}): selector.EntitySelector(
+            selector.EntitySelectorConfig(domain="sensor", device_class="power")
+        ),
+        vol.Optional(CONF_PV_KWP, description={"suggested_value": current.get(CONF_PV_KWP)}): selector.NumberSelector(
+            selector.NumberSelectorConfig(min=0.1, max=100, step=0.1, unit_of_measurement="kWp", mode=selector.NumberSelectorMode.BOX)
+        ),
+        vol.Optional(CONF_PV_FORECAST_SENSOR, description={"suggested_value": fc}): selector.EntitySelector(
+            selector.EntitySelectorConfig(domain="sensor")
+        ),
+    }
 
 
 def _charger_schema(defaults: dict[str, Any]) -> dict:
@@ -514,10 +579,27 @@ class EaseeSmartOptionsFlow(OptionsFlow):
         return self.async_create_entry(data=data)
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        menu = ["charger", "equalizer", "energy", "cars", "advanced", "dashboard"]
+        menu = ["charger", "equalizer", "solar", "energy", "cars", "advanced", "dashboard"]
         if self._current().get(CONF_EQUALIZER_DEVICE) in (None, "", NO_EQUALIZER):
-            menu.insert(2, "grid")
+            menu.insert(3, "grid")
         return self.async_show_menu(step_id="init", menu_options=menu)
+
+    async def async_step_solar(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Link the solar panels (off by default) for a solar forecast in the planning."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            source = user_input.get(CONF_PV_FORECAST, PV_FORECAST_NONE)
+            if source == PV_FORECAST_OWN and not user_input.get(CONF_PV_POWER):
+                errors[CONF_PV_POWER] = "pv_power_required"
+            elif source == PV_FORECAST_SENSOR:
+                fc = user_input.get(CONF_PV_FORECAST_SENSOR)
+                st = self.hass.states.get(fc) if fc else None
+                if st is None or not isinstance(st.attributes.get("hourly"), list):
+                    errors[CONF_PV_FORECAST_SENSOR] = "no_hourly_forecast"
+            if not errors:
+                return self._save(user_input, [CONF_PV_POWER, CONF_PV_KWP, CONF_PV_FORECAST_SENSOR])
+        current = {**self._current(), **(user_input or {})}
+        return self.async_show_form(step_id="solar", data_schema=vol.Schema(_solar_schema(self.hass, current)), errors=errors)
 
     async def async_step_equalizer(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Link (or unlink) an Easee Equalizer and choose whether the cards show it."""

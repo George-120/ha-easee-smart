@@ -107,7 +107,9 @@ def install_stubs():
     _mod("homeassistant.helpers.aiohttp_client", async_get_clientsession=lambda h: None)
     if "aiohttp" not in sys.modules:
         _mod("aiohttp", ClientError=Exception, ClientTimeout=lambda **k: None)
-    dt = _mod("homeassistant.util.dt", now=lambda: CLOCK["now"], utcnow=lambda: CLOCK["now"], as_local=lambda d: d.astimezone(TZ))
+    dt = _mod("homeassistant.util.dt", now=lambda: CLOCK["now"], utcnow=lambda: CLOCK["now"], as_local=lambda d: d.astimezone(TZ),
+              parse_datetime=datetime.fromisoformat, as_utc=lambda d: d.astimezone(timezone.utc),
+              start_of_local_day=lambda: CLOCK["now"].astimezone(TZ).replace(hour=0, minute=0, second=0, microsecond=0))
     _mod("homeassistant.util", dt=dt)
     sys.modules["homeassistant"].helpers = sys.modules["homeassistant.helpers"]
     sys.modules["homeassistant.helpers"].device_registry = sys.modules["homeassistant.helpers.device_registry"]
@@ -663,3 +665,54 @@ def test_hourly_prices():
     hours = prices_mod.to_hourly(quarters)
     assert [round(h.price, 2) for h in hours] == [0.26, 0.10]
     assert hours[0].end - hours[0].start == timedelta(hours=1)
+
+
+def test_solar_outlook_thresholds():
+    install_stubs()
+    sys.modules.pop("easee_smart.logic", None)
+    logic = importlib.import_module("easee_smart.logic")
+    base = datetime(2026, 6, 1, 10, 0, tzinfo=TZ)
+    slots = [logic.PriceSlot(base + timedelta(hours=i), base + timedelta(hours=i + 1), 0.2) for i in range(4)]
+    hour = lambda i: (base + timedelta(hours=i)).astimezone(logic.UTC_TZ)  # noqa: E731
+    pv = {hour(0): 1.0, hour(1): 2.5, hour(2): 6.0, hour(3): 20.0}
+    out = logic.solar_outlook(slots, pv, {}, min_current=6, max_current=16, phases=3,
+                              phase_switching=True, voltage=230, buffer_kw=0)
+    charge = [round(x.charge_kw, 2) for x in out]
+    # 1.0-0.35 < 1.4 → nothing; 2.15 → 1 phase; 5.65 → 3 phases; 19.65 → capped at 16 A × 3 × 230 V
+    assert charge == [0.0, 2.15, 5.65, 11.04]
+    no_switch = logic.solar_outlook(slots, pv, {}, min_current=6, max_current=16, phases=3,
+                                    phase_switching=False, voltage=230)
+    assert [round(x.charge_kw, 2) for x in no_switch][1] == 0.0
+    assert round(logic.solar_energy_until(out, base, base + timedelta(hours=3)), 2) == 7.8
+
+
+def test_solar_smart_buys_less_with_forecast(tmp_path):
+    async def run():
+        CLOCK["now"] = datetime(2026, 6, 1, 6, 0, tzinfo=TZ)
+        hass, m = make(tmp_path, options={"pv_forecast": "sensor", "pv_forecast_entity": "sensor.fc",
+                                          "pv_power_entity": "sensor.pv"})
+        await m.async_setup()
+        setstate(hass, "sensor.c_status", "awaiting_start")
+        setstate(hass, "sensor.c_power", 0)
+        setstate(hass, "sensor.eq_import_power", 0.3)
+        setstate(hass, "sensor.eq_export_power", 0)
+        setstate(hass, "sensor.pv", 0, unit_of_measurement="W")
+        base = CLOCK["now"].replace(minute=0)
+        # 6 kW expected from 9:00 to 15:00 (hour END labels, Wh per hour, like Enphase Envoy Local)
+        hourly = [[(base + timedelta(hours=i + 1)).astimezone(timezone.utc).isoformat(), 6000 if 3 <= i < 9 else 0] for i in range(24)]
+        setstate(hass, "sensor.fc", 10, hourly=hourly)
+        m.day_ahead.points = [(base + timedelta(hours=i), 0.10 + 0.01 * i) for i in range(24)]
+        m.day_ahead.last_fetch = CLOCK["now"] + timedelta(days=1)
+        m.entry.options.update({"price_markup": 0.0, "energy_tax": 0.0, "vat_percent": 0.0})
+        m._rebuild_prices()
+        await m.async_set_setting("departure", "17:00")
+        await m.async_set_setting("target_energy", 30)
+        await m.async_set_setting("mode", "solar_smart")
+        sol = m.card_payload()["solar"]
+        assert sol["source"] == "sensor" and sol["until_departure_kwh"] > 30   # ~5.65 kW × 6 h
+        assert sol["grid_kwh"] < 30 and sol["grid_kwh"] >= 0
+        assert any(x["charge"] > 0 for x in sol["slots"])
+        await m.async_set_setting("mode", "smart")
+        assert m.card_payload()["solar"]["grid_kwh"] == 30   # plain smart does not count on the sun
+        CLOCK["now"] = datetime(2026, 11, 3, 20, 0, tzinfo=TZ)
+    asyncio.run(run())

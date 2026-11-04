@@ -121,11 +121,27 @@
         "menu_options": {
           "charger": "Charger: phases, current and default mode",
           "equalizer": "Easee Equalizer",
+          "solar": "Solar panels and solar forecast",
           "grid": "Main connection: smart meter for solar charging",
           "energy": "Prices, ERE and costs",
           "cars": "Cars: add, change or remove",
           "advanced": "Advanced: solar timing, buffer, language",
           "dashboard": "Create the ready-made dashboard"
+        }
+      },
+      "solar": {
+        "title": "Solar panels and solar forecast",
+        "description": "Optional. With a forecast, **Solar + smart** counts on the sun that is expected before your departure and buys less from the grid; the planning chart shows the expected sun as a dotted line.\n\n- **Own forecast**: link the power sensor of your inverter. The integration fetches the weather (Open-Meteo, three weather models) and learns from your own history the orientation of the panels, how much they make, shade and the season. Works with any brand.\n- **From a sensor**: use a forecast sensor that has an `hourly` list, such as *Enphase Envoy Local* → Forecast today.",
+        "data": {
+          "pv_forecast": "Solar forecast",
+          "pv_power_entity": "Inverter power (production)",
+          "pv_kwp": "Peak power of the panels (optional)",
+          "pv_forecast_entity": "Forecast sensor"
+        },
+        "data_description": {
+          "pv_power_entity": "Needed for the own forecast. A recognised sensor is filled in already. The longer its history, the better the forecast.",
+          "pv_kwp": "Only used until enough history has been learned (about 3 weeks).",
+          "pv_forecast_entity": "Only for 'From a sensor'."
         }
       },
       "equalizer": {
@@ -259,9 +275,13 @@
           "boost_reset_on_unplug": "Turn Boost off when the car is unplugged",
           "resume_nudge": "Wake the car when it does not start charging",
           "car_refresh_minutes": "Refresh car data every (0 = off)",
-          "language": "Language of card and report"
+          "language": "Language of card and report",
+          "phase_confirm_minutes": "Phase switch: switch when it lasts",
+          "phase_interval_minutes": "Phase switch: at least between two switches"
         },
         "data_description": {
+          "phase_confirm_minutes": "How long the sun has to stay below/above the 3-phase minimum (4.1 kW) before switching. Default 3 minutes.",
+          "phase_interval_minutes": "Spares the charger's relays and the car. Default 15 minutes.",
           "min_current": "Most cars need at least 6 A. Some charge more efficiently from 8 or 10 A.",
           "charge_efficiency": "Energy lost while charging; used to calculate how much energy is still needed.",
           "resume_nudge": "After 3 minutes without charging: resume on the charger and the car's start entity.",
@@ -270,6 +290,8 @@
       }
     },
     "error": {
+      "pv_power_required": "Choose the power sensor of your inverter for the own forecast.",
+      "no_hourly_forecast": "This sensor has no hourly forecast (attribute 'hourly').",
       "dashboard_failed": "The dashboard could not be created. Check the log for details."
     },
     "abort": {
@@ -310,6 +332,13 @@
       "options": {
         "quarter": "Quarter hour (15 min)",
         "hour": "Hour"
+      }
+    },
+    "pv_forecast": {
+      "options": {
+        "none": "Off (not linked)",
+        "own": "Own forecast from my inverter",
+        "sensor": "From a forecast sensor (e.g. Enphase Envoy Local)"
       }
     },
     "show_equalizer": {

@@ -121,11 +121,27 @@
         "menu_options": {
           "charger": "Laadpaal: fasen, stroom en standaardmodus",
           "equalizer": "Easee Equalizer",
+          "solar": "Zonnepanelen en zonverwachting",
           "grid": "Hoofdaansluiting: slimme meter voor zonneladen",
           "energy": "Prijzen, ERE en kosten",
           "cars": "Auto's: toevoegen, wijzigen of verwijderen",
           "advanced": "Geavanceerd: zon-timing, buffer, taal",
           "dashboard": "Kant-en-klaar dashboard aanmaken"
+        }
+      },
+      "solar": {
+        "title": "Zonnepanelen en zonverwachting",
+        "description": "Optioneel. Met een verwachting rekent **Zon + slim** op de zon die vóór je vertrektijd wordt verwacht en haalt hij minder van het net; de planningsgrafiek laat de verwachte zon zien als stippellijn.\n\n- **Eigen verwachting**: koppel de vermogenssensor van je omvormer. De integratie haalt het weer op (Open-Meteo, drie weermodellen) en leert uit je eigen geschiedenis de stand van de panelen, hoeveel ze opleveren, schaduw en het seizoen. Werkt met elk merk.\n- **Uit een sensor**: gebruik een verwachtingssensor met een `hourly`-lijst, zoals *Enphase Envoy Local* → Verwachting vandaag.",
+        "data": {
+          "pv_forecast": "Zonverwachting",
+          "pv_power_entity": "Vermogen omvormer (productie)",
+          "pv_kwp": "Piekvermogen van de panelen (optioneel)",
+          "pv_forecast_entity": "Verwachtingssensor"
+        },
+        "data_description": {
+          "pv_power_entity": "Nodig voor de eigen verwachting. Een herkende sensor is al ingevuld. Hoe langer de geschiedenis, hoe beter de verwachting.",
+          "pv_kwp": "Wordt alleen gebruikt tot er genoeg geschiedenis is geleerd (ongeveer 3 weken).",
+          "pv_forecast_entity": "Alleen voor 'Uit een sensor'."
         }
       },
       "equalizer": {
@@ -259,9 +275,13 @@
           "boost_reset_on_unplug": "Boost uitzetten als de auto wordt losgekoppeld",
           "resume_nudge": "Auto wekken als hij niet begint met laden",
           "car_refresh_minutes": "Gegevens auto verversen elke (0 = uit)",
-          "language": "Taal van kaart en rapport"
+          "language": "Taal van kaart en rapport",
+          "phase_confirm_minutes": "Fasewissel: wisselen als het zo blijft",
+          "phase_interval_minutes": "Fasewissel: minimaal tussen twee wissels"
         },
         "data_description": {
+          "phase_confirm_minutes": "Hoe lang de zon onder/boven het 3-fasenminimum (4,1 kW) moet blijven voordat hij wisselt. Standaard 3 minuten.",
+          "phase_interval_minutes": "Spaart de relais van de laadpaal en de auto. Standaard 15 minuten.",
           "min_current": "De meeste auto's hebben minimaal 6 A nodig. Sommige laden efficiënter vanaf 8 of 10 A.",
           "charge_efficiency": "Verlies tijdens het laden; wordt gebruikt om te berekenen hoeveel energie er nog nodig is.",
           "resume_nudge": "Na 3 minuten zonder laden: hervatten op de laadpaal en de start-entiteit van de auto.",
@@ -270,6 +290,8 @@
       }
     },
     "error": {
+      "pv_power_required": "Kies de vermogenssensor van je omvormer voor de eigen verwachting.",
+      "no_hourly_forecast": "Deze sensor heeft geen verwachting per uur (attribuut 'hourly').",
       "dashboard_failed": "Het dashboard kon niet worden aangemaakt. Kijk in het logboek voor details."
     },
     "abort": {
@@ -310,6 +332,13 @@
       "options": {
         "quarter": "Kwartier (15 min)",
         "hour": "Uur"
+      }
+    },
+    "pv_forecast": {
+      "options": {
+        "none": "Uit (niet gekoppeld)",
+        "own": "Eigen verwachting uit mijn omvormer",
+        "sensor": "Uit een verwachtingssensor (bijv. Enphase Envoy Local)"
       }
     },
     "show_equalizer": {

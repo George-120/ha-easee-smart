@@ -53,9 +53,15 @@ from .const import (
     CONF_MODEL,
     CONF_NO_PRICES,
     CONF_NUDGE,
+    CONF_PHASE_CONFIRM,
+    CONF_PHASE_INTERVAL,
     CONF_PHASE_SWITCHING,
     CONF_PHASES,
     CONF_PRICE_RESOLUTION,
+    CONF_PV_FORECAST,
+    CONF_PV_FORECAST_SENSOR,
+    CONF_PV_KWP,
+    CONF_PV_POWER,
     CONF_REIMBURSEMENT,
     CONF_SESSION_MODE,
     CONF_SHOW_EQUALIZER,
@@ -72,6 +78,8 @@ from .const import (
     DEFAULT_EFFICIENCY,
     DEFAULT_MAIN_FUSE,
     DEFAULT_MAX_CURRENT,
+    DEFAULT_PHASE_CONFIRM_MIN,
+    DEFAULT_PHASE_INTERVAL_MIN,
     DEFAULT_PHASES,
     DEFAULT_TARGET_ENERGY,
     DEFAULT_TARGET_SOC,
@@ -93,6 +101,9 @@ from .const import (
     PHASE_MODE_3,
     PHASE_MODE_AUTO,
     PHASE_RESTART_DELAY_S,
+    PV_FORECAST_OWN,
+    PV_FORECAST_REFRESH_S,
+    PV_FORECAST_SENSOR,
     RESOLUTION_HOUR,
     SESSION_MODE_KEEP,
     SIGNAL_UPDATE,
@@ -108,6 +119,7 @@ from .const import (
     SMART_WAITING_SOLAR,
     SOLAR_START_DELAY_S,
     SOLAR_STOP_DELAY_S,
+    SOLAR_TRUST,
     STATUS_DISCONNECTED,
     STORAGE_KEY,
     STORAGE_VERSION,
@@ -123,6 +135,8 @@ from .logic import (
     plan_cheapest,
     power_for_amps,
     price_at,
+    solar_energy_until,
+    solar_outlook,
 )
 from .prices import DayAheadPrices, default_zone, to_hourly, to_slots, zone_defaults
 
@@ -252,6 +266,10 @@ class EaseeSmartManager:
             stop_delay=SOLAR_STOP_DELAY_S,
         )
         self.phase_switch = PhaseSwitcher()
+        self.solar_forecast = None  # SolarForecast when "own" forecast is chosen
+        self.house_profile: dict[int, float] = {}  # local hour -> learned house use (kW)
+        self._house_sampled_at: datetime | None = None
+        self.solar_slots: list = []
         self.active_phases: int | None = None  # what we set on the charger (None = untouched)
         self._phase_original: str | None = None  # the charger's own phase mode before we changed it
         self._unsubs: list[CALLBACK_TYPE] = []
@@ -348,6 +366,9 @@ class EaseeSmartManager:
         return float(self._opt(CONF_SOLAR_BUFFER, 0.0) or 0.0)
 
     def _apply_solar_settings(self) -> None:
+        self.phase_switch.min_current = self.min_current
+        self.phase_switch.confirm_s = float(self._opt(CONF_PHASE_CONFIRM, DEFAULT_PHASE_CONFIRM_MIN) or 0) * 60
+        self.phase_switch.min_interval_s = float(self._opt(CONF_PHASE_INTERVAL, DEFAULT_PHASE_INTERVAL_MIN) or 0) * 60
         self.solar.min_current = self.min_current
         self.solar.max_current = self.max_current
         self.solar.start_delay = float(self._opt(CONF_SOLAR_START_DELAY, SOLAR_START_DELAY_S / 60) or 0) * 60
@@ -461,6 +482,7 @@ class EaseeSmartManager:
         self.totals = data.get("totals", {"energy": 0.0, "cost": 0.0})
         self.last_lifetime = data.get("last_lifetime")
         self._phase_original = data.get("phase_original")
+        self.house_profile = {int(k): float(v) for k, v in (data.get("house_profile") or {}).items()}
         self.active_phases = data.get("active_phases")
         if self.active_phases in (1, 3):
             self.phase_switch.reset(self.active_phases)
@@ -482,6 +504,8 @@ class EaseeSmartManager:
                 *[c.soc_entity for c in self.cars],
                 *[c.plug_entity for c in self.cars],
                 *self.phase_entities,
+                self.pv_power_entity,
+                self.pv_forecast_entity,
             )
             if e
         ]
@@ -494,6 +518,14 @@ class EaseeSmartManager:
                 self.hass, self._async_tick, timedelta(seconds=CONTROL_INTERVAL_S)
             )
         )
+        if self.pv_source == PV_FORECAST_OWN and self.pv_power_entity:
+            from .solar_forecast import SolarForecast
+
+            self.solar_forecast = SolarForecast(self.hass, self.entry.entry_id, self.pv_power_entity, self.pv_kwp)
+            self._unsubs.append(
+                async_track_time_interval(self.hass, self._async_refresh_forecast, timedelta(seconds=PV_FORECAST_REFRESH_S))
+            )
+            self.hass.async_create_task(self._async_refresh_forecast())
         self._recompute()
         self.hass.async_create_task(self._async_tick(dt_util.utcnow()))
 
@@ -520,6 +552,7 @@ class EaseeSmartManager:
             "totals": self.totals,
             "last_lifetime": self.last_lifetime,
             "phase_original": self._phase_original,
+            "house_profile": {str(k): v for k, v in self.house_profile.items()},
             "active_phases": self.active_phases,
         }
 
@@ -667,6 +700,7 @@ class EaseeSmartManager:
         else:
             snap.grid_power_kw = None
         snap.surplus_kw = -snap.grid_power_kw if snap.grid_power_kw is not None else None
+        self._learn_house_use(snap)
         snap.energy_needed = self._energy_needed()
         async_dispatcher_send(self.hass, SIGNAL_UPDATE.format(self.entry.entry_id))
 
@@ -813,6 +847,7 @@ class EaseeSmartManager:
         now = dt_util.now()
         mode = self.settings.mode
         self._apply_solar_settings()
+        self.solar_slots = self._solar_outlook(snap)
         snap.plan_preview = self._preview_plan(snap, now)
 
         if mode == MODE_NORMAL and not self.settings.boost:
@@ -864,7 +899,7 @@ class EaseeSmartManager:
                         snap.prices,
                         now,
                         departure,
-                        needed,
+                        self._grid_needed(needed, now, departure, mode),
                         power_for_amps(self.max_current, self.phases, self.voltage),
                         self.settings.price_threshold,
                     )
@@ -896,6 +931,112 @@ class EaseeSmartManager:
         snap.target_current = want
         await self._async_apply(want, now)
         async_dispatcher_send(self.hass, SIGNAL_UPDATE.format(self.entry.entry_id))
+
+    # ------------------------------------------------------------ solar panels
+    @property
+    def pv_power_entity(self) -> str | None:
+        return self._opt(CONF_PV_POWER) or None
+
+    @property
+    def pv_forecast_entity(self) -> str | None:
+        return self._opt(CONF_PV_FORECAST_SENSOR) or None if self.pv_source == PV_FORECAST_SENSOR else None
+
+    @property
+    def pv_source(self) -> str:
+        return self._opt(CONF_PV_FORECAST) or "none"
+
+    @property
+    def pv_kwp(self) -> float | None:
+        value = self._opt(CONF_PV_KWP)
+        try:
+            return float(value) if value else None
+        except (TypeError, ValueError):
+            return None
+
+    def pv_now_kw(self) -> float | None:
+        value = self._float(self.pv_power_entity)
+        if value is None:
+            return None
+        state = self.hass.states.get(self.pv_power_entity)
+        unit = str(state.attributes.get("unit_of_measurement", "W")).lower() if state else "w"
+        return max(0.0, value if unit == "kw" else value / 1000)
+
+    def _learn_house_use(self, snap: Snapshot) -> None:
+        """Learn what the house uses per hour of the day (without the car): pv + grid - charger."""
+        pv = self.pv_now_kw()
+        if pv is None or snap.grid_power_kw is None:
+            return
+        now = dt_util.now()
+        if self._house_sampled_at and (now - self._house_sampled_at).total_seconds() < 60:
+            return
+        self._house_sampled_at = now
+        house = max(0.0, pv + snap.grid_power_kw - max(snap.power_kw or 0.0, 0.0))
+        old = self.house_profile.get(now.hour)
+        # slow average: one evening with the oven on should not change the plan much
+        self.house_profile[now.hour] = round(house if old is None else old + (house - old) * 0.03, 3)
+
+    def pv_forecast_kw(self) -> dict[datetime, float]:
+        """Hour start (UTC) -> expected kW of the solar panels."""
+        if self.pv_source == PV_FORECAST_OWN and self.solar_forecast is not None:
+            return self.solar_forecast.hourly_kw()
+        if self.pv_source == PV_FORECAST_SENSOR and self.pv_forecast_entity:
+            from .solar_forecast import hourly_from_attribute
+
+            state = self.hass.states.get(self.pv_forecast_entity)
+            return hourly_from_attribute(state.attributes.get("hourly")) if state else {}
+        return {}
+
+    async def _async_refresh_forecast(self, *_: Any) -> None:
+        if self.solar_forecast is not None:
+            await self.solar_forecast.async_update()
+            async_dispatcher_send(self.hass, SIGNAL_UPDATE.format(self.entry.entry_id))
+
+    def _solar_outlook(self, snap: Snapshot) -> list:
+        forecast = self.pv_forecast_kw()
+        if not forecast or not snap.prices:
+            return []
+        return solar_outlook(
+            snap.prices, forecast, self.house_profile,
+            min_current=self.min_current, max_current=self.max_current, phases=self.phases,
+            phase_switching=self.phase_switching, voltage=self.voltage, buffer_kw=self.solar_buffer_kw,
+        )
+
+    def _solar_payload(self, now: datetime) -> dict[str, Any] | None:
+        if self.pv_source == "none":
+            return None
+        slots = self.solar_slots or []
+        departure = next_departure(now, _parse_time(self.settings.departure))
+        needed = self.snapshot.energy_needed or 0.0
+        sun = solar_energy_until(slots, now, departure) if slots else 0.0
+        fc = self.solar_forecast.data if self.solar_forecast is not None else None
+        days: dict[str, float] = {}
+        for start, kw in self.pv_forecast_kw().items():
+            key = dt_util.as_local(start).date().isoformat()
+            days[key] = days.get(key, 0.0) + kw
+        today = dt_util.now().date()
+        return {
+            "source": self.pv_source,
+            "pv_now_kw": self.pv_now_kw(),
+            "today_kwh": round(days.get(today.isoformat(), 0.0), 2) if days else None,
+            "tomorrow_kwh": round(days.get((today + timedelta(days=1)).isoformat(), 0.0), 2) if days else None,
+            "until_departure_kwh": round(sun, 2),
+            "counted_kwh": round(min(needed, sun * SOLAR_TRUST), 2) if self.settings.mode == MODE_SOLAR_SMART else None,
+            "grid_kwh": round(self._grid_needed(needed, now, departure, self.settings.mode), 2),
+            "departure": departure.isoformat(),
+            "error": fc.error if fc else None,
+            "calibration": fc.calibration if fc else None,
+            "slots": [
+                {"start": x.start.isoformat(), "end": x.end.isoformat(), "pv": x.pv_kw, "house": x.house_kw, "charge": x.charge_kw}
+                for x in slots if x.end > now - timedelta(hours=1)
+            ][:200],
+        }
+
+    def _grid_needed(self, needed: float, now: datetime, departure: datetime, mode: str) -> float:
+        """Solar + smart: energy the sun is expected to give before departure is not bought."""
+        if mode != MODE_SOLAR_SMART or not self.solar_slots:
+            return needed
+        sun = solar_energy_until(self.solar_slots, now, departure) * SOLAR_TRUST
+        return max(0.0, needed - sun)
 
     # ------------------------------------------------------------ phase switching
     @property
@@ -983,11 +1124,15 @@ class EaseeSmartManager:
         if needed <= 0 or not snap.prices:
             return None
         try:
+            departure = next_departure(now, _parse_time(self.settings.departure))
+            grid = self._grid_needed(needed, now, departure, self.settings.mode)
+            if grid <= 0:
+                return None
             return plan_cheapest(
                 snap.prices,
                 now,
-                next_departure(now, _parse_time(self.settings.departure)),
-                needed,
+                departure,
+                grid,
                 power_for_amps(self.max_current, self.phases, self.voltage),
                 self.settings.price_threshold,
             )
@@ -1261,6 +1406,7 @@ class EaseeSmartManager:
             "active_phases": self.shown_phases,
             "phase_switching": self.phase_switching,
             "no_prices_action": self._opt(CONF_NO_PRICES) or "charge",
+            "solar": self._solar_payload(now),
             "max_current": self.max_current,
             "sources": self.charger_entities,
             "equalizer": self.equalizer_entities,

@@ -220,8 +220,12 @@ def build(lang):
      "resume_nudge": T("Wake the car when it does not start charging","Auto wekken als hij niet begint met laden","Auto wecken, wenn es nicht lädt"),
      "car_refresh_minutes": T("Refresh car data every (0 = off)","Gegevens auto verversen elke (0 = uit)","Autodaten aktualisieren alle (0 = aus)"),
      "language": T("Language of card and report","Taal van kaart en rapport","Sprache von Karte und Bericht"),
+     "phase_confirm_minutes": T("Phase switch: switch when it lasts","Fasewissel: wisselen als het zo blijft","Phasenwechsel: wechseln, wenn es anhält"),
+     "phase_interval_minutes": T("Phase switch: at least between two switches","Fasewissel: minimaal tussen twee wissels","Phasenwechsel: mindestens zwischen zwei Wechseln"),
     }
     adv_desc = {
+     "phase_confirm_minutes": T("How long the sun has to stay below/above the 3-phase minimum (4.1 kW) before switching. Default 3 minutes.","Hoe lang de zon onder/boven het 3-fasenminimum (4,1 kW) moet blijven voordat hij wisselt. Standaard 3 minuten.","Wie lange die Sonne unter/über dem 3-Phasen-Minimum (4,1 kW) bleiben muss. Standard 3 Minuten."),
+     "phase_interval_minutes": T("Spares the charger's relays and the car. Default 15 minutes.","Spaart de relais van de laadpaal en de auto. Standaard 15 minuten.","Schont die Relais der Wallbox und das Auto. Standard 15 Minuten."),
      "min_current": T("Most cars need at least 6 A. Some charge more efficiently from 8 or 10 A.","De meeste auto's hebben minimaal 6 A nodig. Sommige laden efficiënter vanaf 8 of 10 A.","Die meisten Autos brauchen mindestens 6 A."),
      "charge_efficiency": T("Energy lost while charging; used to calculate how much energy is still needed.","Verlies tijdens het laden; wordt gebruikt om te berekenen hoeveel energie er nog nodig is.","Ladeverluste; für die Berechnung der benötigten Energie."),
      "resume_nudge": T("After 3 minutes without charging: resume on the charger and the car's start entity.","Na 3 minuten zonder laden: hervatten op de laadpaal en de start-entiteit van de auto.","Nach 3 Minuten ohne Laden: Fortsetzen an der Wallbox und Start-Entität des Autos."),
@@ -281,11 +285,30 @@ def build(lang):
         "menu_options": {
          "charger": t(T("Charger: phases, current and default mode","Laadpaal: fasen, stroom en standaardmodus","Wallbox: Phasen, Strom und Standardmodus")),
          "equalizer": t(T("Easee Equalizer","Easee Equalizer","Easee Equalizer")),
+         "solar": t(T("Solar panels and solar forecast","Zonnepanelen en zonverwachting","Solaranlage und Solarprognose")),
          "grid": t(T("Main connection: smart meter for solar charging","Hoofdaansluiting: slimme meter voor zonneladen","Hausanschluss: Smart Meter fürs Solarladen")),
          "energy": t(T("Prices, ERE and costs","Prijzen, ERE en kosten","Preise, ERE und Kosten")),
          "cars": t(T("Cars: add, change or remove","Auto's: toevoegen, wijzigen of verwijderen","Autos: hinzufügen, ändern oder entfernen")),
          "advanced": t(T("Advanced: solar timing, buffer, language","Geavanceerd: zon-timing, buffer, taal","Erweitert: Solar-Timing, Puffer, Sprache")),
          "dashboard": t(T("Create the ready-made dashboard","Kant-en-klaar dashboard aanmaken","Fertiges Dashboard erstellen")),
+        },
+       },
+       "solar": {
+        "title": t(T("Solar panels and solar forecast","Zonnepanelen en zonverwachting","Solaranlage und Solarprognose")),
+        "description": t(T(
+            "Optional. With a forecast, **Solar + smart** counts on the sun that is expected before your departure and buys less from the grid; the planning chart shows the expected sun as a dotted line.\n\n- **Own forecast**: link the power sensor of your inverter. The integration fetches the weather (Open-Meteo, three weather models) and learns from your own history the orientation of the panels, how much they make, shade and the season. Works with any brand.\n- **From a sensor**: use a forecast sensor that has an `hourly` list, such as *Enphase Envoy Local* \u2192 Forecast today.",
+            "Optioneel. Met een verwachting rekent **Zon + slim** op de zon die vóór je vertrektijd wordt verwacht en haalt hij minder van het net; de planningsgrafiek laat de verwachte zon zien als stippellijn.\n\n- **Eigen verwachting**: koppel de vermogenssensor van je omvormer. De integratie haalt het weer op (Open-Meteo, drie weermodellen) en leert uit je eigen geschiedenis de stand van de panelen, hoeveel ze opleveren, schaduw en het seizoen. Werkt met elk merk.\n- **Uit een sensor**: gebruik een verwachtingssensor met een `hourly`-lijst, zoals *Enphase Envoy Local* \u2192 Verwachting vandaag.",
+            "Optional. Mit Prognose rechnet **Solar + Smart** mit der Sonne, die vor deiner Abfahrt erwartet wird, und kauft weniger aus dem Netz; die Planungsgrafik zeigt die erwartete Sonne als gestrichelte Linie.\n\n- **Eigene Prognose**: verbinde den Leistungssensor deines Wechselrichters. Die Integration holt das Wetter (Open-Meteo, drei Wettermodelle) und lernt aus deinem eigenen Verlauf Ausrichtung, Ertrag, Schatten und Jahreszeit. Funktioniert mit jeder Marke.\n- **Aus einem Sensor**: nutze einen Prognosesensor mit einer `hourly`-Liste, z. B. *Enphase Envoy Local* \u2192 Prognose heute.")),
+        "data": {
+         "pv_forecast": t(T("Solar forecast","Zonverwachting","Solarprognose")),
+         "pv_power_entity": t(T("Inverter power (production)","Vermogen omvormer (productie)","Leistung Wechselrichter (Erzeugung)")),
+         "pv_kwp": t(T("Peak power of the panels (optional)","Piekvermogen van de panelen (optioneel)","Spitzenleistung der Module (optional)")),
+         "pv_forecast_entity": t(T("Forecast sensor","Verwachtingssensor","Prognosesensor")),
+        },
+        "data_description": {
+         "pv_power_entity": t(T("Needed for the own forecast. A recognised sensor is filled in already. The longer its history, the better the forecast.","Nodig voor de eigen verwachting. Een herkende sensor is al ingevuld. Hoe langer de geschiedenis, hoe beter de verwachting.","Für die eigene Prognose nötig. Ein erkannter Sensor ist schon eingetragen. Je länger der Verlauf, desto besser.")),
+         "pv_kwp": t(T("Only used until enough history has been learned (about 3 weeks).","Wordt alleen gebruikt tot er genoeg geschiedenis is geleerd (ongeveer 3 weken).","Nur genutzt, bis genug Verlauf gelernt ist (etwa 3 Wochen).")),
+         "pv_forecast_entity": t(T("Only for 'From a sensor'.","Alleen voor 'Uit een sensor'.","Nur für 'Aus einem Sensor'.")),
         },
        },
        "equalizer": {
@@ -320,6 +343,8 @@ def build(lang):
        "advanced": adv_step,
       },
       "error": {
+       "pv_power_required": t(T("Choose the power sensor of your inverter for the own forecast.","Kies de vermogenssensor van je omvormer voor de eigen verwachting.","Wähle den Leistungssensor deines Wechselrichters für die eigene Prognose.")),
+       "no_hourly_forecast": t(T("This sensor has no hourly forecast (attribute 'hourly').","Deze sensor heeft geen verwachting per uur (attribuut 'hourly').","Dieser Sensor hat keine Stundenprognose (Attribut 'hourly').")),
        "dashboard_failed": t(T("The dashboard could not be created. Check the log for details.","Het dashboard kon niet worden aangemaakt. Kijk in het logboek voor details.","Das Dashboard konnte nicht erstellt werden. Details stehen im Protokoll.")),
       },
       "abort": {
@@ -332,6 +357,7 @@ def build(lang):
       "session_mode": {"options": {"keep": t(T("Keep last mode","Laatste stand houden","Letzten Modus behalten")), **{k: t(v) for k, v in MODES.items()}}},
       "no_prices_action": {"options": {"charge": t(T("Charge right away","Meteen laden","Sofort laden")), "wait": t(T("Wait for prices","Wachten op prijzen","Auf Preise warten"))}},
       "price_resolution": {"options": {"quarter": t(T("Quarter hour (15 min)","Kwartier (15 min)","Viertelstunde (15 Min.)")), "hour": t(T("Hour","Uur","Stunde"))}},
+      "pv_forecast": {"options": {"none": t(T("Off (not linked)","Uit (niet gekoppeld)","Aus (nicht verbunden)")), "own": t(T("Own forecast from my inverter","Eigen verwachting uit mijn omvormer","Eigene Prognose aus meinem Wechselrichter")), "sensor": t(T("From a forecast sensor (e.g. Enphase Envoy Local)","Uit een verwachtingssensor (bijv. Enphase Envoy Local)","Aus einem Prognosesensor (z. B. Enphase Envoy Local)"))}},
       "show_equalizer": {"options": {"auto": t(T("Automatic","Automatisch","Automatisch")), "show": t(T("Show","Tonen","Anzeigen")), "hide": t(T("Hide","Verbergen","Ausblenden"))}},
       "language": {"options": {"auto": t(T("Automatic (Home Assistant)","Automatisch (Home Assistant)","Automatisch (Home Assistant)")), "nl": "Nederlands", "en": "English", "de": "Deutsch"}},
      },

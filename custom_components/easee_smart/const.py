@@ -6,7 +6,7 @@ from typing import Final
 
 DOMAIN: Final = "easee_smart"
 EASEE_DOMAIN: Final = "easee"
-VERSION: Final = "1.8.0"
+VERSION: Final = "1.9.0"
 
 CARD_BASE: Final = "/easee_smart"
 CARD_URL: Final = f"{CARD_BASE}/easee-smart-card.js"
@@ -33,6 +33,20 @@ NO_PRICES_CHARGE: Final = "charge"
 NO_PRICES_WAIT: Final = "wait"
 PHASE_MODE_1: Final = "1_phase"
 CONF_PRICE_RESOLUTION: Final = "price_resolution"
+CONF_PV_POWER: Final = "pv_power_entity"
+CONF_PV_FORECAST: Final = "pv_forecast"
+CONF_PV_FORECAST_SENSOR: Final = "pv_forecast_entity"
+CONF_PV_KWP: Final = "pv_kwp"
+CONF_PHASE_CONFIRM: Final = "phase_confirm_minutes"
+CONF_PHASE_INTERVAL: Final = "phase_interval_minutes"
+PV_FORECAST_NONE: Final = "none"
+PV_FORECAST_OWN: Final = "own"
+PV_FORECAST_SENSOR: Final = "sensor"
+PV_FORECAST_OPTIONS: Final = ["none", "own", "sensor"]
+PV_FORECAST_REFRESH_S: Final = 1800
+SOLAR_TRUST: Final = 0.8  # share of the expected solar energy smart charging counts on
+DEFAULT_PHASE_CONFIRM_MIN: Final = 3
+DEFAULT_PHASE_INTERVAL_MIN: Final = 15
 RESOLUTION_QUARTER: Final = "quarter"
 RESOLUTION_HOUR: Final = "hour"
 PHASE_MODE_3: Final = "3_phase"

@@ -121,11 +121,27 @@
         "menu_options": {
           "charger": "Wallbox: Phasen, Strom und Standardmodus",
           "equalizer": "Easee Equalizer",
+          "solar": "Solaranlage und Solarprognose",
           "grid": "Hausanschluss: Smart Meter fürs Solarladen",
           "energy": "Preise, ERE und Kosten",
           "cars": "Autos: hinzufügen, ändern oder entfernen",
           "advanced": "Erweitert: Solar-Timing, Puffer, Sprache",
           "dashboard": "Fertiges Dashboard erstellen"
+        }
+      },
+      "solar": {
+        "title": "Solaranlage und Solarprognose",
+        "description": "Optional. Mit Prognose rechnet **Solar + Smart** mit der Sonne, die vor deiner Abfahrt erwartet wird, und kauft weniger aus dem Netz; die Planungsgrafik zeigt die erwartete Sonne als gestrichelte Linie.\n\n- **Eigene Prognose**: verbinde den Leistungssensor deines Wechselrichters. Die Integration holt das Wetter (Open-Meteo, drei Wettermodelle) und lernt aus deinem eigenen Verlauf Ausrichtung, Ertrag, Schatten und Jahreszeit. Funktioniert mit jeder Marke.\n- **Aus einem Sensor**: nutze einen Prognosesensor mit einer `hourly`-Liste, z. B. *Enphase Envoy Local* → Prognose heute.",
+        "data": {
+          "pv_forecast": "Solarprognose",
+          "pv_power_entity": "Leistung Wechselrichter (Erzeugung)",
+          "pv_kwp": "Spitzenleistung der Module (optional)",
+          "pv_forecast_entity": "Prognosesensor"
+        },
+        "data_description": {
+          "pv_power_entity": "Für die eigene Prognose nötig. Ein erkannter Sensor ist schon eingetragen. Je länger der Verlauf, desto besser.",
+          "pv_kwp": "Nur genutzt, bis genug Verlauf gelernt ist (etwa 3 Wochen).",
+          "pv_forecast_entity": "Nur für 'Aus einem Sensor'."
         }
       },
       "equalizer": {
@@ -259,9 +275,13 @@
           "boost_reset_on_unplug": "Boost ausschalten beim Abstecken",
           "resume_nudge": "Auto wecken, wenn es nicht lädt",
           "car_refresh_minutes": "Autodaten aktualisieren alle (0 = aus)",
-          "language": "Sprache von Karte und Bericht"
+          "language": "Sprache von Karte und Bericht",
+          "phase_confirm_minutes": "Phasenwechsel: wechseln, wenn es anhält",
+          "phase_interval_minutes": "Phasenwechsel: mindestens zwischen zwei Wechseln"
         },
         "data_description": {
+          "phase_confirm_minutes": "Wie lange die Sonne unter/über dem 3-Phasen-Minimum (4,1 kW) bleiben muss. Standard 3 Minuten.",
+          "phase_interval_minutes": "Schont die Relais der Wallbox und das Auto. Standard 15 Minuten.",
           "min_current": "Die meisten Autos brauchen mindestens 6 A.",
           "charge_efficiency": "Ladeverluste; für die Berechnung der benötigten Energie.",
           "resume_nudge": "Nach 3 Minuten ohne Laden: Fortsetzen an der Wallbox und Start-Entität des Autos.",
@@ -270,6 +290,8 @@
       }
     },
     "error": {
+      "pv_power_required": "Wähle den Leistungssensor deines Wechselrichters für die eigene Prognose.",
+      "no_hourly_forecast": "Dieser Sensor hat keine Stundenprognose (Attribut 'hourly').",
       "dashboard_failed": "Das Dashboard konnte nicht erstellt werden. Details stehen im Protokoll."
     },
     "abort": {
@@ -310,6 +332,13 @@
       "options": {
         "quarter": "Viertelstunde (15 Min.)",
         "hour": "Stunde"
+      }
+    },
+    "pv_forecast": {
+      "options": {
+        "none": "Aus (nicht verbunden)",
+        "own": "Eigene Prognose aus meinem Wechselrichter",
+        "sensor": "Aus einem Prognosesensor (z. B. Enphase Envoy Local)"
       }
     },
     "show_equalizer": {

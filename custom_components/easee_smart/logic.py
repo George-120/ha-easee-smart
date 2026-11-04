@@ -5,7 +5,10 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from datetime import date, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
+
+UTC_TZ = UTC
+DEFAULT_HOUSE_KW = 0.35  # kW a house uses when nothing has been learned yet
 from statistics import median
 from typing import Any
 
@@ -360,3 +363,64 @@ class PhaseSwitcher:
             self._since = None
             self._last_switch = now
         return self.phases
+
+
+@dataclass
+class SolarSlot:
+    """What we expect in one price slot: production, house use, surplus and solar charging."""
+
+    start: datetime
+    end: datetime
+    pv_kw: float
+    house_kw: float
+    surplus_kw: float
+    charge_kw: float  # what the charger can take from the sun (0 below the minimum)
+
+
+def solar_outlook(
+    slots: list[PriceSlot],
+    pv_kw_by_hour: dict[datetime, float],
+    house_kw_by_hour: dict[int, float],
+    *,
+    min_current: int,
+    max_current: int,
+    phases: int,
+    phase_switching: bool,
+    voltage: float,
+    buffer_kw: float = 0.0,
+) -> list[SolarSlot]:
+    """Expected solar charging per price slot.
+
+    pv_kw_by_hour: hour start (UTC) -> expected mean kW; house_kw_by_hour: local hour -> kW.
+    The charger needs 6 A to start: 1.4 kW on 1 phase (with phase switching) or 4.1 kW on 3.
+    """
+    p1_min, p1_max = power_for_amps(min_current, 1, voltage), power_for_amps(max_current, 1, voltage)
+    p3_min, p3_max = power_for_amps(min_current, phases, voltage), power_for_amps(max_current, phases, voltage)
+    out: list[SolarSlot] = []
+    for slot in slots:
+        hour = slot.start.astimezone(UTC_TZ).replace(minute=0, second=0, microsecond=0)
+        pv = pv_kw_by_hour.get(hour)
+        if pv is None:
+            continue
+        house = house_kw_by_hour.get(slot.start.hour, DEFAULT_HOUSE_KW)
+        surplus = max(0.0, pv - house - buffer_kw)
+        if surplus >= p3_min:
+            charge = min(surplus, p3_max)
+        elif phase_switching and phases == 3 and surplus >= p1_min:
+            charge = min(surplus, p1_max)
+        elif phases == 1 and surplus >= p1_min:
+            charge = min(surplus, p1_max)
+        else:
+            charge = 0.0
+        out.append(SolarSlot(slot.start, slot.end, round(pv, 3), round(house, 3), round(surplus, 3), round(charge, 3)))
+    return out
+
+
+def solar_energy_until(outlook: list[SolarSlot], now: datetime, until: datetime) -> float:
+    """kWh the charger can take from the sun between now and `until`."""
+    total = 0.0
+    for s in outlook:
+        start, end = max(s.start, now), min(s.end, until)
+        if end > start:
+            total += s.charge_kw * (end - start).total_seconds() / 3600
+    return total
