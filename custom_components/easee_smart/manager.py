@@ -871,6 +871,8 @@ class EaseeSmartManager:
             return  # a control pass is already running; the next tick follows soon
         async with self._lock:
             await self._async_control_locked()
+        # the plan is made here: push it to the entities and the card now, not on the next tick
+        async_dispatcher_send(self.hass, SIGNAL_UPDATE.format(self.entry.entry_id))
 
     async def _async_control_locked(self) -> None:
         snap = self.snapshot
