@@ -749,3 +749,19 @@ def test_history_splits_grid_and_sun(tmp_path):
         assert len(hist) == 1 and round(hist[0]["grid"], 3) == round(2 / 60, 3) and round(hist[0]["sun"], 3) == round(4 / 60, 3)
         CLOCK["now"] = datetime(2026, 11, 3, 20, 0, tzinfo=TZ)
     asyncio.run(run())
+
+
+def test_normal_schedule_only_when_plugged(tmp_path):
+    async def run():
+        hass, m = make(tmp_path)
+        await m.async_setup()
+        prices(hass, m)
+        await m.async_set_setting("target_energy", 10)
+        setstate(hass, "sensor.c_status", "disconnected")
+        m._recompute()
+        assert m.card_payload()["schedule"] == []
+        setstate(hass, "sensor.c_status", "awaiting_start")
+        m._recompute()
+        sched = m.card_payload()["schedule"]
+        assert sched and round(sum(x["grid"] for x in sched), 2) == 10.0
+    asyncio.run(run())

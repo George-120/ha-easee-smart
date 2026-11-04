@@ -1036,6 +1036,8 @@ class EaseeSmartManager:
         if needed <= 0 or not snap.prices:
             return []
         mode = MODE_NORMAL if self.settings.boost else self.settings.mode
+        if mode == MODE_NORMAL and not snap.connected:
+            return []  # Normal charges from the moment the car is plugged in: nothing to plan yet
         departure = next_departure(now, _parse_time(self.settings.departure))
         grid_slots = {s.start for s in plan.slots} if plan and mode in (MODE_SMART, MODE_SOLAR_SMART) else set()
         solar_kw = {x.start: x.charge_kw for x in self.solar_slots} if self.solar_slots else {}
