@@ -1,6 +1,6 @@
 <h1><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/custom_components/easee_smart/brand/icon.png" alt="" width="56" height="56" align="absmiddle"> Easee Smart Charging</h1>
 
-Slim laden, Equalizer-inzicht, laadkosten en een app-achtige dashboardkaart voor je Easee-laadpaal in Home Assistant — gebouwd bovenop de bestaande Easee-integratie. Geen tweede login, geen extra belasting van de Easee-cloud.
+Slim laden, Equalizer-inzicht, laadkosten en een app-achtige dashboardkaart voor je Easee-laadpaal in Home Assistant — gebouwd bovenop de bestaande Easee-integratie. Geen tweede login, geen extra belasting van de Easee-cloud. Hoe werkt slim laden? Je stroom kost elk kwartier een andere prijs. De integratie kijkt naar de prijzen van vandaag en morgen, rekent uit hoeveel stroom je auto nog nodig heeft en laadt dan precies in de goedkoopste uren. Zo is je auto op tijd vol en betaal je zo weinig mogelijk.
 
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=George-120&repository=ha-easee-smart&category=integration)
 [![Integratie toevoegen](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=easee_smart)
@@ -111,7 +111,7 @@ Dit is een communityproject en geen officieel product van Easee.
 
 ## English
 
-Smart charging, grid connection insight, charging costs and app-style dashboard cards for your Easee charger in Home Assistant — built on top of the existing Easee integration. No second login and no extra load on the Easee cloud.
+Smart charging, grid connection insight, charging costs and app-style dashboard cards for your Easee charger in Home Assistant — built on top of the existing Easee integration. No second login and no extra load on the Easee cloud. How does smart charging work? Your electricity has a different price every quarter of an hour. The integration looks at today's and tomorrow's prices, works out how much energy your car still needs and charges in exactly the cheapest hours. Your car is full on time and you pay as little as possible.
 
 ### What it does
 
@@ -174,7 +174,7 @@ This is a community project and not an official Easee product.
 
 ## Deutsch
 
-Smartes Laden, Einblick in den Hausanschluss, Ladekosten und App-ähnliche Dashboard-Karten für deine Easee-Wallbox in Home Assistant — aufbauend auf der bestehenden Easee-Integration. Kein zweites Login und keine zusätzliche Last für die Easee-Cloud.
+Smartes Laden, Einblick in den Hausanschluss, Ladekosten und App-ähnliche Dashboard-Karten für deine Easee-Wallbox in Home Assistant — aufbauend auf der bestehenden Easee-Integration. Kein zweites Login und keine zusätzliche Last für die Easee-Cloud. Wie funktioniert smartes Laden? Strom kostet jede Viertelstunde einen anderen Preis. Die Integration schaut sich die Preise von heute und morgen an, rechnet aus, wie viel Strom dein Auto noch braucht, und lädt genau in den günstigsten Stunden. So ist dein Auto rechtzeitig voll und du zahlst so wenig wie möglich.
 
 ### Was es macht
 
