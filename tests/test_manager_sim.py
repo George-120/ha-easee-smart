@@ -716,3 +716,36 @@ def test_solar_smart_buys_less_with_forecast(tmp_path):
         assert m.card_payload()["solar"]["grid_kwh"] == 30   # plain smart does not count on the sun
         CLOCK["now"] = datetime(2026, 11, 3, 20, 0, tzinfo=TZ)
     asyncio.run(run())
+
+
+def test_charge_schedule_sun_first_then_grid():
+    install_stubs()
+    sys.modules.pop("easee_smart.logic", None)
+    logic = importlib.import_module("easee_smart.logic")
+    base = datetime(2026, 6, 1, 10, 0, tzinfo=TZ)
+    slots = [logic.PriceSlot(base + timedelta(minutes=15 * i), base + timedelta(minutes=15 * (i + 1)), 0.2) for i in range(8)]
+    sun = {slots[0].start: 4.0, slots[1].start: 4.0}
+    rows = logic.charge_schedule(slots, base, None, 4.0, 11.0, grid_slots={slots[4].start, slots[5].start},
+                                 solar_kw=sun, use_solar=True, grid_always=False)
+    # 2 × 1 kWh sun, then 2 kWh from the grid in the first planned (cheap) quarter: max 2.75 kWh per quarter
+    assert [(g, u) for _, g, u in rows[:6]] == [(0, 1.0), (0, 1.0), (0, 0), (0, 0), (2.0, 0), (0, 0)]
+    normal = logic.charge_schedule(slots, base, None, 3.0, 11.0, grid_slots=None, solar_kw=None,
+                                   use_solar=False, grid_always=True)
+    assert [g for _, g, _ in normal[:3]] == [2.75, 0.25, 0]
+
+
+def test_history_splits_grid_and_sun(tmp_path):
+    async def run():
+        hass, m = make(tmp_path)
+        await m.async_setup()
+        setstate(hass, "sensor.c_status", "charging")
+        setstate(hass, "sensor.c_power", 6.0)
+        setstate(hass, "sensor.eq_import_power", 2.0)   # 6 kW charging, 2 kW from the grid → 4 kW sun
+        setstate(hass, "sensor.eq_export_power", 0)
+        m._recompute()
+        CLOCK["now"] += timedelta(seconds=60)
+        m._recompute()
+        hist = m.card_payload()["history"]
+        assert len(hist) == 1 and round(hist[0]["grid"], 3) == round(2 / 60, 3) and round(hist[0]["sun"], 3) == round(4 / 60, 3)
+        CLOCK["now"] = datetime(2026, 11, 3, 20, 0, tzinfo=TZ)
+    asyncio.run(run())

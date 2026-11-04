@@ -424,3 +424,46 @@ def solar_energy_until(outlook: list[SolarSlot], now: datetime, until: datetime)
         if end > start:
             total += s.charge_kw * (end - start).total_seconds() / 3600
     return total
+
+
+def charge_schedule(
+    slots: list[PriceSlot],
+    now: datetime,
+    until: datetime | None,
+    needed_kwh: float,
+    max_kw: float,
+    *,
+    grid_slots: set[datetime] | None,
+    solar_kw: dict[datetime, float] | None,
+    use_solar: bool,
+    grid_always: bool,
+    grid_budget: float | None = None,
+) -> list[tuple[datetime, float, float]]:
+    """(slot start, kWh from the grid, kWh from the sun) per price slot until the car is full.
+
+    grid_slots: starts of the planned (cheap) grid slots; grid_always: Normal/Boost charge now.
+    The sun goes first; the grid fills up to the charger's maximum.
+    """
+    remaining = max(0.0, needed_kwh)
+    # Solar + smart buys only what the sun will not bring: the grid may not use up the sun's share.
+    budget = max(0.0, grid_budget) if grid_budget is not None else float("inf")
+    out: list[tuple[datetime, float, float]] = []
+    for slot in slots:
+        if slot.end <= now or remaining <= 1e-6:
+            out.append((slot.start, 0.0, 0.0))
+            continue
+        if until is not None and slot.start >= until and not grid_always:
+            out.append((slot.start, 0.0, 0.0))
+            continue
+        hours = (slot.end - max(slot.start, now)).total_seconds() / 3600
+        sun = 0.0
+        if use_solar and solar_kw:
+            sun = min(remaining, solar_kw.get(slot.start, 0.0) * hours)
+        remaining -= sun
+        grid = 0.0
+        if grid_always or (grid_slots and slot.start in grid_slots):
+            grid = min(remaining, budget, max(0.0, max_kw * hours - sun))
+        remaining -= grid
+        budget -= grid
+        out.append((slot.start, round(grid, 3), round(sun, 3)))
+    return out

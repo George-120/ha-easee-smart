@@ -1,6 +1,6 @@
 /* Easee Smart Charging card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.9.1";
+  const VERSION = "1.10.0";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -10,7 +10,7 @@
   const I18N = {
     en: {
       tabs: { charge: "Charging", plan: "Planning", grid: "Equalizer", meter: "Grid", history: "History" },
-      modes: { normal: "Normal", smart: "Smart", solar: "Solar", solar_smart: "Solar + smart" }, modeDesc: { normal: "Charges right away at full power, whatever the price.", smart: "Charges in the cheapest hours so the car is ready at your departure time.", solar: "Charges only on solar surplus, on 1 or 3 phases automatically.", solar_smart: "Solar surplus first; what is still needed is charged in the cheapest hours." }, modeNow: "Mode", phase1: "1 phase", phase3: "3 phases", chartNormal: "Normal: charges whenever the car is plugged in, at any price.", chartSolar: "Solar: charges only on surplus; the price does not matter.", chartSolarSmart: "Solar + smart: sun first (yellow); the rest in the blue cheap hours.", sunFirst: "sun first", cheapHours: "cheap hours", noPricesWait: "No prices yet: Smart waits until they arrive.", sunForecast: "solar forecast", sunCharge: "charging on sun", sunToday: "Sun today", sunTomorrow: "Sun tomorrow", tomorrowShort: "tomorrow", sunUntil: "Sun until departure", fromGrid: "From the grid", chargeable: "chargeable", whatWillHappen: "What the system will do", planSun: "Expects {sun} kWh of sun before {time}; buys {grid} kWh from the grid in the cheapest hours.", planSunOnly: "Expects {sun} kWh of sun before {time}; that covers what is needed.", planSolarOnly: "Charges only on the sun: about {sun} kWh before {time}.", forecastLearning: "Forecast is still learning from your history.",
+      modes: { normal: "Normal", smart: "Smart", solar: "Solar", solar_smart: "Solar + smart" }, modeDesc: { normal: "Charges right away at full power, whatever the price.", smart: "Charges in the cheapest hours so the car is ready at your departure time.", solar: "Charges only on solar surplus, on 1 or 3 phases automatically.", solar_smart: "Solar surplus first; what is still needed is charged in the cheapest hours." }, modeNow: "Mode", phase1: "1 phase", phase3: "3 phases", chartNormal: "Normal: charges whenever the car is plugged in, at any price.", chartSolar: "Solar: charges only on surplus; the price does not matter.", chartSolarSmart: "Solar + smart: sun first (yellow); the rest in the blue cheap hours.", sunFirst: "sun first", cheapHours: "cheap hours", noPricesWait: "No prices yet: Smart waits until they arrive.", sunForecast: "solar forecast", sunCharge: "charging on sun", sunToday: "Sun today", sunTomorrow: "Sun tomorrow", tomorrowShort: "tomorrow", perQuarter: "per quarter hour", fromSun: "from the sun", solidLight: "solid = charged, light = expected", expected: "expected", sunUntil: "Sun until departure", fromGrid: "From the grid", chargeable: "chargeable", whatWillHappen: "What the system will do", planSun: "Expects {sun} kWh of sun before {time}; buys {grid} kWh from the grid in the cheapest hours.", planSunOnly: "Expects {sun} kWh of sun before {time}; that covers what is needed.", planSolarOnly: "Charges only on the sun: about {sun} kWh before {time}.", forecastLearning: "Forecast is still learning from your history.",
       status: {
         disconnected: "No car connected", awaiting_start: "Waiting to start", charging: "Charging",
         completed: "Charging complete", error: "Error", ready_to_charge: "Ready to charge",
@@ -39,7 +39,7 @@
     },
     nl: {
       tabs: { charge: "Laden", plan: "Planning", grid: "Equalizer", meter: "Aansluiting", history: "Historie" },
-      modes: { normal: "Normaal", smart: "Slim", solar: "Zon", solar_smart: "Zon + slim" }, modeDesc: { normal: "Laadt meteen op vol vermogen, wat de prijs ook is.", smart: "Laadt in de goedkoopste uren, zodat de auto op je vertrektijd vol is.", solar: "Laadt alleen met zonne-overschot, automatisch op 1 of 3 fasen.", solar_smart: "Eerst zonne-overschot; wat dan nog nodig is, in de goedkoopste uren." }, modeNow: "Modus", phase1: "1 fase", phase3: "3 fasen", chartNormal: "Normaal: laadt zodra de auto is aangesloten, op elk moment en elke prijs.", chartSolar: "Zon: laadt alleen met overschot; de prijs speelt geen rol.", chartSolarSmart: "Zon + slim: eerst zon (geel), de rest in de blauwe goedkope uren.", sunFirst: "eerst zon", cheapHours: "goedkope uren", noPricesWait: "Nog geen prijzen: Slim wacht tot ze er zijn.", sunForecast: "zonverwachting", sunCharge: "laden met zon", sunToday: "Zon vandaag", sunTomorrow: "Zon morgen", tomorrowShort: "morgen", sunUntil: "Zon tot vertrek", fromGrid: "Van het net", chargeable: "laadbaar", whatWillHappen: "Wat het systeem gaat doen", planSun: "Verwacht {sun} kWh zon vóór {time}; haalt {grid} kWh van het net in de goedkoopste uren.", planSunOnly: "Verwacht {sun} kWh zon vóór {time}; dat is genoeg.", planSolarOnly: "Laadt alleen met zon: ongeveer {sun} kWh vóór {time}.", forecastLearning: "De verwachting leert nog van je geschiedenis.",
+      modes: { normal: "Normaal", smart: "Slim", solar: "Zon", solar_smart: "Zon + slim" }, modeDesc: { normal: "Laadt meteen op vol vermogen, wat de prijs ook is.", smart: "Laadt in de goedkoopste uren, zodat de auto op je vertrektijd vol is.", solar: "Laadt alleen met zonne-overschot, automatisch op 1 of 3 fasen.", solar_smart: "Eerst zonne-overschot; wat dan nog nodig is, in de goedkoopste uren." }, modeNow: "Modus", phase1: "1 fase", phase3: "3 fasen", chartNormal: "Normaal: laadt zodra de auto is aangesloten, op elk moment en elke prijs.", chartSolar: "Zon: laadt alleen met overschot; de prijs speelt geen rol.", chartSolarSmart: "Zon + slim: eerst zon (geel), de rest in de blauwe goedkope uren.", sunFirst: "eerst zon", cheapHours: "goedkope uren", noPricesWait: "Nog geen prijzen: Slim wacht tot ze er zijn.", sunForecast: "zonverwachting", sunCharge: "laden met zon", sunToday: "Zon vandaag", sunTomorrow: "Zon morgen", tomorrowShort: "morgen", perQuarter: "per kwartier", fromSun: "van de zon", solidLight: "vol = geladen, licht = verwacht", expected: "verwacht", sunUntil: "Zon tot vertrek", fromGrid: "Van het net", chargeable: "laadbaar", whatWillHappen: "Wat het systeem gaat doen", planSun: "Verwacht {sun} kWh zon vóór {time}; haalt {grid} kWh van het net in de goedkoopste uren.", planSunOnly: "Verwacht {sun} kWh zon vóór {time}; dat is genoeg.", planSolarOnly: "Laadt alleen met zon: ongeveer {sun} kWh vóór {time}.", forecastLearning: "De verwachting leert nog van je geschiedenis.",
       status: {
         disconnected: "Geen auto aangesloten", awaiting_start: "Wacht op start", charging: "Laden",
         completed: "Laden voltooid", error: "Fout", ready_to_charge: "Klaar om te laden",
@@ -68,7 +68,7 @@
     },
     de: {
       tabs: { charge: "Laden", plan: "Planung", grid: "Equalizer", meter: "Anschluss", history: "Verlauf" },
-      modes: { normal: "Normal", smart: "Smart", solar: "Solar", solar_smart: "Solar + Smart" }, modeDesc: { normal: "Lädt sofort mit voller Leistung, egal zu welchem Preis.", smart: "Lädt in den günstigsten Stunden, damit das Auto zur Abfahrt voll ist.", solar: "Lädt nur mit Solarüberschuss, automatisch 1- oder 3-phasig.", solar_smart: "Zuerst Solarüberschuss; der Rest in den günstigsten Stunden." }, modeNow: "Modus", phase1: "1 Phase", phase3: "3 Phasen", chartNormal: "Normal: lädt, sobald das Auto angesteckt ist, zu jedem Preis.", chartSolar: "Solar: lädt nur mit Überschuss; der Preis spielt keine Rolle.", chartSolarSmart: "Solar + Smart: zuerst Sonne (gelb), der Rest in den blauen günstigen Stunden.", sunFirst: "zuerst Sonne", cheapHours: "günstige Stunden", noPricesWait: "Noch keine Preise: Smart wartet, bis sie da sind.", sunForecast: "Solarprognose", sunCharge: "Laden mit Sonne", sunToday: "Sonne heute", sunTomorrow: "Sonne morgen", tomorrowShort: "morgen", sunUntil: "Sonne bis Abfahrt", fromGrid: "Aus dem Netz", chargeable: "ladbar", whatWillHappen: "Was das System tun wird", planSun: "Erwartet {sun} kWh Sonne vor {time}; kauft {grid} kWh in den günstigsten Stunden.", planSunOnly: "Erwartet {sun} kWh Sonne vor {time}; das reicht.", planSolarOnly: "Lädt nur mit Sonne: etwa {sun} kWh vor {time}.", forecastLearning: "Die Prognose lernt noch aus deinem Verlauf.",
+      modes: { normal: "Normal", smart: "Smart", solar: "Solar", solar_smart: "Solar + Smart" }, modeDesc: { normal: "Lädt sofort mit voller Leistung, egal zu welchem Preis.", smart: "Lädt in den günstigsten Stunden, damit das Auto zur Abfahrt voll ist.", solar: "Lädt nur mit Solarüberschuss, automatisch 1- oder 3-phasig.", solar_smart: "Zuerst Solarüberschuss; der Rest in den günstigsten Stunden." }, modeNow: "Modus", phase1: "1 Phase", phase3: "3 Phasen", chartNormal: "Normal: lädt, sobald das Auto angesteckt ist, zu jedem Preis.", chartSolar: "Solar: lädt nur mit Überschuss; der Preis spielt keine Rolle.", chartSolarSmart: "Solar + Smart: zuerst Sonne (gelb), der Rest in den blauen günstigen Stunden.", sunFirst: "zuerst Sonne", cheapHours: "günstige Stunden", noPricesWait: "Noch keine Preise: Smart wartet, bis sie da sind.", sunForecast: "Solarprognose", sunCharge: "Laden mit Sonne", sunToday: "Sonne heute", sunTomorrow: "Sonne morgen", tomorrowShort: "morgen", perQuarter: "pro Viertelstunde", fromSun: "von der Sonne", solidLight: "voll = geladen, hell = erwartet", expected: "erwartet", sunUntil: "Sonne bis Abfahrt", fromGrid: "Aus dem Netz", chargeable: "ladbar", whatWillHappen: "Was das System tun wird", planSun: "Erwartet {sun} kWh Sonne vor {time}; kauft {grid} kWh in den günstigsten Stunden.", planSunOnly: "Erwartet {sun} kWh Sonne vor {time}; das reicht.", planSolarOnly: "Lädt nur mit Sonne: etwa {sun} kWh vor {time}.", forecastLearning: "Die Prognose lernt noch aus deinem Verlauf.",
       status: {
         disconnected: "Kein Fahrzeug verbunden", awaiting_start: "Wartet auf Start", charging: "Lädt",
         completed: "Laden abgeschlossen", error: "Fehler", ready_to_charge: "Ladebereit",
@@ -591,7 +591,8 @@
     }
 
     _priceChart(a, t) {
-      const prices = (a.prices || []).filter((p) => new Date(p.end) > new Date(Date.now() - 3600e3)).slice(0, 96);
+      // 6 hours back (what happened) and up to 24 hours ahead (what will happen)
+      const prices = (a.prices || []).filter((p) => new Date(p.end) > new Date(Date.now() - 6 * 3600e3)).slice(0, 120);
       if (!prices.length) return "";
       const planned = new Set((a.plan || []).map((p) => new Date(p.start).getTime()));
       const mode = a.boost ? "boost" : a.mode || "normal";
@@ -619,13 +620,13 @@
         if (always) cls = "bar plan";                       // Normal: it charges at any price
         else if (onlySun) cls = "bar";                      // Solar: price plays no role
         if (isNow && sunNow) cls = "bar sun";               // charging on solar right now
+        if (e <= now) cls += " past";                       // history: a bit dimmer
         return `<rect class="${cls}" x="${(i * bw + pad / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${Math.max(1, bw - pad).toFixed(1)}" height="${h.toFixed(1)}" rx="1.5"><title>${this._time(p.start)} · ${this._num(p.price, 3)}</title></rect>`;
       }).join("");
       // Solar forecast: dotted line (expected kW of the panels) and yellow blocks where it will charge on sun
       const solar = a.solar && Array.isArray(a.solar.slots) ? a.solar.slots : [];
       const bySlot = new Map(solar.map((x) => [new Date(x.start).getTime(), x]));
-      const sunModes = mode === "solar" || mode === "solar_smart";
-      let sunLine = "", sunBlocks = "", pvMax = 0;
+      let sunLine = "", pvMax = 0;
       if (solar.length) {
         pvMax = Math.max(0.5, ...prices.map((p) => ((bySlot.get(new Date(p.start).getTime()) || {}).pv || 0)));
         const yp = (v) => H - (Math.max(0, v) / pvMax) * (H - 18) - 2;
@@ -634,10 +635,6 @@
           const x = bySlot.get(new Date(p.start).getTime());
           if (!x) return;
           pts.push(`${(i * bw + bw / 2).toFixed(1)},${yp(x.pv).toFixed(1)}`);
-          if (sunModes && x.charge > 0) {
-            const top = yp(x.charge);
-            sunBlocks += `<rect class="sunplan" x="${(i * bw + pad / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${Math.max(1, bw - pad).toFixed(1)}" height="${(H - top).toFixed(1)}" rx="1.5"><title>${this._time(p.start)} · ☀ ${this._num(x.charge, 1)} kW</title></rect>`;
-          }
         });
         if (pts.length > 1) sunLine = `<polyline class="sunline" points="${pts.join(" ")}"></polyline>`;
       }
@@ -645,24 +642,57 @@
         const d = new Date(p.start);
         return d.getMinutes() === 0 && d.getHours() % 6 === 0 ? `<text x="${(i * bw).toFixed(1)}" y="${H + 14}">${String(d.getHours()).padStart(2, "0")}:00</text>` : "";
       }).join("");
+      // Strip below the prices: per quarter kWh from the grid (blue) and from the sun (yellow), stacked.
+      // Past quarters = what really happened (solid), future = what is expected (lighter).
+      const S = 40, top0 = H + 3;
+      const hist = new Map((a.history || []).map((x) => [new Date(x.start).getTime(), x]));
+      const sched = new Map((a.schedule || []).map((x) => [new Date(x.start).getTime(), x]));
+      const energyOf = (p) => {
+        const s0 = new Date(p.start).getTime(), e0 = new Date(p.end).getTime();
+        if (e0 <= now) {
+          // history is kept per quarter; with hourly prices add the quarters up
+          let g = 0, u = 0;
+          for (let q = s0; q < e0; q += 900e3) { const h = hist.get(q); if (h) { g += h.grid; u += h.sun; } }
+          return { g, u, past: true };
+        }
+        const x = sched.get(s0);
+        return { g: x ? x.grid : 0, u: x ? x.sun : 0, past: false };
+      };
+      const energies = prices.map(energyOf);
+      const eMax = Math.max(0.25, ...energies.map((e) => e.g + e.u));
+      const hasStrip = energies.some((e) => e.g + e.u > 0.001);
+      let strip = "";
+      if (hasStrip) {
+        strip = energies.map((e, i) => {
+          if (e.g + e.u <= 0.001) return "";
+          const x = (i * bw + pad / 2).toFixed(1), w = Math.max(1, bw - pad).toFixed(1);
+          const hg = (e.g / eMax) * S, hu = (e.u / eMax) * S;
+          const cls = e.past ? "" : " plan";
+          const tip = `<title>${this._time(prices[i].start)} · ${t.fromGrid} ${this._num(e.g, 2)} kWh · ☀ ${this._num(e.u, 2)} kWh${e.past ? "" : " (" + t.expected + ")"}</title>`;
+          return `<g class="estrip${cls}">${hg > 0.2 ? `<rect class="eg" x="${x}" y="${top0.toFixed(1)}" width="${w}" height="${hg.toFixed(1)}" rx="1">${tip}</rect>` : ""}${hu > 0.2 ? `<rect class="eu" x="${x}" y="${(top0 + hg).toFixed(1)}" width="${w}" height="${hu.toFixed(1)}" rx="1">${tip}</rect>` : ""}</g>`;
+        }).join("");
+      }
+      const tickY = hasStrip ? H + S + 16 : H + 14;
+      const ticksPlaced = ticks.replaceAll(`y="${H + 14}"`, `y="${tickY}"`);
       return `
-        <figure class="chart">
-          <svg viewBox="0 -4 ${W} ${H + 20}" preserveAspectRatio="none" role="img">
+        <figure class="chart${hasStrip ? " withstrip" : ""}">
+          <svg viewBox="0 -4 ${W} ${tickY + 6}" preserveAspectRatio="none" role="img">
             <line class="zero" x1="0" x2="${W}" y1="${zero.toFixed(1)}" y2="${zero.toFixed(1)}"></line>
             ${bars}
-            ${sunBlocks}
             ${sunLine}
             ${pvMax ? `<text class="sunmax" x="${W - 2}" y="8" text-anchor="end">☀ ${this._num(pvMax, 1)} kW</text>` : ""}
-            ${nowX !== null ? `<line class="nowline" x1="${nowX.toFixed(1)}" x2="${nowX.toFixed(1)}" y1="0" y2="${H}"></line>` : ""}
-            ${ticks}
+            ${hasStrip ? `<line class="zero" x1="0" x2="${W}" y1="${top0}" y2="${top0}"></line>${strip}<text class="smax" x="${W - 2}" y="${(top0 + S - 2).toFixed(1)}" text-anchor="end">${this._num(eMax, 1)} kWh</text>` : ""}
+            ${nowX !== null ? `<line class="nowline" x1="${nowX.toFixed(1)}" x2="${nowX.toFixed(1)}" y1="0" y2="${hasStrip ? top0 + S : H}"></line>` : ""}
+            ${ticksPlaced}
           </svg>
           <figcaption>${
             mode === "solar_smart"
               ? `<span class="key sun"></span>${t.sunFirst} <span class="key plan"></span>${t.cheapHours}`
               : onlySun ? `<span class="key sun"></span>${t.modes.solar}` : `<span class="key plan"></span>${always ? t.modes.normal : t.planned}`
           } · ${this._num(lo, 3)} – ${this._num(max, 3)} ${a.currency || "€"}/kWh${
-            solar.length ? ` <span class="key dots"></span>${t.sunForecast}${sunModes ? ` <span class="key sunblk"></span>${t.sunCharge}` : ""}` : ""
+            solar.length ? ` <span class="key dots"></span>${t.sunForecast}` : ""
           }</figcaption>
+          ${hasStrip ? `<p class="stripkey"><span>↓ ${t.perQuarter}:</span><span><i class="key eg"></i>${t.fromGrid}</span><span><i class="key eu"></i>${t.fromSun}</span><span class="muted">${t.solidLight}</span></p>` : ""}
           ${always ? `<p class="note chartnote">${t.chartNormal}</p>` : onlySun ? `<p class="note chartnote">${t.chartSolar}</p>` : mode === "solar_smart" ? `<p class="note chartnote">${t.chartSolarSmart}</p>` : ""}
         </figure>`;
     }
@@ -1042,6 +1072,16 @@
     figcaption { font-size:.74rem; color:var(--muted); display:flex; align-items:center; gap:6px; margin-top:2px; }
     .bar.sun { fill:var(--sun); }
     .sunplan { fill:var(--sun); opacity:.55; }
+    .estrip .eg { fill:var(--accent); } .estrip .eu { fill:var(--sun); }
+    .estrip.plan .eg, .estrip.plan .eu { opacity:.45; }
+    .smax { fill:var(--muted); font-size:9px; }
+    .key.eg { width:10px; height:10px; border-radius:3px; background:var(--accent); display:inline-block; margin-left:4px; }
+    .key.eu { width:10px; height:10px; border-radius:3px; background:var(--sun); display:inline-block; margin-left:6px; }
+    .stripkey { font-size:.72rem; color:var(--muted); margin:3px 0 0; display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; }
+    .stripkey span { display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
+    .stripkey .key { margin:0; }
+    .bar.past { opacity:.45; }
+    .chart.withstrip svg { height:180px; }
     .sunline { fill:none; stroke:var(--sun); stroke-width:2; stroke-dasharray:4 4; vector-effect:non-scaling-stroke; }
     .sunmax { fill:var(--sun); font-size:10px; }
     .key.dots { width:14px; height:0; border-top:2px dashed var(--sun); display:inline-block; vertical-align:middle; margin-left:6px; }
