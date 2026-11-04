@@ -1,6 +1,6 @@
 /* Easee Smart Charging card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.11.9";
+  const VERSION = "1.11.10";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -740,9 +740,14 @@
     }
 
     _solarSummary(a, t) {
-      const sol = a.solar;
-      if (!sol) return "";
+      const raw = a.solar;
+      if (!raw) return "";
       const mode = a.boost ? "boost" : a.mode || "normal";
+      // When there is a per-quarter schedule, the text and tiles use the same numbers as the strip in the chart.
+      const sch = (a.schedule || []).filter((x) => new Date(x.start).getTime() + 900e3 > Date.now());
+      const sol = sch.length && mode !== "normal" && mode !== "boost"
+        ? { ...raw, grid_kwh: sch.reduce((n, x) => n + (x.grid || 0), 0), until_departure_kwh: sch.reduce((n, x) => n + (x.sun || 0), 0) }
+        : raw;
       const time = sol.departure ? this._time(sol.departure) : "";
       const fill = (txt) => txt.replace("{sun}", this._num(sol.until_departure_kwh, 1)).replace("{grid}", this._num(sol.grid_kwh, 1)).replace("{time}", time);
       let line = "";
@@ -752,7 +757,7 @@
       return `
         <div class="sunsum">
           <div class="tile"><span>${t.sunToday}</span><b>${this._num(sol.today_kwh, 1)} ${t.kwh}</b><small>${t.tomorrowShort} ${this._num(sol.tomorrow_kwh, 1)} ${t.kwh}</small></div>
-          <div class="tile"><span>${t.sunUntil}</span><b>${this._num(sol.until_departure_kwh, 1)} ${t.kwh}</b><small>${t.chargeable}</small></div>
+          <div class="tile"><span>${t.sunUntil}</span><b>${this._num(raw.until_departure_kwh, 1)} ${t.kwh}</b><small>${t.chargeable}</small></div>
           <div class="tile"><span>${t.fromGrid}</span><b>${this._num(mode === "solar" ? 0 : sol.grid_kwh, 1)} ${t.kwh}</b><small>${mode === "normal" || mode === "boost" ? t.modes.normal : "&nbsp;"}</small></div>
         </div>
         ${line ? `<p class="note sunline-note"><b>${t.whatWillHappen}:</b> ${esc(line)}</p>` : ""}
