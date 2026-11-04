@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 
 import voluptuous as vol
@@ -14,7 +15,9 @@ from homeassistant.config_entries import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import selector
+from homeassistant.util import dt as dt_util
 
 from .cars import (
     ACTION_DOMAINS,
@@ -340,6 +343,7 @@ PV_WORDS = ("pv", "solar", "zon", "productie", "production", "inverter", "omvorm
 def suggest_pv_power(hass: HomeAssistant) -> str | None:
     """A power sensor of the solar panels (production), if one can be recognised."""
     best: tuple[int, str] | None = None
+    registry = er.async_get(hass)
     for state in hass.states.async_all("sensor"):
         a = state.attributes
         if a.get("device_class") != "power" or str(a.get("unit_of_measurement", "")).lower() not in ("w", "kw"):
@@ -347,10 +351,53 @@ def suggest_pv_power(hass: HomeAssistant) -> str | None:
         eid = state.entity_id.lower()
         if not any(w in eid for w in PV_WORDS) or any(w in eid for w in ("net", "grid", "consum", "verbruik", "import", "export", "battery", "accu", "_dc", "max", "microinverter")):
             continue
-        score = (2 if any(w in eid for w in ("productie", "production", "pv_power", "solar_power")) else 1)
+        score = 2 if any(w in eid for w in ("productie", "production", "pv_power", "solar_power")) else 1
+        entry = registry.async_get(state.entity_id)
+        if entry is not None and entry.platform not in ("template", "statistics", "filter", "utility_meter"):
+            score += 2  # the inverter integration's own sensor beats a template copy
+        if a.get("state_class") == "measurement":
+            score += 1  # long-term statistics: the forecast learns from those
         if best is None or score > best[0]:
             best = (score, state.entity_id)
     return best[1] if best else None
+
+
+def _pv_candidates(hass: HomeAssistant) -> list[str]:
+    out = []
+    for state in hass.states.async_all("sensor"):
+        a = state.attributes
+        if a.get("device_class") != "power" or str(a.get("unit_of_measurement", "")).lower() not in ("w", "kw"):
+            continue
+        eid = state.entity_id.lower()
+        if any(w in eid for w in PV_WORDS) and not any(
+            w in eid for w in ("net", "grid", "consum", "verbruik", "import", "export", "battery", "accu", "_dc", "max", "microinverter")
+        ):
+            out.append(state.entity_id)
+    return out
+
+
+async def async_suggest_pv_power(hass: HomeAssistant) -> str | None:
+    """The solar power sensor with the longest statistics history (the forecast learns from it)."""
+    fallback = suggest_pv_power(hass)
+    candidates = _pv_candidates(hass)
+    if not candidates or "recorder" not in hass.config.components:
+        return fallback
+    try:
+        from homeassistant.components.recorder import get_instance
+        from homeassistant.components.recorder.statistics import (
+            statistics_during_period,
+        )
+
+        start = dt_util.utcnow() - timedelta(days=400)
+        stats = await get_instance(hass).async_add_executor_job(
+            statistics_during_period, hass, start, None, set(candidates), "day", None, {"mean"}
+        )
+    except Exception:  # noqa: BLE001 - suggestion only
+        return fallback
+    ranked = sorted(((len(stats.get(c, [])), c) for c in candidates), reverse=True)
+    if ranked and ranked[0][0] >= 7:
+        return ranked[0][1]
+    return fallback
 
 
 def suggest_pv_forecast(hass: HomeAssistant) -> str | None:
@@ -365,9 +412,9 @@ def suggest_pv_forecast(hass: HomeAssistant) -> str | None:
     return min(found)[1] if found else None
 
 
-def _solar_schema(hass: HomeAssistant, current: dict[str, Any]) -> dict:
+def _solar_schema(hass: HomeAssistant, current: dict[str, Any], suggested_pv: str | None = None) -> dict:
     source = current.get(CONF_PV_FORECAST) or PV_FORECAST_NONE
-    pv = current.get(CONF_PV_POWER) or suggest_pv_power(hass)
+    pv = current.get(CONF_PV_POWER) or suggested_pv or suggest_pv_power(hass)
     fc = current.get(CONF_PV_FORECAST_SENSOR) or suggest_pv_forecast(hass)
     return {
         vol.Required(CONF_PV_FORECAST, default=source): selector.SelectSelector(
@@ -599,7 +646,8 @@ class EaseeSmartOptionsFlow(OptionsFlow):
             if not errors:
                 return self._save(user_input, [CONF_PV_POWER, CONF_PV_KWP, CONF_PV_FORECAST_SENSOR])
         current = {**self._current(), **(user_input or {})}
-        return self.async_show_form(step_id="solar", data_schema=vol.Schema(_solar_schema(self.hass, current)), errors=errors)
+        suggested = None if current.get(CONF_PV_POWER) else await async_suggest_pv_power(self.hass)
+        return self.async_show_form(step_id="solar", data_schema=vol.Schema(_solar_schema(self.hass, current, suggested)), errors=errors)
 
     async def async_step_equalizer(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Link (or unlink) an Easee Equalizer and choose whether the cards show it."""
