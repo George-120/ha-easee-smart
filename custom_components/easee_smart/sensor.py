@@ -13,6 +13,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
+    MATCH_ALL,
     PERCENTAGE,
     EntityCategory,
     UnitOfElectricCurrent,
@@ -286,18 +287,8 @@ class EaseeSmartSensor(EaseeSmartEntity, SensorEntity):
     """A computed sensor."""
 
     entity_description: EaseeSmartSensorDescription
-    # The card payload is large; keep it out of the recorder database.
-    _unrecorded_attributes = frozenset(
-        {
-            "model", "name", "charger_id", "device_id", "mode", "departure",
-            "target_energy", "target_soc", "boost", "manual_kwh", "smart_state", "currency", "phases", "max_current", "sources", "equalizer",
-            "entities", "price", "prices", "plan", "plan_cost", "plan_avg_price",
-            "next_start", "complete_by", "plan_short_kwh", "plan_window_kwh", "charge_power_kw", "charger_power_kw", "car_power_kw", "car_power_source", "departure_at", "departure_moved", "energy_needed", "target_current",
-            "surplus_kw", "grid_power_kw", "phase_currents", "phase_voltages",
-            "main_fuse", "phase_headroom", "session", "today", "month", "months",
-            "sessions", "reimbursement_per_kwh", "has_surplus_source", "has_soc", "uses_meter", "meter", "car", "cars", "active_car_setting", "ere", "language", "cars_detail",
-        }
-    )
+    # The card payload is large and changes all the time: keep every attribute out of the recorder database.
+    _unrecorded_attributes = frozenset({MATCH_ALL})
 
     def __init__(self, manager: EaseeSmartManager, description: EaseeSmartSensorDescription) -> None:
         super().__init__(manager, description.key)

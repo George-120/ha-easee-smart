@@ -1557,10 +1557,10 @@ class EaseeSmartManager:
                 if k >= dt_util.as_utc(dt_util.start_of_local_day() - timedelta(days=1)).isoformat()
             ],
             "max_current": self.max_current,
-            "sources": self.charger_entities,
-            "equalizer": self.equalizer_entities,
+            "sources": dict(self.charger_entities),
+            "equalizer": dict(self.equalizer_entities) if isinstance(self.equalizer_entities, dict) else self.equalizer_entities,
             "equalizer_info": self._equalizer_info(),
-            "entities": self.own_entities,
+            "entities": dict(self.own_entities),  # a copy: HA only sends attributes that changed
             "entry_id": self.entry.entry_id,
             "card_version": VERSION,
             "price": snap.price,

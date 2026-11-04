@@ -844,3 +844,13 @@ def test_departure_choice_sticks_during_a_session(tmp_path):
         assert m._departure(CLOCK["now"]) == dep and not m._departure_moved
         CLOCK["now"] = datetime(2026, 11, 3, 20, 0, tzinfo=TZ)
     asyncio.run(run())
+
+
+def test_payload_entities_is_a_copy(tmp_path):
+    async def run():
+        hass, m = make(tmp_path, equalizer=False)
+        await m.async_setup()
+        first = m.card_payload()["entities"]
+        m.own_entities["charge_mode"] = "select.x"
+        assert "charge_mode" not in first and m.card_payload()["entities"]["charge_mode"] == "select.x"
+    asyncio.run(run())
