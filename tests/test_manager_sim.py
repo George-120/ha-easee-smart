@@ -364,6 +364,12 @@ def test_cars_active_by_plug_target_efficiency_and_ere(tmp_path):
         assert m.active_car().name == "Inster"
         # (90 - 50)% of 49 kWh / 0.9 efficiency
         assert m.snapshot.energy_needed == round(0.40 * 49 / 0.9, 2)
+        # fixed kWh target, also with a car that reports its battery level
+        await m.async_set_setting("target_energy", 12.0)
+        await m.async_set_setting("manual_kwh", True)
+        assert m.snapshot.energy_needed == 12.0 and m.card_payload()["manual_kwh"] is True
+        await m.async_set_setting("manual_kwh", False)
+        assert m.snapshot.energy_needed == round(0.40 * 49 / 0.9, 2)
         setstate(hass, "binary_sensor.inster_plug", "off")
         setstate(hass, "binary_sensor.niro_plug", "on")
         m._recompute()

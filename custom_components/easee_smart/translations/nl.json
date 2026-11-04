@@ -528,6 +528,9 @@
     "switch": {
       "boost": {
         "name": "Boost (nu laden)"
+      },
+      "manual_kwh": {
+        "name": "Vast aantal kWh laden"
       }
     },
     "button": {

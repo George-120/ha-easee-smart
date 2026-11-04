@@ -290,7 +290,7 @@ class EaseeSmartSensor(EaseeSmartEntity, SensorEntity):
     _unrecorded_attributes = frozenset(
         {
             "model", "name", "charger_id", "device_id", "mode", "departure",
-            "target_energy", "target_soc", "boost", "smart_state", "currency", "phases", "max_current", "sources", "equalizer",
+            "target_energy", "target_soc", "boost", "manual_kwh", "smart_state", "currency", "phases", "max_current", "sources", "equalizer",
             "entities", "price", "prices", "plan", "plan_cost", "plan_avg_price",
             "next_start", "complete_by", "energy_needed", "target_current",
             "surplus_kw", "grid_power_kw", "phase_currents", "phase_voltages",

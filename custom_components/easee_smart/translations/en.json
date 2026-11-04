@@ -528,6 +528,9 @@
     "switch": {
       "boost": {
         "name": "Boost (charge now)"
+      },
+      "manual_kwh": {
+        "name": "Charge a fixed kWh amount"
       }
     },
     "button": {

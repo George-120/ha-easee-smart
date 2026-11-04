@@ -208,6 +208,7 @@ class Settings:
     car_targets: dict = field(default_factory=dict)
     price_threshold: float | None = None
     boost: bool = False
+    manual_kwh: bool = False  # charge a fixed number of kWh, also when a car with a battery level is linked
 
 
 @dataclass
@@ -475,6 +476,7 @@ class EaseeSmartManager:
             car_targets=dict(settings.get("car_targets", {})),
             price_threshold=settings.get("price_threshold"),
             boost=bool(settings.get("boost", False)),
+            manual_kwh=bool(settings.get("manual_kwh", False)),
         )
         sess = data.get("session", {})
         self.session = SessionTracker(
@@ -718,7 +720,7 @@ class EaseeSmartManager:
         """Energy still to deliver from the wall (battery energy / charging efficiency)."""
         car = self.active_car()
         soc = self.car_soc(car)
-        if car is not None and soc is not None:
+        if car is not None and soc is not None and not self.settings.manual_kwh:
             battery = max(0.0, (self.car_target(car) - soc) / 100 * car.capacity)
             return round(battery / self.efficiency, 2)
         delivered = self.snapshot.session_energy if self.snapshot.connected else 0.0
@@ -1471,6 +1473,7 @@ class EaseeSmartManager:
             ],
             "active_car_setting": self.settings.active_car,
             "boost": self.settings.boost,
+            "manual_kwh": self.settings.manual_kwh,
             "smart_state": snap.smart_state,
             "currency": self.hass.config.currency,
             "language": self._opt(CONF_LANGUAGE) or "auto",

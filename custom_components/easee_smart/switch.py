@@ -17,7 +17,11 @@ async def async_setup_entry(
     entry: EaseeSmartConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    async_add_entities([Boost(entry.runtime_data, "boost")])
+    manager = entry.runtime_data
+    entities: list[SwitchEntity] = [Boost(manager, "boost")]
+    if manager.cars:
+        entities.append(ManualKwh(manager, "manual_kwh"))
+    async_add_entities(entities)
 
 
 class Boost(EaseeSmartEntity, SwitchEntity):
@@ -32,3 +36,19 @@ class Boost(EaseeSmartEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         await self.manager.async_set_setting("boost", False)
+
+
+class ManualKwh(EaseeSmartEntity, SwitchEntity):
+    """Charge a fixed number of kWh before departure instead of up to a battery percentage."""
+
+    _attr_icon = "mdi:lightning-bolt-circle"
+
+    @property
+    def is_on(self) -> bool:
+        return self.manager.settings.manual_kwh
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self.manager.async_set_setting("manual_kwh", True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self.manager.async_set_setting("manual_kwh", False)

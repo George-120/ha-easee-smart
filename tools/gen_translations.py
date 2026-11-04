@@ -377,7 +377,8 @@ def build(lang):
        "price_threshold": {"name": t(T("Always charge below price","Altijd laden onder prijs","Immer laden unter Preis"))},
       },
       "time": {"departure_time": {"name": t(T("Departure time","Vertrektijd","Abfahrtszeit"))}},
-      "switch": {"boost": {"name": t(T("Boost (charge now)","Boost (nu laden)","Boost (jetzt laden)"))}},
+      "switch": {"boost": {"name": t(T("Boost (charge now)","Boost (nu laden)","Boost (jetzt laden)"))},
+                 "manual_kwh": {"name": t(T("Charge a fixed kWh amount","Vast aantal kWh laden","Feste kWh-Menge laden"))}},
       "button": {
        "export_report": {"name": t(T("Export last month report","Maandrapport vorige maand exporteren","Bericht letzter Monat exportieren"))},
        "refresh_car": {"name": t(T("Refresh car data","Gegevens auto verversen","Autodaten aktualisieren"))},

@@ -1,6 +1,6 @@
 /* Easee Smart Charging card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.11.2";
+  const VERSION = "1.11.3";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -28,7 +28,7 @@
       },
       pause: "Pause", resume: "Resume", start: "Start", boost: "Boost", lock: "Lock cable", unlock: "Cable unlocked",
       session: "this session", cost: "cost", duration: "time",
-      departure: "Ready at", target: "Add", targetSoc: "Charge to", needed: "still needed",
+      departure: "Ready at", target: "Add", targetSoc: "Charge to", unitPct: "%", unitKwh: "kWh", byPct: "Charge to a battery %", byKwh: "Charge a fixed number of kWh", needed: "still needed",
       planStart: "Starts", planEnd: "Ready", planCost: "Estimated", noPlan: "No plan needed right now.",
       noPrices: "Prices could not be fetched yet. They update automatically.",
       now: "now", grid: "Grid", importing: "Importing", exporting: "Exporting", fuse: "Main fuse",
@@ -57,7 +57,7 @@
       },
       pause: "Pauzeren", resume: "Hervatten", start: "Starten", boost: "Boost", lock: "Kabel vast", unlock: "Kabel los",
       session: "deze sessie", cost: "kosten", duration: "tijd",
-      departure: "Klaar om", target: "Laden", targetSoc: "Laden tot", needed: "nog nodig",
+      departure: "Klaar om", target: "Laden", targetSoc: "Laden tot", unitPct: "%", unitKwh: "kWh", byPct: "Laden tot een accupercentage", byKwh: "Een vast aantal kWh laden", needed: "nog nodig",
       planStart: "Start", planEnd: "Klaar", planCost: "Verwacht", noPlan: "Er is nu geen planning nodig.",
       noPrices: "De prijzen konden nog niet worden opgehaald. Ze worden vanzelf bijgewerkt.",
       now: "nu", grid: "Net", importing: "Afname", exporting: "Teruglevering", fuse: "Hoofdzekering",
@@ -86,7 +86,7 @@
       },
       pause: "Pausieren", resume: "Fortsetzen", start: "Starten", boost: "Boost", lock: "Kabel verriegelt", unlock: "Kabel frei",
       session: "dieser Ladevorgang", cost: "Kosten", duration: "Dauer",
-      departure: "Fertig um", target: "Laden", targetSoc: "Laden bis", needed: "noch nötig",
+      departure: "Fertig um", target: "Laden", targetSoc: "Laden bis", unitPct: "%", unitKwh: "kWh", byPct: "Bis zu einem Akkustand laden", byKwh: "Eine feste kWh-Menge laden", needed: "noch nötig",
       planStart: "Start", planEnd: "Fertig", planCost: "Erwartet", noPlan: "Derzeit ist keine Planung nötig.",
       noPrices: "Preise konnten noch nicht abgerufen werden. Sie werden automatisch aktualisiert.",
       now: "jetzt", grid: "Netz", importing: "Bezug", exporting: "Einspeisung", fuse: "Hauptsicherung",
@@ -567,7 +567,7 @@
 
     _tabPlan(a, t) {
       const ent = a.entities || {};
-      const useSoc = a.has_soc && ent.target_soc;
+      const useSoc = a.has_soc && ent.target_soc && !a.manual_kwh;
       const targetVal = useSoc ? a.target_soc : a.target_energy;
       const step = useSoc ? 5 : 1;
       const unit = useSoc ? "%" : t.kwh;
@@ -588,7 +588,8 @@
           <label class="ctl"><span>${t.departure}</span>
             <input type="time" value="${esc(a.departure || "07:00")}" data-ctl="departure">
           </label>
-          <div class="ctl"><span>${useSoc ? t.targetSoc : t.target}</span>
+          <div class="ctl"><span class="ctlhead">${useSoc ? t.targetSoc : t.target}${a.has_soc && ent.manual_kwh ? `<span class="unitsw" role="group">
+                <button data-act="tgtype" data-kwh="0" class="${useSoc ? "on" : ""}" title="${t.byPct}" aria-label="${t.byPct}">${t.unitPct}</button><button data-act="tgtype" data-kwh="1" class="${useSoc ? "" : "on"}" title="${t.byKwh}" aria-label="${t.byKwh}">${t.unitKwh}</button></span>` : ""}</span>
             <div class="stepper">
               <button data-act="step" data-dir="-1" data-step="${step}" aria-label="−">−</button>
               <b>${this._num(targetVal, 0)} ${unit}</b>
@@ -844,6 +845,9 @@
           await call("easee", "action_command", { device_id: a.device_id, action_command: cmd });
           return;
         }
+        case "tgtype":
+          if (ent.manual_kwh) await call("switch", btn.dataset.kwh === "1" ? "turn_on" : "turn_off", { entity_id: ent.manual_kwh });
+          return;
         case "boost":
           if (ent.boost) await call("switch", a.boost ? "turn_off" : "turn_on", { entity_id: ent.boost });
           return;
@@ -853,7 +857,7 @@
           return;
         }
         case "step": {
-          const useSoc = a.has_soc && ent.target_soc;
+          const useSoc = a.has_soc && ent.target_soc && !a.manual_kwh;
           const id = useSoc ? ent.target_soc : ent.target_energy;
           const cur = useSoc ? a.target_soc : a.target_energy;
           const next = Math.min(useSoc ? 100 : 120, Math.max(useSoc ? 10 : 1, Number(cur) + Number(btn.dataset.dir) * Number(btn.dataset.step)));
@@ -1114,6 +1118,10 @@
     .zero { stroke:var(--line); stroke-width:1; }
     .nowline { stroke:#fff; stroke-width:1.5; stroke-dasharray:3 3; opacity:.7; }
     .chart .plot { position:relative; }
+    .ctlhead { display:flex; align-items:center; justify-content:space-between; gap:4px; white-space:nowrap; }
+    .unitsw { display:inline-flex; border:1px solid var(--line, rgba(255,255,255,.14)); border-radius:999px; overflow:hidden; }
+    .unitsw button { all:unset; cursor:pointer; font-size:10px; line-height:1; padding:3px 5px; color:var(--muted); }
+    .unitsw button.on { background:var(--accent, #3b82f6); color:#fff; }
     .clbl { position:absolute; transform:translateY(-85%); font-size:11px; line-height:1; color:var(--muted); white-space:nowrap; pointer-events:none; font-variant-numeric:tabular-nums; letter-spacing:.01em; }
     figcaption { font-size:.74rem; color:var(--muted); display:flex; align-items:center; gap:6px; margin-top:2px; }
     .bar.sun { fill:var(--sun); }
