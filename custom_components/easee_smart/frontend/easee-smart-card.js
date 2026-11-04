@@ -1,6 +1,6 @@
 /* Easee Smart Charging card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.11.0";
+  const VERSION = "1.11.1";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -133,6 +133,12 @@
         this.attachShadow({ mode: "open" });
         this.shadowRoot.addEventListener("click", (e) => this._onClick(e));
         this.shadowRoot.addEventListener("change", (e) => this._onChange(e));
+        // The time field is saved when you leave it (click elsewhere) or press Enter, not while typing:
+        // a native time input already reports "02:00" after the first digit of "20:00".
+        this.shadowRoot.addEventListener("focusout", (e) => this._onLeave(e));
+        this.shadowRoot.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && e.target && e.target.dataset && e.target.dataset.ctl) e.target.blur();
+        });
       }
     }
 
@@ -154,7 +160,13 @@
       const sig = JSON.stringify([this._config && this._config.language, this._tab, st && st.last_updated, a, ids.map((id) => hass.states[id] && hass.states[id].state), hass.locale && hass.locale.language]);
       if (sig === this._sig) return;
       this._sig = sig;
+      if (this._editing()) { this._pending = true; return; }  // never redraw under the user's fingers
       this._render();
+    }
+
+    _editing() {
+      const el = this.shadowRoot && this.shadowRoot.activeElement;
+      return !!(el && el.dataset && el.dataset.ctl);
     }
 
     _entityId() {
@@ -884,14 +896,19 @@
       }
     }
 
-    async _onChange(e) {
+    async _onChange(_e) {
+      // saving happens in _onLeave
+    }
+
+    async _onLeave(e) {
       const el = e.target;
-      if (el.dataset.ctl === "departure") {
-        const ent = this._attrs().entities || {};
-        if (ent.departure_time && el.value) {
-          await this._hass.callService("time", "set_value", { entity_id: ent.departure_time, time: `${el.value}:00` });
-        }
+      if (!el || !el.dataset || el.dataset.ctl !== "departure") return;
+      const a = this._attrs();
+      const ent = a.entities || {};
+      if (ent.departure_time && el.value && el.value !== (a.departure || "")) {
+        await this._hass.callService("time", "set_value", { entity_id: ent.departure_time, time: `${el.value}:00` });
       }
+      if (this._pending) { this._pending = false; this._sig = null; setTimeout(() => this._render(), 0); }
     }
   }
 
