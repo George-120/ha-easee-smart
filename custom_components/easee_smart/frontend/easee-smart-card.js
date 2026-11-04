@@ -1,6 +1,6 @@
 /* Easee Smart Charging card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.11.4";
+  const VERSION = "1.11.5";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -29,7 +29,7 @@
       pause: "Pause", resume: "Resume", start: "Start", boost: "Boost", lock: "Lock cable", unlock: "Cable unlocked",
       session: "this session", cost: "cost", duration: "time",
       departure: "Ready at", target: "Add", targetSoc: "Charge to", unitPct: "%", unitKwh: "kWh", byPct: "Charge to a battery %", byKwh: "Charge a fixed number of kWh", needed: "still needed",
-      planStart: "Starts", planEnd: "Ready", planCost: "Estimated", noPlan: "No plan needed right now.",
+      planStart: "Starts", planEnd: "Ready", planCost: "Estimated", noPlan: "No plan needed right now.", tooShort: "Not possible before {dep}: at {kw} kW only {fit} kWh fits until then, {need} kWh is needed (about {dur} of charging). Set \u201cReady at\u201d later or use Boost.",
       noPrices: "Prices could not be fetched yet. They update automatically.",
       now: "now", grid: "Grid", importing: "Importing", exporting: "Exporting", fuse: "Main fuse",
       headroom: "headroom", surplus: "Solar surplus", phase: "Phase", noGrid: "No Equalizer or main connection set. Add your meter under Configure → Main connection.",
@@ -58,7 +58,7 @@
       pause: "Pauzeren", resume: "Hervatten", start: "Starten", boost: "Boost", lock: "Kabel vast", unlock: "Kabel los",
       session: "deze sessie", cost: "kosten", duration: "tijd",
       departure: "Klaar om", target: "Laden", targetSoc: "Laden tot", unitPct: "%", unitKwh: "kWh", byPct: "Laden tot een accupercentage", byKwh: "Een vast aantal kWh laden", needed: "nog nodig",
-      planStart: "Start", planEnd: "Klaar", planCost: "Verwacht", noPlan: "Er is nu geen planning nodig.",
+      planStart: "Start", planEnd: "Klaar", planCost: "Verwacht", noPlan: "Er is nu geen planning nodig.", tooShort: "Niet haalbaar vóór {dep}: met {kw} kW past er tot dan maar {fit} kWh in, er is {need} kWh nodig (ongeveer {dur} laden). Zet \u201cKlaar om\u201d later of kies Boost.",
       noPrices: "De prijzen konden nog niet worden opgehaald. Ze worden vanzelf bijgewerkt.",
       now: "nu", grid: "Net", importing: "Afname", exporting: "Teruglevering", fuse: "Hoofdzekering",
       headroom: "ruimte", surplus: "Zonne-overschot", phase: "Fase", noGrid: "Geen Equalizer of hoofdaansluiting ingesteld. Voeg je meter toe via Configureren → Hoofdaansluiting.",
@@ -87,7 +87,7 @@
       pause: "Pausieren", resume: "Fortsetzen", start: "Starten", boost: "Boost", lock: "Kabel verriegelt", unlock: "Kabel frei",
       session: "dieser Ladevorgang", cost: "Kosten", duration: "Dauer",
       departure: "Fertig um", target: "Laden", targetSoc: "Laden bis", unitPct: "%", unitKwh: "kWh", byPct: "Bis zu einem Akkustand laden", byKwh: "Eine feste kWh-Menge laden", needed: "noch nötig",
-      planStart: "Start", planEnd: "Fertig", planCost: "Erwartet", noPlan: "Derzeit ist keine Planung nötig.",
+      planStart: "Start", planEnd: "Fertig", planCost: "Erwartet", noPlan: "Derzeit ist keine Planung nötig.", tooShort: "Bis {dep} nicht machbar: mit {kw} kW passen bis dahin nur {fit} kWh, nötig sind {need} kWh (etwa {dur} Laden). Stelle \u201eFertig um\u201c später ein oder nutze Boost.",
       noPrices: "Preise konnten noch nicht abgerufen werden. Sie werden automatisch aktualisiert.",
       now: "jetzt", grid: "Netz", importing: "Bezug", exporting: "Einspeisung", fuse: "Hauptsicherung",
       headroom: "Reserve", surplus: "Solarüberschuss", phase: "Phase", noGrid: "Kein Equalizer oder Hausanschluss eingerichtet. Zähler unter Konfigurieren → Hausanschluss hinzufügen.",
@@ -574,7 +574,11 @@
       const chart = this._priceChart(a, t);
       const pm = a.boost ? "boost" : a.mode || "normal";
       const noPlanMode = pm === "normal" || pm === "boost" || pm === "solar";
-      const summary = noPlanMode ? ""
+      const dur = (h) => { const m = Math.round(h * 60); return m >= 60 ? `${Math.floor(m / 60)} u ${String(m % 60).padStart(2, "0")} min`.replace(" u ", this._lang.startsWith("en") ? " h " : this._lang.startsWith("de") ? " Std. " : " u ") : `${m} min`; };
+      const short = !noPlanMode && a.plan_short_kwh > 0.05 && a.charge_power_kw
+        ? `<p class="note warn">${t.tooShort.replace("{dep}", esc(a.departure || "")).replace("{kw}", this._num(a.charge_power_kw, 1)).replace("{fit}", this._num(a.plan_window_kwh, 1))
+            .replace("{need}", this._num(a.energy_needed, 1)).replace("{dur}", dur((a.energy_needed || 0) / a.charge_power_kw))}</p>` : "";
+      const summary = (noPlanMode ? ""
         : !a.prices || !a.prices.length ? `<p class="note">${a.smart_state === "no_prices" && a.no_prices_action === "wait" ? t.noPricesWait : t.noPrices}</p>`
         : a.plan && a.plan.length
         ? `${a.plan_preview ? `<p class="note preview">${t.preview}</p>` : ""}<div class="plansum ${a.plan_preview ? "preview" : ""}">
@@ -582,7 +586,7 @@
              <div><span>${t.planEnd}</span><b>${this._time(a.complete_by)}</b></div>
              <div><span>${t.planCost}</span><b>${this._money(a.plan_cost, a.currency)}</b></div>
            </div>`
-        : `<p class="note">${a.prices && a.prices.length ? t.noPlan : t.noPrices}</p>`;
+        : `<p class="note">${a.prices && a.prices.length ? t.noPlan : t.noPrices}</p>`);
       return `
         <div class="controls">
           <label class="ctl"><span>${t.departure}</span>
@@ -598,6 +602,7 @@
           </div>
           <div class="ctl"><span>${t.needed}</span><b class="plain">${this._num(a.energy_needed, 1)} ${t.kwh}</b></div>
         </div>
+        ${short}
         ${chart}
         ${this._solarSummary(a, t)}
         ${summary}`;
@@ -989,6 +994,7 @@
     .pill.ptop.sun { background:var(--sun); color:#2A2000; }
     .bar.plan.pv { fill:var(--accent); opacity:.45; }
     .note.preview { color:var(--accent); }
+    .note.warn { color:#F5A142; border-left:3px solid #F5A142; padding-left:9px; }
     .plansum.preview b { opacity:.75; }
 
     /* cars view */

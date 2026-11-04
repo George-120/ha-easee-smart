@@ -172,6 +172,8 @@ class ChargePlan:
     next_start: datetime | None = None
     complete_by: datetime | None = None
     fallback: bool = False
+    window_kwh: float = 0.0  # most that fits before departure at full power
+    short_kwh: float = 0.0  # what does not fit before departure, even at full power
 
 
 def plan_cheapest(
@@ -196,6 +198,10 @@ def plan_cheapest(
         end = min(slot.end, departure)
         if end > start:
             window.append(PriceSlot(start, end, slot.price))
+
+    window_hours = max(0.0, (departure - now).total_seconds() / 3600)
+    plan.window_kwh = round(window_hours * charge_power_kw, 2)
+    plan.short_kwh = round(max(0.0, energy_needed_kwh - plan.window_kwh), 2)
 
     if not window:
         # No price information at all: charge now (safe default).

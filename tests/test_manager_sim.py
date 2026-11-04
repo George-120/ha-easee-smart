@@ -771,3 +771,13 @@ def test_normal_schedule_only_when_plugged(tmp_path):
         sched = m.card_payload()["schedule"]
         assert sched and round(sum(x["grid"] for x in sched), 2) == 10.0
     asyncio.run(run())
+
+
+def test_plan_reports_energy_that_does_not_fit_before_departure():
+    logic = importlib.import_module("easee_smart.logic")
+    base = datetime(2026, 11, 4, 21, 30, tzinfo=TZ)
+    slots = [logic.PriceSlot(base + timedelta(minutes=15 * i), base + timedelta(minutes=15 * (i + 1)), 0.3) for i in range(8)]
+    plan = logic.plan_cheapest(slots, base, base + timedelta(minutes=30), 56.9, 11.0)
+    assert plan.window_kwh == 5.5 and plan.short_kwh == 51.4
+    plan = logic.plan_cheapest(slots, base, base + timedelta(hours=2), 10.0, 11.0)
+    assert plan.short_kwh == 0

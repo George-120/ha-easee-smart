@@ -292,7 +292,7 @@ class EaseeSmartSensor(EaseeSmartEntity, SensorEntity):
             "model", "name", "charger_id", "device_id", "mode", "departure",
             "target_energy", "target_soc", "boost", "manual_kwh", "smart_state", "currency", "phases", "max_current", "sources", "equalizer",
             "entities", "price", "prices", "plan", "plan_cost", "plan_avg_price",
-            "next_start", "complete_by", "energy_needed", "target_current",
+            "next_start", "complete_by", "plan_short_kwh", "plan_window_kwh", "charge_power_kw", "energy_needed", "target_current",
             "surplus_kw", "grid_power_kw", "phase_currents", "phase_voltages",
             "main_fuse", "phase_headroom", "session", "today", "month", "months",
             "sessions", "reimbursement_per_kwh", "has_surplus_source", "has_soc", "uses_meter", "meter", "car", "cars", "active_car_setting", "ere", "language", "cars_detail",
