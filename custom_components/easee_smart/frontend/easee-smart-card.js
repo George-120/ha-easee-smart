@@ -1,6 +1,6 @@
 /* Easee Smart Charging card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.11.6";
+  const VERSION = "1.11.7";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -29,7 +29,7 @@
       pause: "Pause", resume: "Resume", start: "Start", boost: "Boost", lock: "Lock cable", unlock: "Cable unlocked",
       session: "this session", cost: "cost", duration: "time",
       departure: "Ready at", target: "Add", targetSoc: "Charge to", unitPct: "%", unitKwh: "kWh", byPct: "Charge to a battery %", byKwh: "Charge a fixed number of kWh", needed: "still needed",
-      planStart: "Starts", planEnd: "Ready", planCost: "Estimated", noPlan: "No plan needed right now.", tooShort: "Not possible before {dep}: at {kw} kW only {fit} kWh fits until then, {need} kWh is needed (about {dur} of charging). Set \u201cReady at\u201d later or use Boost.",
+      planStart: "Starts", planEnd: "Ready", planCost: "Estimated", noPlan: "No plan needed right now.", previewPlug: "Preview: this is the plan as soon as the car is plugged in.", moved: "{dep} today is too soon for what is needed, so it plans for {dep} tomorrow.", maxKw: "max {kw} kW", srcCharger: "charger", srcCar: "car", srcMeasured: "measured", tooShort: "Not possible before {dep}: at {kw} kW only {fit} kWh fits until then, {need} kWh is needed (about {dur} of charging). Set \u201cReady at\u201d later or use Boost.",
       noPrices: "Prices could not be fetched yet. They update automatically.",
       now: "now", grid: "Grid", importing: "Importing", exporting: "Exporting", fuse: "Main fuse",
       headroom: "headroom", surplus: "Solar surplus", phase: "Phase", noGrid: "No Equalizer or main connection set. Add your meter under Configure → Main connection.",
@@ -58,7 +58,7 @@
       pause: "Pauzeren", resume: "Hervatten", start: "Starten", boost: "Boost", lock: "Kabel vast", unlock: "Kabel los",
       session: "deze sessie", cost: "kosten", duration: "tijd",
       departure: "Klaar om", target: "Laden", targetSoc: "Laden tot", unitPct: "%", unitKwh: "kWh", byPct: "Laden tot een accupercentage", byKwh: "Een vast aantal kWh laden", needed: "nog nodig",
-      planStart: "Start", planEnd: "Klaar", planCost: "Verwacht", noPlan: "Er is nu geen planning nodig.", tooShort: "Niet haalbaar vóór {dep}: met {kw} kW past er tot dan maar {fit} kWh in, er is {need} kWh nodig (ongeveer {dur} laden). Zet \u201cKlaar om\u201d later of kies Boost.",
+      planStart: "Start", planEnd: "Klaar", planCost: "Verwacht", noPlan: "Er is nu geen planning nodig.", previewPlug: "Voorbeeld: zo plant hij zodra de auto is aangesloten.", moved: "Vandaag {dep} is te kort voor wat er nodig is, dus hij plant voor morgen {dep}.", maxKw: "max {kw} kW", srcCharger: "laadpaal", srcCar: "auto", srcMeasured: "gemeten", tooShort: "Niet haalbaar vóór {dep}: met {kw} kW past er tot dan maar {fit} kWh in, er is {need} kWh nodig (ongeveer {dur} laden). Zet \u201cKlaar om\u201d later of kies Boost.",
       noPrices: "De prijzen konden nog niet worden opgehaald. Ze worden vanzelf bijgewerkt.",
       now: "nu", grid: "Net", importing: "Afname", exporting: "Teruglevering", fuse: "Hoofdzekering",
       headroom: "ruimte", surplus: "Zonne-overschot", phase: "Fase", noGrid: "Geen Equalizer of hoofdaansluiting ingesteld. Voeg je meter toe via Configureren → Hoofdaansluiting.",
@@ -87,7 +87,7 @@
       pause: "Pausieren", resume: "Fortsetzen", start: "Starten", boost: "Boost", lock: "Kabel verriegelt", unlock: "Kabel frei",
       session: "dieser Ladevorgang", cost: "Kosten", duration: "Dauer",
       departure: "Fertig um", target: "Laden", targetSoc: "Laden bis", unitPct: "%", unitKwh: "kWh", byPct: "Bis zu einem Akkustand laden", byKwh: "Eine feste kWh-Menge laden", needed: "noch nötig",
-      planStart: "Start", planEnd: "Fertig", planCost: "Erwartet", noPlan: "Derzeit ist keine Planung nötig.", tooShort: "Bis {dep} nicht machbar: mit {kw} kW passen bis dahin nur {fit} kWh, nötig sind {need} kWh (etwa {dur} Laden). Stelle \u201eFertig um\u201c später ein oder nutze Boost.",
+      planStart: "Start", planEnd: "Fertig", planCost: "Erwartet", noPlan: "Derzeit ist keine Planung nötig.", previewPlug: "Vorschau: so wird geplant, sobald das Auto angesteckt ist.", moved: "Heute {dep} ist zu knapp für das Benötigte, daher wird für morgen {dep} geplant.", maxKw: "max. {kw} kW", srcCharger: "Wallbox", srcCar: "Auto", srcMeasured: "gemessen", tooShort: "Bis {dep} nicht machbar: mit {kw} kW passen bis dahin nur {fit} kWh, nötig sind {need} kWh (etwa {dur} Laden). Stelle \u201eFertig um\u201c später ein oder nutze Boost.",
       noPrices: "Preise konnten noch nicht abgerufen werden. Sie werden automatisch aktualisiert.",
       now: "jetzt", grid: "Netz", importing: "Bezug", exporting: "Einspeisung", fuse: "Hauptsicherung",
       headroom: "Reserve", surplus: "Solarüberschuss", phase: "Phase", noGrid: "Kein Equalizer oder Hausanschluss eingerichtet. Zähler unter Konfigurieren → Hausanschluss hinzufügen.",
@@ -578,10 +578,11 @@
       const short = !noPlanMode && a.plan_short_kwh > 0.05 && a.charge_power_kw
         ? `<p class="note warn">${t.tooShort.replace("{dep}", esc(a.departure || "")).replace("{kw}", this._num(a.charge_power_kw, 1)).replace("{fit}", this._num(a.plan_window_kwh, 1))
             .replace("{need}", this._num(a.energy_needed, 1)).replace("{dur}", dur((a.energy_needed || 0) / a.charge_power_kw))}</p>` : "";
+      const moved = !noPlanMode && a.departure_moved ? `<p class="note">${t.moved.replaceAll("{dep}", esc(a.departure || ""))}</p>` : "";
       const summary = (noPlanMode ? ""
         : !a.prices || !a.prices.length ? `<p class="note">${a.smart_state === "no_prices" && a.no_prices_action === "wait" ? t.noPricesWait : t.noPrices}</p>`
         : a.plan && a.plan.length
-        ? `${a.plan_preview ? `<p class="note preview">${t.preview}</p>` : ""}<div class="plansum ${a.plan_preview ? "preview" : ""}">
+        ? `${a.plan_preview ? `<p class="note preview">${pm === "smart" || pm === "solar_smart" ? t.previewPlug : t.preview}</p>` : ""}<div class="plansum ${a.plan_preview ? "preview" : ""}">
              <div><span>${t.planStart}</span><b>${this._time(a.next_start)}</b></div>
              <div><span>${t.planEnd}</span><b>${this._time(a.complete_by)}</b></div>
              <div><span>${t.planCost}</span><b>${this._money(a.plan_cost, a.currency)}</b></div>
@@ -600,9 +601,9 @@
               <button data-act="step" data-dir="1" data-step="${step}" aria-label="+">+</button>
             </div>
           </div>
-          <div class="ctl"><span>${t.needed}</span><b class="plain">${this._num(a.energy_needed, 1)} ${t.kwh}</b></div>
+          <div class="ctl"><span>${t.needed}</span><b class="plain">${this._num(a.energy_needed, 1)} ${t.kwh}</b>${a.charge_power_kw ? `<small class="ctlsub">${t.maxKw.replace("{kw}", this._num(a.charge_power_kw, 1))} · ${a.car_power_source === "set" ? t.srcCar : a.car_power_source === "measured" ? t.srcMeasured : t.srcCharger}</small>` : ""}</div>
         </div>
-        ${short}
+        ${short}${moved}
         ${chart}
         ${this._solarSummary(a, t)}
         ${summary}`;
@@ -1099,6 +1100,8 @@
     .actions { display:flex; gap:8px; margin:4px 0 12px; }
     .act { flex:1; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:12px; padding:11px 8px; font:inherit; font-size:.88rem; cursor:pointer; }
     .act.primary { background:var(--accent); border-color:var(--accent); color:#06121F; font-weight:600; }
+    .act:disabled { opacity:.35; cursor:default; filter:grayscale(1); }
+    .ctlsub { display:block; color:var(--muted); font-size:.72rem; margin-top:2px; }
     .act.on { border-color:var(--led); color:var(--led); }
     .act[disabled] { opacity:.4; cursor:default; }
     .act.wide { width:100%; margin-top:12px; }

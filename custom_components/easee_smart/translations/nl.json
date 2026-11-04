@@ -92,6 +92,7 @@
           "soc": "Accuniveau",
           "capacity": "Accucapaciteit",
           "target": "Laden tot",
+          "max_kw": "Max. AC-laadvermogen van de auto",
           "plug": "Stekker-sensor",
           "start_entity": "Laden starten (schakelaar, knop of script)",
           "refresh_entity": "Gegevens auto verversen (knop, schakelaar of script)",
@@ -103,7 +104,8 @@
           "image": "Zet een foto in /config/www/ en vul /local/naam.png in, of plak een webadres.",
           "plug": "Hiermee ziet Easee Smart Charging welke auto aan de laadpaal hangt.",
           "start_entity": "Wordt aangezet als de auto niet vanzelf begint met laden (slapende auto's).",
-          "limit_entity": "Je 'laden tot'-doel wordt ook in de auto gezet."
+          "limit_entity": "Je 'laden tot'-doel wordt ook in de auto gezet.",
+          "max_kw": "Wat de lader in de auto aankan, bijv. 11 kW (3 fasen) of 7,4 kW (1 fase). Leeg laten: wordt na een paar laadsessies vanzelf gemeten."
         }
       }
     },
@@ -250,6 +252,7 @@
           "soc": "Accuniveau",
           "capacity": "Accucapaciteit",
           "target": "Laden tot",
+          "max_kw": "Max. AC-laadvermogen van de auto",
           "plug": "Stekker-sensor",
           "start_entity": "Laden starten (schakelaar, knop of script)",
           "refresh_entity": "Gegevens auto verversen (knop, schakelaar of script)",
@@ -261,7 +264,8 @@
           "image": "Zet een foto in /config/www/ en vul /local/naam.png in, of plak een webadres.",
           "plug": "Hiermee ziet Easee Smart Charging welke auto aan de laadpaal hangt.",
           "start_entity": "Wordt aangezet als de auto niet vanzelf begint met laden (slapende auto's).",
-          "limit_entity": "Je 'laden tot'-doel wordt ook in de auto gezet."
+          "limit_entity": "Je 'laden tot'-doel wordt ook in de auto gezet.",
+          "max_kw": "Wat de lader in de auto aankan, bijv. 11 kW (3 fasen) of 7,4 kW (1 fase). Leeg laten: wordt na een paar laadsessies vanzelf gemeten."
         }
       },
       "advanced": {

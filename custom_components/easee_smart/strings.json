@@ -92,6 +92,7 @@
           "soc": "Battery level",
           "capacity": "Battery capacity",
           "target": "Charge to",
+          "max_kw": "Max. AC charging power of the car",
           "plug": "Plugged-in sensor",
           "start_entity": "Start charging (switch, button or script)",
           "refresh_entity": "Refresh car data (button, switch or script)",
@@ -103,7 +104,8 @@
           "image": "Put a photo in /config/www/ and use /local/name.png, or paste a web address.",
           "plug": "Lets Easee Smart Charging see which car is connected.",
           "start_entity": "Turned on when the car does not start charging by itself (sleeping cars).",
-          "limit_entity": "Your 'charge to' target is also set in the car."
+          "limit_entity": "Your 'charge to' target is also set in the car.",
+          "max_kw": "What the car's on-board charger can take, e.g. 11 kW (3 phases) or 7.4 kW (1 phase). Leave empty: measured automatically after a few sessions."
         }
       }
     },
@@ -250,6 +252,7 @@
           "soc": "Battery level",
           "capacity": "Battery capacity",
           "target": "Charge to",
+          "max_kw": "Max. AC charging power of the car",
           "plug": "Plugged-in sensor",
           "start_entity": "Start charging (switch, button or script)",
           "refresh_entity": "Refresh car data (button, switch or script)",
@@ -261,7 +264,8 @@
           "image": "Put a photo in /config/www/ and use /local/name.png, or paste a web address.",
           "plug": "Lets Easee Smart Charging see which car is connected.",
           "start_entity": "Turned on when the car does not start charging by itself (sleeping cars).",
-          "limit_entity": "Your 'charge to' target is also set in the car."
+          "limit_entity": "Your 'charge to' target is also set in the car.",
+          "max_kw": "What the car's on-board charger can take, e.g. 11 kW (3 phases) or 7.4 kW (1 phase). Leave empty: measured automatically after a few sessions."
         }
       },
       "advanced": {

@@ -27,6 +27,7 @@ F_START = "start_entity"
 F_REFRESH = "refresh_entity"
 F_LIMIT = "limit_entity"
 F_RANGE = "range_entity"
+F_MAX_KW = "max_kw"
 ENTITY_FIELDS = (F_SOC, F_PLUG, F_START, F_REFRESH, F_LIMIT, F_RANGE)
 
 # Domains that can be "pressed" or "turned on"

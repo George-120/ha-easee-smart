@@ -218,6 +218,7 @@ class SessionTracker:
     start: str | None = None
     energy: float = 0.0
     cost: float = 0.0
+    peak_kw: float = 0.0  # highest power seen while the charger was allowed its full current
 
 
 @dataclass
@@ -270,6 +271,9 @@ class EaseeSmartManager:
         self.phase_switch = PhaseSwitcher()
         self.solar_forecast = None  # SolarForecast when "own" forecast is chosen
         self.house_profile: dict[int, float] = {}  # local hour -> learned house use (kW)
+        self.car_peaks: dict[str, list[float]] = {}  # car name -> peak charging power of recent sessions
+        self._departure_moved = False
+        self._sticky_departure: tuple[str, datetime, bool] | None = None
         self._house_sampled_at: datetime | None = None
         self.solar_slots: list = []
         self.history: dict[str, list[float]] = {}  # quarter start (UTC ISO) -> [kWh from grid, kWh from sun]
@@ -328,7 +332,12 @@ class EaseeSmartManager:
 
     @property
     def max_current(self) -> int:
-        return int(self._opt(CONF_MAX_CURRENT, DEFAULT_MAX_CURRENT))
+        """Configured maximum, never above the charger's own maximum limit (set in the Easee app)."""
+        configured = int(self._opt(CONF_MAX_CURRENT, DEFAULT_MAX_CURRENT))
+        charger = self.charger_value("max_charger_limit")
+        if charger is not None and charger >= 6:
+            return max(6, min(configured, int(charger)))
+        return configured
 
     @property
     def zone(self) -> str:
@@ -488,6 +497,7 @@ class EaseeSmartManager:
         self.last_lifetime = data.get("last_lifetime")
         self._phase_original = data.get("phase_original")
         self.house_profile = {int(k): float(v) for k, v in (data.get("house_profile") or {}).items()}
+        self.car_peaks = {str(k): [float(x) for x in v][-5:] for k, v in (data.get("car_peaks") or {}).items() if isinstance(v, list)}
         self.history = {
             k: [float(x) for x in v][:3] + [0.0] * (3 - len(v))
             for k, v in (data.get("history") or {}).items()
@@ -563,6 +573,7 @@ class EaseeSmartManager:
             "last_lifetime": self.last_lifetime,
             "phase_original": self._phase_original,
             "house_profile": {str(k): v for k, v in self.house_profile.items()},
+            "car_peaks": self.car_peaks,
             "history": self.history,
             "active_phases": self.active_phases,
         }
@@ -663,6 +674,8 @@ class EaseeSmartManager:
         snap.status = status_state.state if status_state else "unknown"
         snap.connected = snap.status in CONNECTED_STATUSES
         snap.power_kw = self.charger_value("power")
+        if self.session.start and snap.power_kw and (self._last_sent is None or self._last_sent >= self.max_current):
+            self.session.peak_kw = max(self.session.peak_kw, round(snap.power_kw, 2))
         snap.session_energy = self.charger_value("session_energy")
         snap.lifetime_energy = self.charger_value("lifetime_energy")
 
@@ -788,7 +801,12 @@ class EaseeSmartManager:
             energy = self.snapshot.session_energy
             if energy is None or energy < self.session.energy:
                 energy = self.session.energy
+            car = self.active_car()
+            if car is not None and self.session.peak_kw >= 1.0 and energy and energy >= 2:
+                self.car_peaks[car.name] = [*self.car_peaks.get(car.name, []), self.session.peak_kw][-5:]
             record = {
+                "car": car.name if car else None,
+                "peak_kw": self.session.peak_kw or None,
                 "start": self.session.start,
                 "end": dt_util.now().isoformat(),
                 "energy": round(energy, 3),
@@ -906,13 +924,13 @@ class EaseeSmartManager:
                     else:
                         want_smart, state = self.max_current, SMART_NO_PRICES
                 else:
-                    departure = next_departure(now, _parse_time(self.settings.departure))
+                    departure = self._departure(now)
                     plan = plan_cheapest(
                         snap.prices,
                         now,
                         departure,
                         self._grid_needed(needed, now, departure, mode),
-                        power_for_amps(self.max_current, self.phases, self.voltage),
+                        self.charge_power_kw,
                         self.settings.price_threshold,
                     )
                     snap.plan = plan
@@ -1052,7 +1070,7 @@ class EaseeSmartManager:
         mode = MODE_NORMAL if self.settings.boost else self.settings.mode
         if mode == MODE_NORMAL and not snap.connected:
             return []  # Normal charges from the moment the car is plugged in: nothing to plan yet
-        departure = next_departure(now, _parse_time(self.settings.departure))
+        departure = self._departure(now)
         grid_slots = {s.start for s in plan.slots} if plan and mode in (MODE_SMART, MODE_SOLAR_SMART) else set()
         solar_kw = {x.start: x.charge_kw for x in self.solar_slots} if self.solar_slots else {}
         rows = charge_schedule(
@@ -1060,7 +1078,7 @@ class EaseeSmartManager:
             now,
             None if mode == MODE_NORMAL else departure,
             needed,
-            power_for_amps(self.max_current, self.phases, self.voltage),
+            self.charge_power_kw,
             grid_slots=grid_slots,
             solar_kw=solar_kw,
             use_solar=mode in (MODE_SOLAR, MODE_SOLAR_SMART),
@@ -1073,7 +1091,7 @@ class EaseeSmartManager:
         if self.pv_source == "none":
             return None
         slots = self.solar_slots or []
-        departure = next_departure(now, _parse_time(self.settings.departure))
+        departure = self._departure(now)
         needed = self.snapshot.energy_needed or 0.0
         sun = solar_energy_until(slots, now, departure) if slots else 0.0
         fc = self.solar_forecast.data if self.solar_forecast is not None else None
@@ -1192,13 +1210,61 @@ class EaseeSmartManager:
         _LOGGER.info("Charger phase mode set to %s", mode)
         return True
 
+    # ------------------------------------------------------- power & departure
+    @property
+    def charger_power_kw(self) -> float:
+        """What the charger can deliver: configured current, capped by the charger's own maximum."""
+        return round(power_for_amps(self.max_current, self.phases, self.voltage), 2)
+
+    def car_power_kw(self, car: Car | None) -> tuple[float | None, str | None]:
+        """Max AC charging power of the car: set by the user, otherwise measured in earlier sessions."""
+        if car is None:
+            return None, None
+        try:
+            set_kw = float(car.raw.get("max_kw") or 0)
+        except (TypeError, ValueError):
+            set_kw = 0.0
+        if set_kw > 0:
+            return set_kw, "set"
+        peaks = [p for p in self.car_peaks.get(car.name, []) if p >= 1.0]
+        if len(peaks) >= 2:
+            measured = round(max(peaks), 1)
+            if measured < self.charger_power_kw * 0.9:
+                return measured, "measured"
+        return None, None
+
+    @property
+    def charge_power_kw(self) -> float:
+        """Power used for planning: the lower of the charger and the car."""
+        car_kw, _src = self.car_power_kw(self.active_car())
+        return round(min(self.charger_power_kw, car_kw) if car_kw else self.charger_power_kw, 2)
+
+    def _departure(self, now: datetime) -> datetime:
+        """Next "ready at" moment. When today's is too close to charge what is needed, plan for tomorrow."""
+        # During a session the choice made at the start sticks, so a long charge is never pushed a day back.
+        key = self.settings.departure
+        sticky = self._sticky_departure
+        if self.snapshot.connected and sticky and sticky[0] == key and now < sticky[1]:
+            self._departure_moved = sticky[2]
+            return sticky[1]
+        dep = next_departure(now, _parse_time(self.settings.departure))
+        needed = self.snapshot.energy_needed or 0.0
+        power = self.charge_power_kw
+        moved = False
+        if needed > 0 and power > 0 and dep - now < timedelta(hours=needed / power) and dep - now < timedelta(hours=12):
+            dep += timedelta(days=1)
+            moved = True
+        self._departure_moved = moved
+        self._sticky_departure = (key, dep, moved) if self.snapshot.connected else None
+        return dep
+
     def _preview_plan(self, snap: Snapshot, now: datetime) -> ChargePlan | None:
         """What smart charging would plan right now (shown even in normal mode or unplugged)."""
         needed = snap.energy_needed or 0.0
         if needed <= 0 or not snap.prices:
             return None
         try:
-            departure = next_departure(now, _parse_time(self.settings.departure))
+            departure = self._departure(now)
             grid = self._grid_needed(needed, now, departure, self.settings.mode)
             if grid <= 0:
                 return None
@@ -1207,7 +1273,7 @@ class EaseeSmartManager:
                 now,
                 departure,
                 grid,
-                power_for_amps(self.max_current, self.phases, self.voltage),
+                self.charge_power_kw,
                 self.settings.price_threshold,
             )
         except (TypeError, ValueError):
@@ -1517,7 +1583,12 @@ class EaseeSmartManager:
             "complete_by": plan.complete_by.isoformat() if plan and plan.complete_by else None,
             "plan_short_kwh": plan.short_kwh if plan else 0,
             "plan_window_kwh": plan.window_kwh if plan else None,
-            "charge_power_kw": round(power_for_amps(self.max_current, self.phases, self.voltage), 2),
+            "charge_power_kw": self.charge_power_kw,
+            "charger_power_kw": self.charger_power_kw,
+            "car_power_kw": self.car_power_kw(self.active_car())[0],
+            "car_power_source": self.car_power_kw(self.active_car())[1],
+            "departure_at": self._departure(now).isoformat(),
+            "departure_moved": self._departure_moved,
             "energy_needed": snap.energy_needed,
             "target_current": snap.target_current,
             "surplus_kw": snap.surplus_kw,

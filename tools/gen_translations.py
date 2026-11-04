@@ -173,6 +173,7 @@ def build(lang):
      "soc": T("Battery level","Accuniveau","Akkustand"),
      "capacity": T("Battery capacity","Accucapaciteit","Akkukapazität"),
      "target": T("Charge to","Laden tot","Laden bis"),
+     "max_kw": T("Max. AC charging power of the car","Max. AC-laadvermogen van de auto","Max. AC-Ladeleistung des Autos"),
      "plug": T("Plugged-in sensor","Stekker-sensor","Stecker-Sensor"),
      "start_entity": T("Start charging (switch, button or script)","Laden starten (schakelaar, knop of script)","Laden starten (Schalter, Taste oder Skript)"),
      "refresh_entity": T("Refresh car data (button, switch or script)","Gegevens auto verversen (knop, schakelaar of script)","Autodaten aktualisieren (Taste, Schalter oder Skript)"),
@@ -185,6 +186,9 @@ def build(lang):
      "plug": T("Lets Easee Smart Charging see which car is connected.","Hiermee ziet Easee Smart Charging welke auto aan de laadpaal hangt.","Damit erkennt Easee Smart Charging, welches Auto angeschlossen ist."),
      "start_entity": T("Turned on when the car does not start charging by itself (sleeping cars).","Wordt aangezet als de auto niet vanzelf begint met laden (slapende auto's).","Wird eingeschaltet, wenn das Auto nicht von selbst lädt."),
      "limit_entity": T("Your 'charge to' target is also set in the car.","Je 'laden tot'-doel wordt ook in de auto gezet.","Dein Ladeziel wird auch im Auto gesetzt."),
+     "max_kw": T("What the car's on-board charger can take, e.g. 11 kW (3 phases) or 7.4 kW (1 phase). Leave empty: measured automatically after a few sessions.",
+                 "Wat de lader in de auto aankan, bijv. 11 kW (3 fasen) of 7,4 kW (1 fase). Leeg laten: wordt na een paar laadsessies vanzelf gemeten.",
+                 "Was das Ladegerät im Auto schafft, z. B. 11 kW (3 Phasen) oder 7,4 kW (1 Phase). Leer lassen: wird nach einigen Ladesitzungen automatisch gemessen."),
     }
     device_field = {"device_id": t(T("Car (device)","Auto (apparaat)","Auto (Gerät)"))}
     device_desc = {"device_id": t(T("Pick your car from any integration. Its sensors are filled in automatically; you can change everything.",

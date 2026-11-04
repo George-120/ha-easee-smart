@@ -27,6 +27,7 @@ from .cars import (
     F_DEVICE,
     F_IMAGE,
     F_LIMIT,
+    F_MAX_KW,
     F_NAME,
     F_PLUG,
     F_RANGE,
@@ -271,6 +272,9 @@ def _car_schema(d: dict[str, Any], editing: bool) -> dict:
     schema[vol.Required(F_TARGET, default=d.get(F_TARGET) or DEFAULT_CAR_TARGET)] = selector.NumberSelector(
         selector.NumberSelectorConfig(min=10, max=100, step=5, unit_of_measurement="%", mode=selector.NumberSelectorMode.SLIDER)
     )
+    schema[vol.Optional(F_MAX_KW, description={"suggested_value": d.get(F_MAX_KW)})] = selector.NumberSelector(
+        selector.NumberSelectorConfig(min=1, max=22, step=0.1, unit_of_measurement="kW", mode=selector.NumberSelectorMode.BOX)
+    )
     schema.update(
         dict(
             [
@@ -295,6 +299,8 @@ def _clean_car(user_input: dict[str, Any], device_id: str | None) -> dict[str, A
         car[F_CAPACITY] = float(car[F_CAPACITY])
     if F_TARGET in car:
         car[F_TARGET] = int(car[F_TARGET])
+    if F_MAX_KW in car:
+        car[F_MAX_KW] = round(float(car[F_MAX_KW]), 1)
     return car
 
 

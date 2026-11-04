@@ -781,3 +781,66 @@ def test_plan_reports_energy_that_does_not_fit_before_departure():
     assert plan.window_kwh == 5.5 and plan.short_kwh == 51.4
     plan = logic.plan_cheapest(slots, base, base + timedelta(hours=2), 10.0, 11.0)
     assert plan.short_kwh == 0
+
+
+def test_departure_too_close_plans_for_tomorrow_and_power_limits(tmp_path):
+    async def run():
+        CLOCK["now"] = datetime(2026, 11, 4, 21, 51, tzinfo=TZ)
+        cars = [{"name": "E-Niro", "soc": "sensor.niro_soc", "capacity": 64, "plug": "binary_sensor.niro_plug", "target": 100}]
+        hass, m = make(tmp_path, equalizer=False, extra={"cars": cars, "charge_efficiency": 90})
+        await m.async_setup()
+        setstate(hass, "sensor.c_status", "disconnected")
+        setstate(hass, "sensor.c_power", 0)
+        setstate(hass, "sensor.c_max_charger_limit", 16)
+        setstate(hass, "sensor.niro_soc", 20)
+        setstate(hass, "binary_sensor.niro_plug", "off")
+        base = CLOCK["now"].replace(hour=0, minute=0)
+        m.day_ahead.points = [(base + timedelta(hours=i), 0.10 if 26 <= i < 32 else 0.30) for i in range(48)]
+        m.day_ahead.last_fetch = CLOCK["now"] + timedelta(days=1)
+        m.entry.options.update({"price_markup": 0.0, "energy_tax": 0.0, "vat_percent": 0.0})
+        m._rebuild_prices()
+        await m.async_set_setting("departure", "22:00")
+        await m.async_set_setting("mode", "smart")
+        p = m.card_payload()
+        assert p["energy_needed"] == round(0.8 * 64 / 0.9, 2)
+        assert p["charge_power_kw"] == 11.04 and p["charger_power_kw"] == 11.04
+        assert p["departure_moved"] is True and p["departure_at"].startswith("2026-11-05T22:00")
+        assert p["plan_short_kwh"] == 0
+        starts = [s["start"] for s in p["plan"]]
+        assert starts and all(s >= "2026-11-05T02:00" and s < "2026-11-05T22:00" for s in starts)
+        # the charger's own maximum (Easee app) caps the configured current
+        setstate(hass, "sensor.c_max_charger_limit", 10)
+        assert m.max_current == 10 and m.charger_power_kw == 6.9
+        setstate(hass, "sensor.c_max_charger_limit", 16)
+        # a car that never takes more than 7.2 kW: measured after two sessions
+        for _ in range(2):
+            setstate(hass, "binary_sensor.niro_plug", "on")
+            m._start_session()
+            setstate(hass, "sensor.c_power", 7.2)
+            setstate(hass, "sensor.c_session_energy", 10)
+            m._recompute()
+            m._end_session()
+        assert m.car_power_kw(m.active_car()) == (7.2, "measured")
+        assert m.charge_power_kw == 7.2
+        CLOCK["now"] = datetime(2026, 11, 3, 20, 0, tzinfo=TZ)
+    asyncio.run(run())
+
+
+def test_departure_choice_sticks_during_a_session(tmp_path):
+    async def run():
+        CLOCK["now"] = datetime(2026, 11, 4, 23, 0, tzinfo=TZ)
+        hass, m = make(tmp_path, equalizer=False)
+        await m.async_setup()
+        setstate(hass, "sensor.c_status", "charging")
+        setstate(hass, "sensor.c_session_energy", 0)
+        m._recompute()
+        await m.async_set_setting("departure", "07:00")
+        await m.async_set_setting("target_energy", 50)
+        dep = m._departure(CLOCK["now"])
+        assert dep.day == 5 and not m._departure_moved
+        # 03:00, still 50 kWh to go (> 4 h at 11 kW): keeps 07:00 today, does not move to tomorrow
+        CLOCK["now"] = datetime(2026, 11, 5, 3, 0, tzinfo=TZ)
+        m._recompute()
+        assert m._departure(CLOCK["now"]) == dep and not m._departure_moved
+        CLOCK["now"] = datetime(2026, 11, 3, 20, 0, tzinfo=TZ)
+    asyncio.run(run())

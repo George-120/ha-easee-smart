@@ -21,6 +21,7 @@ Slim laden, Equalizer-inzicht, laadkosten en een app-achtige dashboardkaart voor
 - **Auto wekken.** Begint een auto niet met laden, dan stuurt Easee Smart Charging na drie minuten een *hervatten* naar de laadpaal en zet de start-entiteit van de auto aan.
 - **ERE-regeling.** Zet de ERE-regeling aan en vul in wat je per geladen kWh ontvangt; je ziet de opbrengst per maand, per jaar en totaal (ook in het maandrapport).
 - **Boost.** Eén knop om direct op vol vermogen te laden, tot je de stekker eruit haalt.
+- **Laadvermogen.** Hij rekent met het vermogen dat je laadpaal echt kan leveren (je ingestelde stroom, nooit boven de maximale limiet uit de Easee-app) en met wat je auto aankan. Dat stel je per auto in, of hij meet het zelf na een paar laadsessies. Lukt het niet meer vóór de vertrektijd van vandaag, dan plant hij voor dezelfde tijd morgen en zegt hij dat in de kaart.
 - **Vast aantal kWh.** Ook met een gekoppelde auto kun je in de planningskaart met de knop `% / kWh` kiezen om een vast aantal kWh vóór je vertrektijd te laden in plaats van tot een accupercentage.
 - **Equalizer uitgelezen.** Netvermogen, stroom per fase (L1/L2/L3), spanning, belasting en resterende ruimte op je hoofdzekering, plus afname/teruglevering in kWh.
 - **Kosten en vergoeding.** Kosten per sessie, dag en maand op basis van de echte prijs op dat moment. Optioneel een vergoedingstarief voor leaserijders, met een CSV-maandrapport voor je werkgever.
@@ -170,6 +171,7 @@ Smart charging, grid connection insight, charging costs and app-style dashboard 
 - **Wake the car.** If a car does not start charging, Easee Smart Charging sends *resume* to the charger after three minutes and turns on the car's start entity.
 - **ERE scheme.** Turn on the ERE scheme (emission reduction units) and enter what you receive per charged kWh; you see the revenue per month, per year and in total (also in the monthly report).
 - **Boost.** One button to charge at full power right away, until you unplug.
+- **Charging power.** It plans with what your charger can really deliver (your configured current, never above the maximum limit set in the Easee app) and what your car can take — set per car, or measured automatically after a few sessions. If today's departure time is too close, it plans for the same time tomorrow and says so in the card.
 - **Fixed kWh.** Even with a linked car you can use the `% / kWh` toggle in the planning card to charge a fixed number of kWh before departure instead of up to a battery level.
 - **Equalizer values.** Grid power, current per phase (L1/L2/L3), voltage, load and headroom on your main fuse, plus imported/exported energy.
 - **Costs and reimbursement.** Costs per session, day and month based on the actual price at that moment. Optionally a reimbursement rate for company-car drivers, with a monthly CSV report for your employer.
@@ -279,6 +281,7 @@ Smartes Laden, Einblick in den Hausanschluss, Ladekosten und App-ähnliche Dashb
 - **Auto wecken.** Lädt ein Auto nicht, sendet Easee Smart Charging nach drei Minuten *Fortsetzen* an die Wallbox und schaltet die Start-Entität des Autos ein.
 - **ERE (Emissionsminderung).** Schalte die ERE-Erfassung ein und trage ein, was du pro geladener kWh erhältst; du siehst den Erlös pro Monat, pro Jahr und gesamt (auch im Monatsbericht).
 - **Boost.** Eine Taste, um sofort mit voller Leistung zu laden, bis du absteckst.
+- **Ladeleistung.** Geplant wird mit dem, was die Wallbox wirklich liefert (eingestellter Strom, nie über dem Maximum aus der Easee-App) und was das Auto schafft — pro Auto einstellbar oder nach einigen Ladesitzungen automatisch gemessen. Ist die heutige Abfahrt zu knapp, plant er für dieselbe Zeit morgen und zeigt das in der Karte.
 - **Feste kWh-Menge.** Auch mit verbundenem Auto kannst du in der Planungskarte mit `% / kWh` eine feste kWh-Menge bis zur Abfahrt laden statt bis zu einem Akkustand.
 - **Equalizer-Werte.** Netzleistung, Strom pro Phase (L1/L2/L3), Spannung, Auslastung und Reserve der Hauptsicherung sowie Bezug/Einspeisung in kWh.
 - **Kosten und Erstattung.** Kosten pro Ladevorgang, Tag und Monat auf Basis des tatsächlichen Preises. Optional ein Erstattungssatz für Dienstwagenfahrer mit monatlichem CSV-Bericht für den Arbeitgeber.

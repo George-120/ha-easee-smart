@@ -92,6 +92,7 @@
           "soc": "Akkustand",
           "capacity": "Akkukapazität",
           "target": "Laden bis",
+          "max_kw": "Max. AC-Ladeleistung des Autos",
           "plug": "Stecker-Sensor",
           "start_entity": "Laden starten (Schalter, Taste oder Skript)",
           "refresh_entity": "Autodaten aktualisieren (Taste, Schalter oder Skript)",
@@ -103,7 +104,8 @@
           "image": "Foto in /config/www/ ablegen und /local/name.png eintragen, oder eine Webadresse.",
           "plug": "Damit erkennt Easee Smart Charging, welches Auto angeschlossen ist.",
           "start_entity": "Wird eingeschaltet, wenn das Auto nicht von selbst lädt.",
-          "limit_entity": "Dein Ladeziel wird auch im Auto gesetzt."
+          "limit_entity": "Dein Ladeziel wird auch im Auto gesetzt.",
+          "max_kw": "Was das Ladegerät im Auto schafft, z. B. 11 kW (3 Phasen) oder 7,4 kW (1 Phase). Leer lassen: wird nach einigen Ladesitzungen automatisch gemessen."
         }
       }
     },
@@ -250,6 +252,7 @@
           "soc": "Akkustand",
           "capacity": "Akkukapazität",
           "target": "Laden bis",
+          "max_kw": "Max. AC-Ladeleistung des Autos",
           "plug": "Stecker-Sensor",
           "start_entity": "Laden starten (Schalter, Taste oder Skript)",
           "refresh_entity": "Autodaten aktualisieren (Taste, Schalter oder Skript)",
@@ -261,7 +264,8 @@
           "image": "Foto in /config/www/ ablegen und /local/name.png eintragen, oder eine Webadresse.",
           "plug": "Damit erkennt Easee Smart Charging, welches Auto angeschlossen ist.",
           "start_entity": "Wird eingeschaltet, wenn das Auto nicht von selbst lädt.",
-          "limit_entity": "Dein Ladeziel wird auch im Auto gesetzt."
+          "limit_entity": "Dein Ladeziel wird auch im Auto gesetzt.",
+          "max_kw": "Was das Ladegerät im Auto schafft, z. B. 11 kW (3 Phasen) oder 7,4 kW (1 Phase). Leer lassen: wird nach einigen Ladesitzungen automatisch gemessen."
         }
       },
       "advanced": {
