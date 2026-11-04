@@ -5,7 +5,7 @@ import json
 import sys
 import types
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from enum import StrEnum
 from pathlib import Path
 
@@ -108,7 +108,7 @@ def install_stubs():
     if "aiohttp" not in sys.modules:
         _mod("aiohttp", ClientError=Exception, ClientTimeout=lambda **k: None)
     dt = _mod("homeassistant.util.dt", now=lambda: CLOCK["now"], utcnow=lambda: CLOCK["now"], as_local=lambda d: d.astimezone(TZ),
-              parse_datetime=datetime.fromisoformat, as_utc=lambda d: d.astimezone(timezone.utc),
+              parse_datetime=datetime.fromisoformat, as_utc=lambda d: d.astimezone(UTC),
               start_of_local_day=lambda: CLOCK["now"].astimezone(TZ).replace(hour=0, minute=0, second=0, microsecond=0))
     _mod("homeassistant.util", dt=dt)
     sys.modules["homeassistant"].helpers = sys.modules["homeassistant.helpers"]
@@ -699,7 +699,7 @@ def test_solar_smart_buys_less_with_forecast(tmp_path):
         setstate(hass, "sensor.pv", 0, unit_of_measurement="W")
         base = CLOCK["now"].replace(minute=0)
         # 6 kW expected from 9:00 to 15:00 (hour END labels, Wh per hour, like Enphase Envoy Local)
-        hourly = [[(base + timedelta(hours=i + 1)).astimezone(timezone.utc).isoformat(), 6000 if 3 <= i < 9 else 0] for i in range(24)]
+        hourly = [[(base + timedelta(hours=i + 1)).astimezone(UTC).isoformat(), 6000 if 3 <= i < 9 else 0] for i in range(24)]
         setstate(hass, "sensor.fc", 10, hourly=hourly)
         m.day_ahead.points = [(base + timedelta(hours=i), 0.10 + 0.01 * i) for i in range(24)]
         m.day_ahead.last_fetch = CLOCK["now"] + timedelta(days=1)

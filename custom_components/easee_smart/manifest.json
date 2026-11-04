@@ -3,7 +3,8 @@
   "name": "Easee Smart Charging",
   "after_dependencies": [
     "easee",
-    "lovelace"
+    "lovelace",
+    "recorder"
   ],
   "categories": [
     "energy.ev_charging"
