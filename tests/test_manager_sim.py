@@ -854,3 +854,15 @@ def test_payload_entities_is_a_copy(tmp_path):
         m.own_entities["charge_mode"] = "select.x"
         assert "charge_mode" not in first and m.card_payload()["entities"]["charge_mode"] == "select.x"
     asyncio.run(run())
+
+
+def test_smart_schedule_shows_sun_share_in_grid_slots():
+    logic = importlib.import_module("easee_smart.logic")
+    base = datetime(2026, 11, 5, 12, 0, tzinfo=TZ)
+    slots = [logic.PriceSlot(base + timedelta(minutes=15 * i), base + timedelta(minutes=15 * (i + 1)), 0.3) for i in range(4)]
+    rows = logic.charge_schedule(slots, base, base + timedelta(hours=2), 8.0, 11.0,
+                                 grid_slots={slots[0].start, slots[1].start, slots[2].start}, solar_kw=None,
+                                 use_solar=False, grid_always=False, surplus_kw={s.start: 2.0 for s in slots})
+    grid = sum(r[1] for r in rows)
+    sun = sum(r[2] for r in rows)
+    assert round(grid + sun, 2) == 8.0 and rows[0][2] == 0.5 and rows[0][1] == 2.25 and rows[3] == (slots[3].start, 0.0, 0.0)

@@ -444,11 +444,14 @@ def charge_schedule(
     use_solar: bool,
     grid_always: bool,
     grid_budget: float | None = None,
+    surplus_kw: dict[datetime, float] | None = None,
 ) -> list[tuple[datetime, float, float]]:
     """(slot start, kWh from the grid, kWh from the sun) per price slot until the car is full.
 
     grid_slots: starts of the planned (cheap) grid slots; grid_always: Normal/Boost charge now.
     The sun goes first; the grid fills up to the charger's maximum.
+    surplus_kw: expected solar surplus per slot. In modes that do not wait for the sun (Normal, Smart)
+    it still covers part of a grid slot, so that part is shown as sun instead of grid.
     """
     remaining = max(0.0, needed_kwh)
     # Solar + smart buys only what the sun will not bring: the grid may not use up the sun's share.
@@ -469,6 +472,11 @@ def charge_schedule(
         grid = 0.0
         if grid_always or (grid_slots and slot.start in grid_slots):
             grid = min(remaining, budget, max(0.0, max_kw * hours - sun))
+            if not use_solar and surplus_kw:
+                share = min(grid, surplus_kw.get(slot.start, 0.0) * hours)
+                sun += share
+                grid -= share
+                remaining -= share
         remaining -= grid
         budget -= grid
         out.append((slot.start, round(grid, 3), round(sun, 3)))

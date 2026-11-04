@@ -927,14 +927,7 @@ class EaseeSmartManager:
                         want_smart, state = self.max_current, SMART_NO_PRICES
                 else:
                     departure = self._departure(now)
-                    plan = plan_cheapest(
-                        snap.prices,
-                        now,
-                        departure,
-                        self._grid_needed(needed, now, departure, mode),
-                        self.charge_power_kw,
-                        self.settings.price_threshold,
-                    )
+                    plan = self._plan_grid(snap, now, departure, self._grid_needed(needed, now, departure, mode), mode)
                     snap.plan = plan
                     if plan.charge_now:
                         want_smart = self.max_current
@@ -1086,6 +1079,7 @@ class EaseeSmartManager:
             use_solar=mode in (MODE_SOLAR, MODE_SOLAR_SMART),
             grid_always=mode == MODE_NORMAL,
             grid_budget=self._grid_needed(needed, now, departure, mode) if mode == MODE_SOLAR_SMART else None,
+            surplus_kw={x.start: x.surplus_kw for x in self.solar_slots} if self.solar_slots else None,
         )
         return [{"start": start.isoformat(), "grid": grid, "sun": sun} for start, grid, sun in rows if grid or sun]
 
@@ -1260,6 +1254,18 @@ class EaseeSmartManager:
         self._sticky_departure = (key, dep, moved) if self.snapshot.connected else None
         return dep
 
+    def _plan_grid(self, snap: Snapshot, now: datetime, departure: datetime, grid_kwh: float, mode: str) -> ChargePlan:
+        """Cheapest grid slots. In Solar + smart, sun expected inside a chosen slot takes room the grid
+        cannot use there, so plan once more with that amount added."""
+        power = self.charge_power_kw
+        plan = plan_cheapest(snap.prices, now, departure, grid_kwh, power, self.settings.price_threshold)
+        if mode == MODE_SOLAR_SMART and plan.slots and self.solar_slots:
+            sun = {x.start: x.charge_kw for x in self.solar_slots}
+            overlap = sum(min(power, sun.get(sl.start, 0.0)) * sl.hours for sl in plan.slots)
+            if overlap > 0.05:
+                plan = plan_cheapest(snap.prices, now, departure, grid_kwh + overlap, power, self.settings.price_threshold)
+        return plan
+
     def _preview_plan(self, snap: Snapshot, now: datetime) -> ChargePlan | None:
         """What smart charging would plan right now (shown even in normal mode or unplugged)."""
         needed = snap.energy_needed or 0.0
@@ -1270,14 +1276,7 @@ class EaseeSmartManager:
             grid = self._grid_needed(needed, now, departure, self.settings.mode)
             if grid <= 0:
                 return None
-            return plan_cheapest(
-                snap.prices,
-                now,
-                departure,
-                grid,
-                self.charge_power_kw,
-                self.settings.price_threshold,
-            )
+            return self._plan_grid(snap, now, departure, grid, self.settings.mode)
         except (TypeError, ValueError):
             return None
 
