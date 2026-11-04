@@ -100,6 +100,7 @@ from .const import (
     STATUS_DISCONNECTED,
     STORAGE_KEY,
     STORAGE_VERSION,
+    VERSION,
 )
 from .logic import (
     ChargePlan,
@@ -1139,6 +1140,7 @@ class EaseeSmartManager:
             "equalizer_info": self._equalizer_info(),
             "entities": self.own_entities,
             "entry_id": self.entry.entry_id,
+            "card_version": VERSION,
             "price": snap.price,
             "market_price": self.market_price(),
             "zone": self.zone,

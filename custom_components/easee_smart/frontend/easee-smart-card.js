@@ -1,6 +1,6 @@
 /* Easee Smart Charging card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.7.1";
+  const VERSION = "1.7.2";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -35,7 +35,7 @@
       headroom: "headroom", surplus: "Solar surplus", phase: "Phase", noGrid: "No Equalizer or main connection set. Add your meter under Configure → Main connection.",
       month: "This month", prev: "Previous months", reimb: "Reimbursement", sessions: "Recent sessions",
       export: "Export last month (CSV)", exported: "Report written", today: "Today", none: "No sessions yet.",
-      kwh: "kWh", avg: "avg.", amps: "Charge current", planned: "Planned charging", preview: "Preview: this is how Smart would plan it. Choose Smart (or Solar + smart) to use it.", solarStart: "starts from", solarNone: "No surplus right now", solarAvail: "Solar available", eqTitle: "Equalizer", eqOnline: "Online", eqOffline: "Offline", eqLoad: "load", eqLoadT: "Load", eqLimit: "Max. continuous", eqFirmware: "Firmware", eqTemp: "Temperature", eqNone: "No Equalizer linked. Link it under Configure → Equalizer.", eqTotals: "Meter readings", eqPhases: "Phases", refresh: "Refresh car data", priceNow: "Power now", carsTitle: "Cars", noCars: "No cars linked yet. Add them under Configure → Cars.", pluggedIn: "Plugged in", notPlugged: "Not plugged in", ere: "ERE", year: "This year", total: "Total", range: "range",
+      kwh: "kWh", avg: "avg.", amps: "Charge current", planned: "Planned charging", preview: "Preview: this is how Smart would plan it. Choose Smart (or Solar + smart) to use it.", solarStart: "starts from", solarNone: "No surplus right now", solarAvail: "Solar available", eqTitle: "Equalizer", eqOnline: "Online", eqOffline: "Offline", eqLoad: "load", eqLoadT: "Load", eqLimit: "Max. continuous", eqFirmware: "Firmware", eqTemp: "Temperature", eqNone: "No Equalizer linked. Link it under Configure → Equalizer.", eqTotals: "Meter readings", eqPhases: "Phases", stale: "Easee Smart Charging was updated. Refresh the page to load the new cards.", reload: "Refresh", refresh: "Refresh car data", priceNow: "Power now", carsTitle: "Cars", noCars: "No cars linked yet. Add them under Configure → Cars.", pluggedIn: "Plugged in", notPlugged: "Not plugged in", ere: "ERE", year: "This year", total: "Total", range: "range",
     },
     nl: {
       tabs: { charge: "Laden", plan: "Planning", grid: "Equalizer", meter: "Aansluiting", history: "Historie" },
@@ -64,7 +64,7 @@
       headroom: "ruimte", surplus: "Zonne-overschot", phase: "Fase", noGrid: "Geen Equalizer of hoofdaansluiting ingesteld. Voeg je meter toe via Configureren → Hoofdaansluiting.",
       month: "Deze maand", prev: "Vorige maanden", reimb: "Vergoeding", sessions: "Recente sessies",
       export: "Vorige maand exporteren (CSV)", exported: "Rapport opgeslagen", today: "Vandaag", none: "Nog geen sessies.",
-      kwh: "kWh", avg: "gem.", amps: "Laadstroom", planned: "Gepland laden", preview: "Voorbeeld: zo plant Slim laden het. Kies Slim (of Zon + slim) om dit te gebruiken.", solarStart: "start vanaf", solarNone: "Nu geen overschot", solarAvail: "Zon beschikbaar", eqTitle: "Equalizer", eqOnline: "Online", eqOffline: "Offline", eqLoad: "belast", eqLoadT: "Belasting", eqLimit: "Max. continu", eqFirmware: "Firmware", eqTemp: "Temperatuur", eqNone: "Geen Equalizer gekoppeld. Koppel hem via Configureren → Equalizer.", eqTotals: "Meterstanden", eqPhases: "Fasen", refresh: "Gegevens auto verversen", priceNow: "Stroom nu", carsTitle: "Auto's", noCars: "Nog geen auto's gekoppeld. Voeg ze toe via Configureren → Auto's.", pluggedIn: "Aangesloten", notPlugged: "Niet aangesloten", ere: "ERE", year: "Dit jaar", total: "Totaal", range: "actieradius",
+      kwh: "kWh", avg: "gem.", amps: "Laadstroom", planned: "Gepland laden", preview: "Voorbeeld: zo plant Slim laden het. Kies Slim (of Zon + slim) om dit te gebruiken.", solarStart: "start vanaf", solarNone: "Nu geen overschot", solarAvail: "Zon beschikbaar", eqTitle: "Equalizer", eqOnline: "Online", eqOffline: "Offline", eqLoad: "belast", eqLoadT: "Belasting", eqLimit: "Max. continu", eqFirmware: "Firmware", eqTemp: "Temperatuur", eqNone: "Geen Equalizer gekoppeld. Koppel hem via Configureren → Equalizer.", eqTotals: "Meterstanden", eqPhases: "Fasen", stale: "Easee Smart Charging is bijgewerkt. Vernieuw de pagina om de nieuwe kaarten te laden.", reload: "Vernieuwen", refresh: "Gegevens auto verversen", priceNow: "Stroom nu", carsTitle: "Auto's", noCars: "Nog geen auto's gekoppeld. Voeg ze toe via Configureren → Auto's.", pluggedIn: "Aangesloten", notPlugged: "Niet aangesloten", ere: "ERE", year: "Dit jaar", total: "Totaal", range: "actieradius",
     },
     de: {
       tabs: { charge: "Laden", plan: "Planung", grid: "Equalizer", meter: "Anschluss", history: "Verlauf" },
@@ -93,7 +93,7 @@
       headroom: "Reserve", surplus: "Solarüberschuss", phase: "Phase", noGrid: "Kein Equalizer oder Hausanschluss eingerichtet. Zähler unter Konfigurieren → Hausanschluss hinzufügen.",
       month: "Dieser Monat", prev: "Vormonate", reimb: "Erstattung", sessions: "Letzte Ladevorgänge",
       export: "Letzten Monat exportieren (CSV)", exported: "Bericht gespeichert", today: "Heute", none: "Noch keine Ladevorgänge.",
-      kwh: "kWh", avg: "Ø", amps: "Ladestrom", planned: "Geplantes Laden", preview: "Vorschau: so würde Smart planen. Wähle Smart (oder Solar + Smart), um es zu nutzen.", solarStart: "startet ab", solarNone: "Gerade kein Überschuss", solarAvail: "Solar verfügbar", eqTitle: "Equalizer", eqOnline: "Online", eqOffline: "Offline", eqLoad: "Last", eqLoadT: "Auslastung", eqLimit: "Max. Dauerstrom", eqFirmware: "Firmware", eqTemp: "Temperatur", eqNone: "Kein Equalizer verbunden. Unter Konfigurieren → Equalizer verbinden.", eqTotals: "Zählerstände", eqPhases: "Phasen", refresh: "Autodaten aktualisieren", priceNow: "Strom jetzt", carsTitle: "Autos", noCars: "Noch keine Autos verbunden. Unter Konfigurieren → Autos hinzufügen.", pluggedIn: "Angeschlossen", notPlugged: "Nicht angeschlossen", ere: "ERE", year: "Dieses Jahr", total: "Gesamt", range: "Reichweite",
+      kwh: "kWh", avg: "Ø", amps: "Ladestrom", planned: "Geplantes Laden", preview: "Vorschau: so würde Smart planen. Wähle Smart (oder Solar + Smart), um es zu nutzen.", solarStart: "startet ab", solarNone: "Gerade kein Überschuss", solarAvail: "Solar verfügbar", eqTitle: "Equalizer", eqOnline: "Online", eqOffline: "Offline", eqLoad: "Last", eqLoadT: "Auslastung", eqLimit: "Max. Dauerstrom", eqFirmware: "Firmware", eqTemp: "Temperatur", eqNone: "Kein Equalizer verbunden. Unter Konfigurieren → Equalizer verbinden.", eqTotals: "Zählerstände", eqPhases: "Phasen", stale: "Easee Smart Charging wurde aktualisiert. Lade die Seite neu, um die neuen Karten zu laden.", reload: "Neu laden", refresh: "Autodaten aktualisieren", priceNow: "Strom jetzt", carsTitle: "Autos", noCars: "Noch keine Autos verbunden. Unter Konfigurieren → Autos hinzufügen.", pluggedIn: "Angeschlossen", notPlugged: "Nicht angeschlossen", ere: "ERE", year: "Dieses Jahr", total: "Gesamt", range: "Reichweite",
     },
   };
 
@@ -253,6 +253,7 @@
         this.shadowRoot.innerHTML = `
           <style>${CSS}</style>
           <ha-card class="${this._themeClass()} v-${view}" style="--led:${led.color}">
+            ${this._staleBar(a, t)}
             ${this._renderView(view, { a, t, status, smart, led, power, name, isOnline, duration })}
           </ha-card>`;
         return;
@@ -261,6 +262,7 @@
       this.shadowRoot.innerHTML = `
         <style>${CSS}</style>
         <ha-card class="${this._themeClass()}" style="--led:${led.color}">
+          ${this._staleBar(a, t)}
           <header>
             <div class="title">
               <span class="name">${esc(name)}</span>
@@ -310,6 +312,13 @@
       if (theme === "dark" || theme === "light") return theme;
       const dark = this._hass && this._hass.themes && this._hass.themes.darkMode;
       return dark === false ? "light" : "dark";
+    }
+
+    // Home Assistant's service worker can hand out an older copy of this file (e.g. right
+    // after a restart). The integration reports its version, so we can say so.
+    _staleBar(a, t) {
+      if (!a || !a.card_version || a.card_version === VERSION) return "";
+      return `<div class="stale"><span>${t.stale}</span><button data-act="reload">${t.reload}</button></div>`;
     }
 
     _section(title) {
@@ -709,6 +718,9 @@
         case "car":
           if (ent.active_car) await call("select", "select_option", { entity_id: ent.active_car, option: btn.dataset.name });
           return;
+        case "reload":
+          location.reload();
+          return;
         case "refresh":
           if (ent.refresh_car) await call("button", "press", { entity_id: ent.refresh_car });
           return;
@@ -767,6 +779,9 @@
     ha-card.light .act.primary { color:#FFFFFF; }
     ha-card.light .mcol i { background:#D5DAE1; }
     .empty { padding:16px; color:var(--muted); }
+    .stale { display:flex; align-items:center; gap:10px; background:rgba(90,169,255,.14); border:1px solid rgba(90,169,255,.4); color:var(--text); border-radius:12px; padding:8px 10px; margin:0 0 12px; font-size:.8rem; }
+    .stale span { flex:1; }
+    .stale button { background:var(--accent); color:#06121F; border:0; border-radius:8px; padding:6px 12px; font:inherit; font-weight:600; cursor:pointer; }
     .sectitle { font-size:.95rem; font-weight:600; margin:0 2px 12px; }
 
     /* big charger view */
