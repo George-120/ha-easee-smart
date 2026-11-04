@@ -1,6 +1,6 @@
 /* Easee Smart Charging card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.11.3";
+  const VERSION = "1.11.4";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -691,7 +691,7 @@
       const every = day === 0 ? 6 : 3;
       const ticks = grid.map((g, i) => {
         const d = new Date(g.s);
-        return d.getMinutes() === 0 && d.getHours() % every === 0 ? lbl(i === 0 ? "tick first" : "tick", i * bw, tickY, `${String(d.getHours()).padStart(2, "0")}:00`) : "";
+        return i > 0 && d.getMinutes() === 0 && d.getHours() % every === 0 ? lbl("tick", i * bw, tickY, `${String(d.getHours()).padStart(2, "0")}:00`) : "";
       }).join("");
       const legend = [
         withPrice.length ? (mode === "solar_smart" && day >= 0
@@ -1130,7 +1130,6 @@
     .estrip.plan .eg, .estrip.plan .eu { opacity:.45; }
     .clbl.smax { font-size:10px; }
     .clbl.tick { transform:translate(-50%,-85%); }
-    .clbl.tick.first { transform:translateY(-85%); }
     .key.eg { width:10px; height:10px; border-radius:3px; background:var(--accent); display:inline-block; margin-left:4px; }
     .key.eu { width:10px; height:10px; border-radius:3px; background:var(--sun); display:inline-block; margin-left:6px; }
     .daynav { display:flex; align-items:center; justify-content:center; gap:10px; margin:6px 0 2px; font-size:.82rem; font-weight:600; }

@@ -5,7 +5,7 @@ Slim laden, Equalizer-inzicht, laadkosten en een app-achtige dashboardkaart voor
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=George-120&repository=ha-easee-smart&category=integration)
 [![Integratie toevoegen](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=easee_smart)
 
-![Easee Smart-kaart](docs/preview.png)
+![Easee Smart-kaart](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/preview.png)
 
 **Taal / Language / Sprache:** [Nederlands](#nederlands) · [English](#english) · [Deutsch](#deutsch)
 
@@ -29,6 +29,44 @@ Slim laden, Equalizer-inzicht, laadkosten en een app-achtige dashboardkaart voor
 - Nederlands, Engels en Duits.
 
 Load balancing doet de Easee Equalizer zelf; deze integratie grijpt daar niet in.
+
+### De laadmodi in beeld
+
+![Wisselen tussen de laadmodi](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modi.gif)
+
+Je kiest de modus met de vier knoppen. De kaart laat altijd zien welke modus aanstaat, op hoeveel fasen hij laadt, en kleurt de prijsgrafiek mee. Onder de prijzen staat per kwartier een balkje dat naar beneden wijst: **blauw** = van het net, **geel** = van de zon. Vol is al geladen, licht is wat hij verwacht.
+
+| Modus | Wat hij doet | Wanneer handig |
+|---|---|---|
+| **Normaal** | Laadt meteen op vol vermogen zodra de auto is aangesloten, wat de prijs ook is. Alle prijsbalken worden blauw. | Je wilt gewoon laden, zoals een gewone laadpaal. |
+| **Slim** | Rekent uit hoeveel kWh je nodig hebt en laadt alleen in de goedkoopste kwartieren vóór je vertrektijd. De geplande kwartieren worden blauw. | Je laadt 's nachts en wilt zo weinig mogelijk betalen. |
+| **Zon** | Laadt alleen met zonne-overschot. Bij weinig zon schakelt hij automatisch naar 1 fase (vanaf 1,4 kW), bij genoeg zon naar 3 fasen. De prijs speelt geen rol. | Je wilt alleen eigen zonnestroom in de auto. |
+| **Zon + slim** | Eerst zonne-overschot; wat daarna nog nodig is, laadt hij in de goedkoopste uren vóór vertrek. Met de zonnevoorspelling weet hij vooraf hoeveel zon er komt. | Zo veel mogelijk zon, en toch op tijd vol. |
+| **Boost** | Knop bovenop elke modus: nu laden op vol vermogen. Gaat vanzelf uit als je de stekker eruit haalt. | Je moet onverwacht snel weg. |
+
+<table><tr>
+<td><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modus-normal.png" alt="Normaal"><br><b>Normaal</b></td>
+<td><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modus-smart.png" alt="Slim"><br><b>Slim</b></td>
+</tr><tr>
+<td><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modus-solar.png" alt="Zon"><br><b>Zon</b></td>
+<td><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modus-solar-smart.png" alt="Zon + slim"><br><b>Zon + slim</b></td>
+</tr></table>
+
+### Gisteren, vandaag en morgen
+
+![Bladeren met de pijltjes](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/dagen.gif)
+
+Met de pijltjes boven de grafiek kijk je terug naar **gisteren** (wat er echt geladen is, van net en zon, en de gemeten zonnestroom) of vooruit naar **morgen** (de zonnevoorspelling; de prijzen voor morgen komen rond 13:00).
+
+### Laden tot een percentage of een vast aantal kWh
+
+![Wisselen tussen % en kWh](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/kwh.gif)
+
+Met het knopje **% / kWh** kies je of hij laadt tot een accupercentage van je auto, of een vast aantal kWh vóór je vertrektijd. Dat kan ook als er een auto gekoppeld is.
+
+### Equalizer en kosten
+
+![Equalizer- en kostenkaart](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/energie.png)
 
 ### Installatie
 
@@ -141,6 +179,44 @@ Smart charging, grid connection insight, charging costs and app-style dashboard 
 
 Load balancing is done by the Easee Equalizer itself; this integration does not interfere with it.
 
+### The charge modes at a glance
+
+![Switching between the charge modes](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modi.gif)
+
+Pick the mode with the four buttons. The card always shows which mode is active and on how many phases it charges, and colours the price chart to match. Below the prices a small bar per quarter points down: **blue** = from the grid, **yellow** = from the sun. Solid is already charged, light is what it expects.
+
+| Mode | What it does | Good for |
+|---|---|---|
+| **Normal** | Charges at full power as soon as the car is plugged in, whatever the price. All price bars turn blue. | Just charging, like a regular charger. |
+| **Smart** | Works out how many kWh you need and charges only in the cheapest quarter hours before your departure time. The planned quarters turn blue. | Charging overnight for as little as possible. |
+| **Solar** | Charges only on solar surplus. With little sun it switches to 1 phase (from 1.4 kW) automatically, with enough sun back to 3 phases. Price plays no part. | Only your own solar power in the car. |
+| **Solar + smart** | Solar surplus first; whatever is still needed is charged in the cheapest hours before departure. The solar forecast tells it in advance how much sun is coming. | As much sun as possible, and still full on time. |
+| **Boost** | A button on top of any mode: charge at full power now. Turns off when you unplug. | You suddenly need to leave. |
+
+<table><tr>
+<td><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modus-normal.png" alt="Normal"><br><b>Normal</b></td>
+<td><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modus-smart.png" alt="Smart"><br><b>Smart</b></td>
+</tr><tr>
+<td><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modus-solar.png" alt="Solar"><br><b>Solar</b></td>
+<td><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modus-solar-smart.png" alt="Solar + smart"><br><b>Solar + smart</b></td>
+</tr></table>
+
+### Yesterday, today and tomorrow
+
+![Browsing with the arrows](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/dagen.gif)
+
+Use the arrows above the chart to look back at **yesterday** (what was actually charged from grid and sun, and the measured solar power) or ahead to **tomorrow** (the solar forecast; tomorrow's prices arrive around 13:00).
+
+### Charge to a percentage or a fixed number of kWh
+
+![Switching between % and kWh](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/kwh.gif)
+
+The **% / kWh** toggle chooses between charging up to a battery percentage of your car, or a fixed number of kWh before departure — also when a car is linked.
+
+### Equalizer and costs
+
+![Equalizer and costs cards](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/energie.png)
+
 ### Installation
 
 1. Make sure the **Easee integration** is running ([nordicopen/easee_hass](https://github.com/nordicopen/easee_hass) via HACS).
@@ -211,6 +287,44 @@ Smartes Laden, Einblick in den Hausanschluss, Ladekosten und App-ähnliche Dashb
 - Deutsch, Englisch und Niederländisch.
 
 Das Lastmanagement übernimmt der Easee Equalizer selbst; diese Integration greift nicht ein.
+
+### Die Lademodi im Überblick
+
+![Wechsel zwischen den Lademodi](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modi.gif)
+
+Den Modus wählst du mit den vier Tasten. Die Karte zeigt immer den aktiven Modus und die Phasenzahl und färbt die Preisgrafik passend. Unter den Preisen zeigt pro Viertelstunde ein Balken nach unten: **blau** = aus dem Netz, **gelb** = von der Sonne. Kräftig = bereits geladen, hell = erwartet.
+
+| Modus | Was er macht | Gut für |
+|---|---|---|
+| **Normal** | Lädt sofort mit voller Leistung, sobald das Auto angesteckt ist, egal zu welchem Preis. Alle Preisbalken werden blau. | Einfach laden wie eine normale Wallbox. |
+| **Smart** | Berechnet die benötigten kWh und lädt nur in den günstigsten Viertelstunden vor der Abfahrt. Die geplanten Viertelstunden werden blau. | Nachts laden und möglichst wenig zahlen. |
+| **Solar** | Lädt nur mit Solarüberschuss. Bei wenig Sonne automatisch einphasig (ab 1,4 kW), bei genug Sonne dreiphasig. Der Preis spielt keine Rolle. | Nur eigenen Solarstrom ins Auto. |
+| **Solar + Smart** | Zuerst Solarüberschuss; was dann noch fehlt, wird in den günstigsten Stunden vor der Abfahrt geladen. Die Solarprognose sagt vorab, wie viel Sonne kommt. | Möglichst viel Sonne und trotzdem rechtzeitig voll. |
+| **Boost** | Taste über jedem Modus: jetzt mit voller Leistung laden. Geht beim Abstecken aus. | Du musst plötzlich los. |
+
+<table><tr>
+<td><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modus-normal.png" alt="Normal"><br><b>Normal</b></td>
+<td><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modus-smart.png" alt="Smart"><br><b>Smart</b></td>
+</tr><tr>
+<td><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modus-solar.png" alt="Solar"><br><b>Solar</b></td>
+<td><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modus-solar-smart.png" alt="Solar + Smart"><br><b>Solar + Smart</b></td>
+</tr></table>
+
+### Gestern, heute und morgen
+
+![Blättern mit den Pfeilen](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/dagen.gif)
+
+Mit den Pfeilen über der Grafik blickst du zurück auf **gestern** (was wirklich aus Netz und Sonne geladen wurde, plus gemessener Solarstrom) oder voraus auf **morgen** (Solarprognose; die Preise für morgen kommen gegen 13:00).
+
+### Bis zu einem Prozentwert oder eine feste kWh-Menge laden
+
+![Wechsel zwischen % und kWh](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/kwh.gif)
+
+Mit **% / kWh** wählst du, ob bis zu einem Akkustand oder eine feste kWh-Menge bis zur Abfahrt geladen wird — auch mit verbundenem Auto.
+
+### Equalizer und Kosten
+
+![Equalizer- und Kostenkarte](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/energie.png)
 
 ### Installation
 
