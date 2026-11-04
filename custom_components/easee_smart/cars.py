@@ -12,7 +12,7 @@ from homeassistant.helpers import entity_registry as er
 
 MAX_CARS = 6
 DEFAULT_CAPACITY = 60.0
-DEFAULT_CAR_TARGET = 80
+DEFAULT_CAR_TARGET = 100
 CONF_CARS = "cars"
 
 # Fields of one car (stored as a dict in options["cars"])

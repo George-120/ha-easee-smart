@@ -6,7 +6,7 @@ from typing import Final
 
 DOMAIN: Final = "easee_smart"
 EASEE_DOMAIN: Final = "easee"
-VERSION: Final = "1.11.5"
+VERSION: Final = "1.11.6"
 
 CARD_BASE: Final = "/easee_smart"
 CARD_URL: Final = f"{CARD_BASE}/easee-smart-card.js"
@@ -95,7 +95,7 @@ DEFAULT_VOLTAGE: Final = 230
 DEFAULT_MAX_CURRENT: Final = 16
 DEFAULT_BATTERY_CAPACITY: Final = 60.0
 DEFAULT_TARGET_ENERGY: Final = 20.0
-DEFAULT_TARGET_SOC: Final = 80
+DEFAULT_TARGET_SOC: Final = 100
 DEFAULT_DEPARTURE: Final = "07:00"
 
 MIN_CHARGE_CURRENT: Final = 6
