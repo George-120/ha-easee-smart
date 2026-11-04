@@ -68,13 +68,12 @@ Elke kaart volgt je licht/donker thema (`theme: auto | light | dark`) en heeft e
 
 ### Kant-en-klaar dashboard
 
-Eén druk op de knop en je hebt een compleet **Easee Smart**-dashboard in de zijbalk, met alle kaarten netjes ingedeeld (Laden, Energie & kosten, Alles in één). Je eigen dashboards blijven ongemoeid.
+Eén druk op de knop en je hebt een compleet **Easee Smart**-dashboard in de zijbalk, met alle kaarten netjes ingedeeld (Laden, Energie & kosten, Alles in één). Je eigen dashboards worden nooit overschreven: is de naam al bezet, dan krijgt het nieuwe dashboard een vrije naam.
 
 - **Instellingen → Apparaten & diensten → Easee Smart Charging → Configureren → Dashboard aanmaken**, of
-- de knop **Dashboard aanmaken** op het apparaat, of
-- de actie `easee_smart.create_dashboard`.
+- de actie `easee_smart.create_dashboard` (alleen voor beheerders).
 
-Nog een keer drukken werkt het dashboard bij met je huidige auto's en instellingen.
+Nog een keer aanmaken werkt alleen het dashboard bij dat deze integratie zelf heeft gemaakt.
 
 ### Entiteiten
 
@@ -96,9 +95,9 @@ Nog een keer drukken werkt het dashboard bij met je huidige auto's en instelling
 | `sensor … accu auto` | Accuniveau van de aangesloten auto |
 | `sensor … ERE deze maand / dit jaar / totaal` | Opbrengst van de ERE-regeling |
 | `button … gegevens auto verversen` / `laden starten in auto` | Acties op de auto |
-| `button … maandrapport exporteren` | CSV in `/config/www/easee_smart/` |
+| `button … maandrapport exporteren` | Totalen van vorige maand als melding; de CSV download je via de Kosten-kaart of de actie |
 
-Acties: `easee_smart.export_report` (geeft het resultaat terug, handig in automatiseringen) en `easee_smart.set_mode`.
+Acties: `easee_smart.export_report` (geeft de CSV terug als antwoord; er wordt niets in `/config/www` gezet, want die map is zonder inloggen bereikbaar), `easee_smart.create_dashboard` (alleen beheerders) en `easee_smart.set_mode`.
 
 ### Goed om te weten
 
@@ -156,16 +155,16 @@ language: auto                       # auto | nl | en | de
 
 ### Ready-made dashboard
 
-One press and you get a complete **Easee Smart** dashboard in the sidebar, with all cards neatly grouped (Charging, Energy & costs, All in one). Your own dashboards are not touched.
+One press and you get a complete **Easee Smart** dashboard in the sidebar, with all cards neatly grouped (Charging, Energy & costs, All in one). Your own dashboards are never overwritten: if the name is taken, the new dashboard gets a free one.
 
 - **Settings → Devices & services → Easee Smart Charging → Configure → Create dashboard**, or
-- the **Create dashboard** button on the device, or
-- the action `easee_smart.create_dashboard`.
+- the action `easee_smart.create_dashboard` (admins only).
 
-Press it again to refresh the dashboard with your current cars and settings.
+Creating it again only refreshes the dashboard this integration made itself.
 
 ### Good to know
 
+- **Monthly report.** The CSV is downloaded from the Costs card, or returned by the action `easee_smart.export_report`. Nothing is stored in `/config/www`, because that folder can be reached without logging in.
 - Turn off Easee's own *smart charging* in the Easee app when you let this integration plan, otherwise two systems control the charger at once.
 - Costs are counted from the moment the integration runs; earlier sessions are not in the history.
 
@@ -218,16 +217,16 @@ language: auto                       # auto | nl | en | de
 
 ### Fertiges Dashboard
 
-Ein Knopfdruck und du hast ein komplettes **Easee Smart**-Dashboard in der Seitenleiste, mit allen Karten übersichtlich gruppiert (Laden, Energie & Kosten, Alles in einem). Deine eigenen Dashboards bleiben unverändert.
+Ein Knopfdruck und du hast ein komplettes **Easee Smart**-Dashboard in der Seitenleiste, mit allen Karten übersichtlich gruppiert (Laden, Energie & Kosten, Alles in einem). Deine eigenen Dashboards werden nie überschrieben: ist der Name vergeben, bekommt das neue Dashboard einen freien Namen.
 
 - **Einstellungen → Geräte & Dienste → Easee Smart Charging → Konfigurieren → Dashboard erstellen**, oder
-- die Taste **Dashboard erstellen** am Gerät, oder
-- die Aktion `easee_smart.create_dashboard`.
+- die Aktion `easee_smart.create_dashboard` (nur Administratoren).
 
-Erneut drücken aktualisiert das Dashboard mit deinen aktuellen Autos und Einstellungen.
+Erneut erstellen aktualisiert nur das Dashboard, das diese Integration selbst angelegt hat.
 
 ### Gut zu wissen
 
+- **Monatsbericht.** Die CSV lädst du über die Kosten-Karte herunter, oder du bekommst sie als Antwort der Aktion `easee_smart.export_report`. Nichts wird in `/config/www` gespeichert, denn dieser Ordner ist ohne Anmeldung erreichbar.
 - Schalte das eigene *Smart Charging* von Easee in der Easee-App aus, wenn diese Integration plant, sonst steuern zwei Systeme gleichzeitig.
 - Kosten werden ab dem Moment gezählt, in dem die Integration läuft.
 

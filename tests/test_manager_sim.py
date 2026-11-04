@@ -231,8 +231,10 @@ def test_sessions_costs_and_report(tmp_path):
         assert m.sessions[-1]["energy"] == 10 and m.sessions[-1]["reimbursement"] == 2.3
         assert m.period_totals("month") == {"energy": 10.0, "cost": 3.0}
         res = await m.async_export_report("2026-11")
-        text = Path(res["file"]).read_text(encoding="utf-8-sig")
+        text = res["csv"]
         assert "10,000" in text and res["sessions"] == 1 and res["reimbursement"] == 2.3
+        assert "file" not in res and "url" not in res  # nothing in the public www folder
+        assert not list(tmp_path.rglob("*.csv"))
         payload = m.card_payload()
         assert payload["month"]["energy"] == 10.0 and payload["sessions"][0]["cost"] == 3.0
     asyncio.run(run())
@@ -498,3 +500,69 @@ def test_dashboard_has_all_cards(tmp_path):
     ws.DOMAIN = "websocket_api"
     hass = types.SimpleNamespace(data={"websocket_api": {"lovelace/dashboards/create": (wrap(wrap(Owner().ws_create)), None)}})
     assert dash._dashboards_collection(hass) == "COLL"
+
+
+def test_dashboard_never_overwrites_a_user_dashboard(tmp_path):
+    install_stubs()
+    sys.modules.pop("easee_smart.dashboard", None)
+    disk: dict = {}
+
+    class PersistentStore(Store):
+        def __init__(self, hass, version, key):
+            self.key = key
+
+        async def async_load(self):
+            return disk.get(self.key)
+
+        async def async_save(self, data):
+            disk[self.key] = data
+
+    sys.modules["homeassistant.helpers.storage"].Store = PersistentStore
+
+    class Board:
+        def __init__(self, config=None):
+            self.config = config
+
+        async def async_load(self, force):
+            if self.config is None:
+                raise ValueError("empty")
+            return self.config
+
+        async def async_save(self, config):
+            self.config = config
+
+    user_board = Board({"views": [{"title": "Mine", "cards": [{"type": "entities"}]}]})
+    lovelace = types.SimpleNamespace(dashboards={"easee-smart": user_board})
+
+    class Coll:
+        async def async_create_item(self, item):
+            lovelace.dashboards[item["url_path"]] = Board()
+
+    _mod("homeassistant.components.lovelace")
+    _mod("homeassistant.components.lovelace.const", LOVELACE_DATA="lovelace")
+    _mod("homeassistant.components.frontend", async_panel_exists=lambda h, u: False)
+    dash = importlib.import_module("easee_smart.dashboard")
+    dash._dashboards_collection = lambda h: Coll()
+
+    own = {"charger_status": "sensor.es_status"}
+    m = types.SimpleNamespace(own_entities=own, charger_entities={}, cars=[], ere_rate=None, name="Easee",
+                              model=None, _opt=lambda k, d=None: "en", charger_id="EH1",
+                              entry=types.SimpleNamespace(entry_id="e1"))
+    m.hass = types.SimpleNamespace(config=types.SimpleNamespace(language="en"), data={"lovelace": lovelace},
+                                   config_entries=types.SimpleNamespace(async_entries=lambda d: [1]))
+
+    url = asyncio.run(dash.async_create_dashboard(m))
+    assert url == "easee-smart-2"                                   # user's dashboard is taken: pick a free url
+    assert user_board.config["views"][0]["title"] == "Mine"         # ...and leave it untouched
+    assert lovelace.dashboards["easee-smart-2"].config["views"][0]["sections"]
+    lovelace.dashboards["easee-smart-2"].config = {"views": []}
+    assert asyncio.run(dash.async_create_dashboard(m)) == "easee-smart-2"  # ours: refreshed in place
+    assert lovelace.dashboards["easee-smart-2"].config["views"]
+    assert user_board.config["views"][0]["title"] == "Mine"
+
+    # a dashboard made by 1.5.0-1.5.4 (our header, only our cards) is adopted instead of duplicated
+    disk.clear()
+    legacy = Board(dash.build_dashboard(m))
+    lovelace.dashboards = {"easee-smart": legacy}
+    assert asyncio.run(dash.async_create_dashboard(m)) == "easee-smart"
+    assert disk["easee_smart.dashboards"] == {"owned": {"e1": "easee-smart"}}

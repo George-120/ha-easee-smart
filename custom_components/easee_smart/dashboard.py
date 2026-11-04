@@ -7,6 +7,7 @@ same collection the frontend talks to (reached through its websocket command).
 from __future__ import annotations
 
 import inspect
+import json
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -138,35 +139,94 @@ def _dashboards_collection(hass: HomeAssistant):
     return getattr(owner, "storage_collection", None)
 
 
-async def async_create_dashboard(manager: EaseeSmartManager, overwrite: bool = True) -> str:
-    """Create (or refresh) the Easee Smart dashboard. Returns its url path."""
+STORE_KEY = f"{DOMAIN}.dashboards"
+STORE_VERSION = 1
+MARKER = f"{CARD_BASE}/logo.png"  # in the header of every dashboard we generate
+
+
+def _looks_like_ours(config: dict[str, Any] | None) -> bool:
+    """Dashboards made by 1.5.0-1.5.4 (before ownership was recorded): our header, only our cards."""
+    if not isinstance(config, dict):
+        return False
+    views = config.get("views") or []
+    if not views:
+        return False
+    for view in views:
+        header = json.dumps(view.get("header") or {})
+        cards = [c for sec in view.get("sections") or [] for c in sec.get("cards") or []]
+        if view is views[0] and MARKER not in header:
+            return False
+        for card in cards:
+            kind = str(card.get("type", ""))
+            if not (kind.startswith("custom:easee-smart") or kind == "heading"):
+                return False
+    return True
+
+
+def _url_taken(hass: HomeAssistant, data: Any, url: str) -> bool:
+    from homeassistant.components.frontend import async_panel_exists
+
+    return url in data.dashboards or async_panel_exists(hass, url)
+
+
+async def async_create_dashboard(manager: EaseeSmartManager) -> str:
+    """Create the Easee Smart dashboard, or refresh the one this integration created.
+
+    A dashboard the user made (or any dashboard we did not create) is never overwritten:
+    when the preferred url is taken we pick the next free one.
+    """
     from homeassistant.components.lovelace.const import LOVELACE_DATA
+    from homeassistant.helpers.storage import Store
 
     hass = manager.hass
-    config = build_dashboard(manager)
-    url = DASHBOARD_URL if len(hass.config_entries.async_entries(DOMAIN)) <= 1 else f"{DASHBOARD_URL}-{manager.charger_id or manager.entry.entry_id}".lower()
     data = hass.data.get(LOVELACE_DATA)
     if data is None:
         raise HomeAssistantError("Lovelace is not loaded")
-    store = data.dashboards.get(url)
-    if store is None:
-        coll = _dashboards_collection(hass)
-        if coll is None:
-            raise HomeAssistantError("Could not reach the dashboards collection")
-        try:
-            await coll.async_create_item(
-                {"url_path": url, "title": config["title"], "icon": DASHBOARD_ICON,
-                 "show_in_sidebar": True, "require_admin": False, "mode": "storage"}
-            )
-        except HomeAssistantError:
-            raise
-        except Exception as err:  # vol.Invalid etc.
-            raise HomeAssistantError(str(err)) from err
-        store = data.dashboards.get(url)
-        if store is None:
+    config = build_dashboard(manager)
+    entry_id = manager.entry.entry_id
+
+    store: Store = Store(hass, STORE_VERSION, STORE_KEY)
+    owned: dict[str, str] = ((await store.async_load()) or {}).get("owned", {})
+
+    base = DASHBOARD_URL if len(hass.config_entries.async_entries(DOMAIN)) <= 1 else f"{DASHBOARD_URL}-{manager.charger_id or entry_id}".lower()
+    url = owned.get(entry_id)
+    if url and url in data.dashboards:
+        target = data.dashboards[url]  # ours: refresh it
+    else:
+        url = None
+        # adopt a dashboard an earlier version created before ownership was recorded
+        existing = data.dashboards.get(base)
+        if existing is not None and base not in owned.values():
+            try:
+                current = await existing.async_load(False)
+            except Exception:  # noqa: BLE001 - empty or unreadable config: not ours
+                current = None
+            if _looks_like_ours(current):
+                url = base
+        if url is None:
+            url = base
+            n = 2
+            while _url_taken(hass, data, url):
+                url = f"{base}-{n}"
+                n += 1
+            coll = _dashboards_collection(hass)
+            if coll is None:
+                raise HomeAssistantError("Could not reach the dashboards collection")
+            try:
+                await coll.async_create_item(
+                    {"url_path": url, "title": config["title"], "icon": DASHBOARD_ICON,
+                     "show_in_sidebar": True, "require_admin": False, "mode": "storage"}
+                )
+            except HomeAssistantError:
+                raise
+            except Exception as err:  # vol.Invalid etc.
+                raise HomeAssistantError(str(err)) from err
+        target = data.dashboards.get(url)
+        if target is None:
             raise HomeAssistantError("Dashboard was not registered")
-    elif not overwrite:
-        return url
-    await store.async_save(config)
+        owned[entry_id] = url
+        await store.async_save({"owned": owned})
+
+    await target.async_save(config)
     _LOGGER.info("Easee Smart dashboard written to /%s", url)
     return url

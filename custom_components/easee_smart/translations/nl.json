@@ -116,7 +116,7 @@
       },
       "dashboard": {
         "title": "Dashboard aanmaken",
-        "description": "Zet een kant-en-klaar **Easee Smart**-dashboard met alle kaarten in je zijbalk. Je eigen dashboards blijven ongemoeid. Bestaat het al? Dan wordt het bijgewerkt met je huidige auto's en instellingen."
+        "description": "Zet een kant-en-klaar **Easee Smart**-dashboard met alle kaarten in je zijbalk. Je eigen dashboards worden nooit overschreven. Heeft deze integratie het al eerder gemaakt? Dan wordt het bijgewerkt met je huidige auto's en instellingen."
       },
       "charger": {
         "title": "Laadpaal",
@@ -444,16 +444,13 @@
       },
       "start_car": {
         "name": "Laden starten in auto"
-      },
-      "create_dashboard": {
-        "name": "Dashboard aanmaken"
       }
     }
   },
   "services": {
     "export_report": {
       "name": "Laadrapport exporteren",
-      "description": "Schrijft een CSV met alle sessies van een maand naar /config/www/easee_smart.",
+      "description": "Geeft een CSV met alle sessies van een maand terug als antwoord van de actie (er wordt niets op schijf opgeslagen).",
       "fields": {
         "config_entry_id": {
           "name": "Laadpaal",
@@ -467,7 +464,7 @@
     },
     "create_dashboard": {
       "name": "Dashboard aanmaken",
-      "description": "Zet het kant-en-klare Easee Smart-dashboard met alle kaarten in de zijbalk (of werkt het bij).",
+      "description": "Zet het kant-en-klare Easee Smart-dashboard met alle kaarten in de zijbalk, of werkt het dashboard bij dat deze integratie zelf heeft gemaakt. Alleen voor beheerders; je eigen dashboards worden nooit overschreven.",
       "fields": {
         "config_entry_id": {
           "name": "Laadpaal",

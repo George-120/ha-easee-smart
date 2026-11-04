@@ -6,7 +6,6 @@ import asyncio
 import csv
 import io
 import logging
-import os
 from dataclasses import dataclass, field
 from datetime import datetime, time, timedelta
 from typing import Any
@@ -83,7 +82,6 @@ from .const import (
     MODE_SOLAR_SMART,
     MODES,
     PHASE_ENTITY_KEYS,
-    REPORT_DIR,
     SIGNAL_UPDATE,
     SMART_CHARGING_BOOST,
     SMART_CHARGING_CHEAP,
@@ -1045,24 +1043,17 @@ class EaseeSmartManager:
                 "" if ere is None else f"{totals_energy * ere:.2f}".replace(".", ","),
             ]
         )
-        filename = f"{(self.charger_id or 'easee').lower()}-{month}.csv"
-        folder = self.hass.config.path("www", REPORT_DIR)
-        path = os.path.join(folder, filename)
-
-        def _write() -> None:
-            os.makedirs(folder, exist_ok=True)
-            with open(path, "w", encoding="utf-8-sig", newline="") as handle:
-                handle.write(buffer.getvalue())
-
-        await self.hass.async_add_executor_job(_write)
+        # Returned to the caller only (service response / card download). Nothing is written
+        # to /config/www, because that folder is served without authentication.
         return {
             "month": month,
-            "file": path,
-            "url": f"/local/{REPORT_DIR}/{filename}",
+            "filename": f"easee-smart-{month}.csv",
+            "csv": buffer.getvalue(),
             "sessions": len(sessions),
             "energy_kwh": totals_energy,
             "cost": totals_cost,
             "reimbursement": None if reimb is None else round(totals_energy * reimb, 2),
+            "ere": None if ere is None else round(totals_energy * ere, 2),
         }
 
     # ------------------------------------------------------------ card payload
@@ -1120,6 +1111,7 @@ class EaseeSmartManager:
             "sources": self.charger_entities,
             "equalizer": self.equalizer_entities,
             "entities": self.own_entities,
+            "entry_id": self.entry.entry_id,
             "price": snap.price,
             "market_price": self.market_price(),
             "zone": self.zone,

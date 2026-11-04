@@ -1,6 +1,6 @@
 /* Easee Smart Charging card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.5.4";
+  const VERSION = "1.6.0";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -631,14 +631,29 @@
         case "refresh":
           if (ent.refresh_car) await call("button", "press", { entity_id: ent.refresh_car });
           return;
-        case "export":
-          if (ent.export_report) {
-            await call("button", "press", { entity_id: ent.export_report });
-            this._exported = true;
-            this._sig = null;
-            this._render();
+        case "export": {
+          // The CSV comes back in the action response and is saved by the browser;
+          // nothing is written to /config/www (that folder is public).
+          const a = this._attrs();
+          const res = await this._hass.callService(
+            "easee_smart", "export_report", a.entry_id ? { config_entry_id: a.entry_id } : {},
+            undefined, true, true,
+          );
+          const r = (res && res.response) || {};
+          if (r.csv) {
+            const blob = new Blob(["\ufeff" + r.csv], { type: "text/csv;charset=utf-8" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = r.filename || "easee-smart.csv";
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => { URL.revokeObjectURL(link.href); link.remove(); }, 1000);
           }
+          this._exported = true;
+          this._sig = null;
+          this._render();
           return;
+        }
         default:
       }
     }

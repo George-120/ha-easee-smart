@@ -116,7 +116,7 @@
       },
       "dashboard": {
         "title": "Create dashboard",
-        "description": "Adds a ready-made **Easee Smart** dashboard with all cards to your sidebar. Your own dashboards are not touched. Already there? Then it is refreshed with your current cars and settings."
+        "description": "Adds a ready-made **Easee Smart** dashboard with all cards to your sidebar. Your own dashboards are never overwritten. Already created by this integration? Then it is refreshed with your current cars and settings."
       },
       "charger": {
         "title": "Charger",
@@ -444,16 +444,13 @@
       },
       "start_car": {
         "name": "Start charging in car"
-      },
-      "create_dashboard": {
-        "name": "Create dashboard"
       }
     }
   },
   "services": {
     "export_report": {
       "name": "Export charging report",
-      "description": "Writes a CSV with all sessions of a month to /config/www/easee_smart.",
+      "description": "Returns a CSV with all sessions of a month as the action response (nothing is stored on disk).",
       "fields": {
         "config_entry_id": {
           "name": "Charger",
@@ -467,7 +464,7 @@
     },
     "create_dashboard": {
       "name": "Create dashboard",
-      "description": "Adds (or refreshes) the ready-made Easee Smart dashboard with all cards to the sidebar.",
+      "description": "Adds the ready-made Easee Smart dashboard with all cards to the sidebar, or refreshes the one this integration created. Admins only; your own dashboards are never overwritten.",
       "fields": {
         "config_entry_id": {
           "name": "Charger",

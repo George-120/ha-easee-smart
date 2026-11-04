@@ -6,7 +6,7 @@ from typing import Final
 
 DOMAIN: Final = "easee_smart"
 EASEE_DOMAIN: Final = "easee"
-VERSION: Final = "1.5.4"
+VERSION: Final = "1.6.0"
 
 CARD_BASE: Final = "/easee_smart"
 CARD_URL: Final = f"{CARD_BASE}/easee-smart-card.js"
@@ -239,4 +239,3 @@ STORAGE_VERSION: Final = 1
 STORAGE_KEY: Final = "easee_smart.{}"
 MAX_STORED_SESSIONS: Final = 500
 
-REPORT_DIR: Final = "easee_smart"

@@ -116,7 +116,7 @@
       },
       "dashboard": {
         "title": "Dashboard erstellen",
-        "description": "Fügt ein fertiges **Easee Smart**-Dashboard mit allen Karten zur Seitenleiste hinzu. Deine eigenen Dashboards bleiben unverändert. Gibt es schon eins? Dann wird es mit deinen aktuellen Autos und Einstellungen aktualisiert."
+        "description": "Fügt ein fertiges **Easee Smart**-Dashboard mit allen Karten zur Seitenleiste hinzu. Deine eigenen Dashboards werden nie überschrieben. Hat diese Integration es schon erstellt? Dann wird es mit deinen aktuellen Autos und Einstellungen aktualisiert."
       },
       "charger": {
         "title": "Wallbox",
@@ -444,16 +444,13 @@
       },
       "start_car": {
         "name": "Laden im Auto starten"
-      },
-      "create_dashboard": {
-        "name": "Dashboard erstellen"
       }
     }
   },
   "services": {
     "export_report": {
       "name": "Ladebericht exportieren",
-      "description": "Schreibt eine CSV mit allen Ladevorgängen eines Monats nach /config/www/easee_smart.",
+      "description": "Gibt eine CSV mit allen Ladevorgängen eines Monats als Antwort der Aktion zurück (nichts wird gespeichert).",
       "fields": {
         "config_entry_id": {
           "name": "Wallbox",
@@ -467,7 +464,7 @@
     },
     "create_dashboard": {
       "name": "Dashboard erstellen",
-      "description": "Fügt das fertige Easee Smart-Dashboard mit allen Karten zur Seitenleiste hinzu (oder aktualisiert es).",
+      "description": "Fügt das fertige Easee Smart-Dashboard mit allen Karten zur Seitenleiste hinzu oder aktualisiert das von dieser Integration erstellte. Nur für Administratoren; eigene Dashboards werden nie überschrieben.",
       "fields": {
         "config_entry_id": {
           "name": "Wallbox",

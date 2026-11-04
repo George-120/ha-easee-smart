@@ -81,7 +81,6 @@
     },
     "button": {
       "export_report": { "default": "mdi:file-delimited-outline" },
-      "create_dashboard": { "default": "mdi:view-dashboard-edit-outline" },
       "refresh_car": { "default": "mdi:car-sync" },
       "start_car": { "default": "mdi:car-electric-outline" }
     }

@@ -21,6 +21,7 @@ from homeassistant.exceptions import (
     ServiceValidationError,
 )
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
@@ -104,7 +105,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             ) from err
         return {"url_path": url}
 
-    hass.services.async_register(
+    # Writes Lovelace config, so admins only.
+    async_register_admin_service(
+        hass,
         DOMAIN,
         SERVICE_CREATE_DASHBOARD,
         _create_dashboard,
@@ -154,10 +157,53 @@ async def async_setup_entry(hass: HomeAssistant, entry: EaseeSmartConfigEntry) -
             translation_domain=DOMAIN, translation_key="charger_not_found"
         )
     entry.runtime_data = manager
+    _async_remove_old_entities(hass, manager)
+    hass.async_create_background_task(_async_remove_public_reports(hass, manager), f"{DOMAIN} cleanup")
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     manager.async_start()
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     return True
+
+
+def _async_remove_old_entities(hass: HomeAssistant, manager: EaseeSmartManager) -> None:
+    """Remove entities older versions created that no longer exist."""
+    from homeassistant.helpers import entity_registry as er
+
+    reg = er.async_get(hass)
+    # 1.5.0-1.5.4 had a "Create dashboard" button; that is now admin-only (options flow / admin action).
+    if entity_id := reg.async_get_entity_id("button", DOMAIN, f"{manager.charger_id}_smart_create_dashboard"):
+        reg.async_remove(entity_id)
+
+
+async def _async_remove_public_reports(hass: HomeAssistant, manager: EaseeSmartManager) -> None:
+    """Delete monthly CSVs that versions before 1.6.0 wrote to /config/www/easee_smart (served without login).
+
+    Only files with the exact name pattern those versions used are removed.
+    """
+    import re
+
+    folder = Path(hass.config.path("www", "easee_smart"))
+    pattern = re.compile(rf"^{re.escape((manager.charger_id or 'easee').lower())}-\d{{4}}-\d{{2}}\.csv$")
+
+    def _clean() -> list[str]:
+        if not folder.is_dir():
+            return []
+        removed = []
+        for file in folder.iterdir():
+            if file.is_file() and pattern.match(file.name):
+                file.unlink()
+                removed.append(file.name)
+        if not any(folder.iterdir()):
+            folder.rmdir()
+        return removed
+
+    try:
+        removed = await hass.async_add_executor_job(_clean)
+    except OSError as err:
+        _LOGGER.warning("Could not remove old public reports in %s: %s", folder, err)
+        return
+    if removed:
+        _LOGGER.info("Removed %d old public report(s) from %s", len(removed), folder)
 
 
 async def _async_reload(hass: HomeAssistant, entry: EaseeSmartConfigEntry) -> None:
