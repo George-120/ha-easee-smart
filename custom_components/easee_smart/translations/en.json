@@ -107,11 +107,24 @@
         "title": "Easee Smart Charging settings",
         "menu_options": {
           "charger": "Charger",
+          "equalizer": "Equalizer",
           "grid": "Main connection",
           "energy": "Prices and costs",
           "cars": "Cars",
           "advanced": "Advanced",
           "dashboard": "Create dashboard"
+        }
+      },
+      "equalizer": {
+        "title": "Easee Equalizer",
+        "description": "Do you have an Easee Equalizer? Pick it here; when nothing is filled in yet, the Equalizer the Easee integration knows is picked for you. Found: {found}.",
+        "data": {
+          "equalizer_device": "Equalizer",
+          "show_equalizer": "Show in the cards"
+        },
+        "data_description": {
+          "equalizer_device": "Choose — if you don't have one. With an Equalizer, solar charging uses its measurements instead of a meter.",
+          "show_equalizer": "Automatic shows it as soon as an Equalizer is linked."
         }
       },
       "dashboard": {
@@ -251,6 +264,13 @@
         "smart": "Smart (cheapest hours)",
         "solar": "Solar surplus",
         "solar_smart": "Solar + smart"
+      }
+    },
+    "show_equalizer": {
+      "options": {
+        "auto": "Automatic",
+        "show": "Show",
+        "hide": "Hide"
       }
     },
     "language": {

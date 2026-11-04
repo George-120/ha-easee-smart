@@ -99,7 +99,9 @@ def build_dashboard(manager: EaseeSmartManager) -> dict[str, Any]:
         {"type": "grid", "cards": [heading(t["plan"], "mdi:calendar-clock"), card("plan")]},
     ]
     energy_sections = [
-        {"type": "grid", "cards": [heading(t["grid"], "mdi:transmission-tower"), card("grid")]},
+        {"type": "grid", "cards": [heading(t["grid"], "mdi:transmission-tower"),
+                                   *([card("equalizer")] if getattr(manager, "show_equalizer", False) else []),
+                                   card("grid")]},
         {"type": "grid", "cards": [heading(t["costs"], "mdi:cash-multiple"), card("costs")]},
     ]
     header = {

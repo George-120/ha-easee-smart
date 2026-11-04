@@ -6,7 +6,7 @@ from typing import Final
 
 DOMAIN: Final = "easee_smart"
 EASEE_DOMAIN: Final = "easee"
-VERSION: Final = "1.6.0"
+VERSION: Final = "1.7.0"
 
 CARD_BASE: Final = "/easee_smart"
 CARD_URL: Final = f"{CARD_BASE}/easee-smart-card.js"
@@ -14,6 +14,9 @@ CARD_URL: Final = f"{CARD_BASE}/easee-smart-card.js"
 # ---- config entry keys -------------------------------------------------------
 CONF_CHARGER_DEVICE: Final = "charger_device"
 CONF_EQUALIZER_DEVICE: Final = "equalizer_device"
+CONF_SHOW_EQUALIZER: Final = "show_equalizer"
+SHOW_EQUALIZER_OPTIONS: Final = ["auto", "show", "hide"]
+NO_EQUALIZER: Final = "none"
 CONF_MODEL: Final = "model"
 CONF_PHASES: Final = "phases"
 CONF_VOLTAGE: Final = "voltage"

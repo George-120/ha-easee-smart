@@ -566,3 +566,23 @@ def test_dashboard_never_overwrites_a_user_dashboard(tmp_path):
     lovelace.dashboards = {"easee-smart": legacy}
     assert asyncio.run(dash.async_create_dashboard(m)) == "easee-smart"
     assert disk["easee_smart.dashboards"] == {"owned": {"e1": "easee-smart"}}
+
+
+def test_equalizer_show_setting_and_options_override(tmp_path):
+    async def run():
+        hass, m = make(tmp_path)
+        await m.async_setup()
+        info = m.card_payload()["equalizer_info"]
+        assert info["show"] is True and info["linked"] is True and info["model"] == "Equalizer"   # auto: linked → shown
+        m.entry.options["show_equalizer"] = "hide"
+        assert m.card_payload()["equalizer_info"]["show"] is False
+
+        # an Equalizer chosen later in the options wins over the setup data, "none" removes it
+        hass, m = make(tmp_path, equalizer=False, options={"equalizer_device": "dev2"})
+        assert m.equalizer_device_id == "dev2"
+        hass, m = make(tmp_path, options={"equalizer_device": "none"})
+        await m.async_setup()
+        assert m.equalizer_device_id is None and m.card_payload()["equalizer_info"]["show"] is False
+        m.entry.options["show_equalizer"] = "show"
+        assert m.card_payload()["equalizer_info"] == {"show": True, "linked": False}
+    asyncio.run(run())

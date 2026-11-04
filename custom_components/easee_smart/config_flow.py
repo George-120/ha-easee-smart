@@ -63,6 +63,7 @@ from .const import (
     CONF_NUDGE,
     CONF_PHASES,
     CONF_REIMBURSEMENT,
+    CONF_SHOW_EQUALIZER,
     CONF_SOLAR_BUFFER,
     CONF_SOLAR_START_DELAY,
     CONF_SOLAR_STOP_DELAY,
@@ -80,17 +81,17 @@ from .const import (
     MAIN_FUSE_SIZES,
     MIN_CHARGE_CURRENT,
     MODEL_MAX_CURRENT,
+    NO_EQUALIZER,
     PHASE_ENTITY_KEYS,
     REQUIRED_CHARGER_KEYS,
     REQUIRED_EQUALIZER_KEYS,
+    SHOW_EQUALIZER_OPTIONS,
     SOLAR_START_DELAY_S,
     SOLAR_STOP_DELAY_S,
 )
 from .grid_detect import suggest_grid_sensors
 from .manager import easee_product_id, enable_disabled_entities, resolve_entities
 from .prices import BIDDING_ZONES, default_zone, zone_defaults
-
-NO_EQUALIZER = "none"
 
 
 def _easee_devices(hass: HomeAssistant) -> tuple[list[dr.DeviceEntry], list[dr.DeviceEntry]]:
@@ -492,10 +493,45 @@ class EaseeSmartOptionsFlow(OptionsFlow):
         return self.async_create_entry(data=data)
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        menu = ["charger", "energy", "cars", "advanced", "dashboard"]
-        if CONF_EQUALIZER_DEVICE not in self.config_entry.data:
-            menu.insert(1, "grid")
+        menu = ["charger", "equalizer", "energy", "cars", "advanced", "dashboard"]
+        if self._current().get(CONF_EQUALIZER_DEVICE) in (None, "", NO_EQUALIZER):
+            menu.insert(2, "grid")
         return self.async_show_menu(step_id="init", menu_options=menu)
+
+    async def async_step_equalizer(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Link (or unlink) an Easee Equalizer and choose whether the cards show it."""
+        _chargers, equalizers = _easee_devices(self.hass)
+        current = self._current()
+        if user_input is not None:
+            eq = user_input.get(CONF_EQUALIZER_DEVICE) or NO_EQUALIZER
+            if eq != NO_EQUALIZER and eq != current.get(CONF_EQUALIZER_DEVICE):
+                device = dr.async_get(self.hass).async_get(eq)
+                enable_disabled_entities(self.hass, easee_product_id(device), REQUIRED_EQUALIZER_KEYS)
+            data = {**self.config_entry.options, CONF_EQUALIZER_DEVICE: eq,
+                    CONF_SHOW_EQUALIZER: user_input.get(CONF_SHOW_EQUALIZER, "auto")}
+            return self.async_create_entry(data=data)
+        chosen = current.get(CONF_EQUALIZER_DEVICE)
+        if chosen in (None, ""):
+            # nothing filled in yet: pop up the Equalizer the Easee integration knows
+            chosen = equalizers[0].id if equalizers else NO_EQUALIZER
+        options = [selector.SelectOptionDict(value=NO_EQUALIZER, label="—")] + [
+            selector.SelectOptionDict(value=d.id, label=_label(d)) for d in equalizers
+        ]
+        if chosen not in [o["value"] for o in options]:
+            chosen = NO_EQUALIZER
+        schema = {
+            vol.Required(CONF_EQUALIZER_DEVICE, default=chosen): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=options, mode=selector.SelectSelectorMode.DROPDOWN)
+            ),
+            vol.Required(CONF_SHOW_EQUALIZER, default=current.get(CONF_SHOW_EQUALIZER) or "auto"): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=SHOW_EQUALIZER_OPTIONS, translation_key="show_equalizer")
+            ),
+        }
+        return self.async_show_form(
+            step_id="equalizer",
+            data_schema=vol.Schema(schema),
+            description_placeholders={"found": ", ".join(_label(d) for d in equalizers) or "—"},
+        )
 
     async def async_step_dashboard(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Put the ready-made dashboard in the sidebar (or refresh it)."""

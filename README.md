@@ -63,6 +63,7 @@ Naast de complete kaart zijn er losse kaarten om je dashboard zelf in te delen (
 | `custom:easee-smart-plan-card` | Vertrektijd, laaddoel en prijsgrafiek |
 | `custom:easee-smart-grid-card` | Hoofdaansluiting of Equalizer |
 | `custom:easee-smart-costs-card` | Kosten, ERE, sessies en export |
+| `custom:easee-smart-equalizer-card` | Easee Equalizer: foto, online, afname/teruglevering, fasen, hoofdzekering en meterstanden |
 
 Elke kaart volgt je licht/donker thema (`theme: auto | light | dark`) en heeft een optionele `title`.
 
@@ -101,6 +102,7 @@ Acties: `easee_smart.export_report` (geeft de CSV terug als antwoord; er wordt n
 
 ### Goed om te weten
 
+- **Easee Equalizer.** Onder *Configureren → Equalizer* kies je je Equalizer (staat al klaar als de Easee-integratie er één kent) en of de kaarten hem tonen: *Automatisch* (zodra er een gekoppeld is), *Tonen* of *Verbergen*. De hoofdkaart laat hem dan zien onder je auto, en er is een losse Equalizer-kaart met alle gegevens.
 - Zet in de Easee-app de eigen *slim laden* van Easee uit als je deze integratie de planning laat doen, anders sturen twee systemen tegelijk.
 - Sommige auto's vallen in slaap tijdens een lange pauze. De integratie stuurt na drie minuten zonder stroom automatisch een *hervat*-commando.
 - Kosten worden gerekend vanaf het moment dat de integratie draait; eerdere sessies staan niet in de historie.
@@ -147,7 +149,7 @@ Tick *Enable the Easee sensors this integration needs* in step 4: a few Easee se
 The cards are loaded automatically; you do not have to change your dashboard or resources. Add them via *Add card → Easee Smart Charging*, or in YAML:
 
 ```yaml
-type: custom:easee-smart-card       # or easee-smart-charger-card, -modes-, -cars-, -plan-, -grid-, -costs-card
+type: custom:easee-smart-card       # or easee-smart-charger-card, -modes-, -cars-, -plan-, -grid-, -costs-, -equalizer-card
 entity: sensor.driveway_smart_status  # optional; without it the first charger is used
 theme: auto                          # auto | light | dark
 language: auto                       # auto | nl | en | de
@@ -164,6 +166,7 @@ Creating it again only refreshes the dashboard this integration made itself.
 
 ### Good to know
 
+- **Easee Equalizer.** Under *Configure → Equalizer* you pick your Equalizer (pre-selected when the Easee integration knows one) and whether the cards show it: *Automatic* (as soon as one is linked), *Show* or *Hide*. The main card then shows it under your car, and there is a separate Equalizer card (`easee-smart-equalizer-card`) with all its data.
 - **Monthly report.** The CSV is downloaded from the Costs card, or returned by the action `easee_smart.export_report`. Nothing is stored in `/config/www`, because that folder can be reached without logging in.
 - Turn off Easee's own *smart charging* in the Easee app when you let this integration plan, otherwise two systems control the charger at once.
 - Costs are counted from the moment the integration runs; earlier sessions are not in the history.
@@ -226,6 +229,7 @@ Erneut erstellen aktualisiert nur das Dashboard, das diese Integration selbst an
 
 ### Gut zu wissen
 
+- **Easee Equalizer.** Unter *Konfigurieren → Equalizer* wählst du deinen Equalizer (vorausgewählt, wenn die Easee-Integration einen kennt) und ob die Karten ihn zeigen: *Automatisch* (sobald einer verbunden ist), *Anzeigen* oder *Ausblenden*. Die Hauptkarte zeigt ihn dann unter deinem Auto, und es gibt eine eigene Equalizer-Karte (`easee-smart-equalizer-card`) mit allen Daten.
 - **Monatsbericht.** Die CSV lädst du über die Kosten-Karte herunter, oder du bekommst sie als Antwort der Aktion `easee_smart.export_report`. Nichts wird in `/config/www` gespeichert, denn dieser Ordner ist ohne Anmeldung erreichbar.
 - Schalte das eigene *Smart Charging* von Easee in der Easee-App aus, wenn diese Integration plant, sonst steuern zwei Systeme gleichzeitig.
 - Kosten werden ab dem Moment gezählt, in dem die Integration läuft.

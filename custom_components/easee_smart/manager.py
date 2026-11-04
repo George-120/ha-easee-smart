@@ -54,6 +54,7 @@ from .const import (
     CONF_NUDGE,
     CONF_PHASES,
     CONF_REIMBURSEMENT,
+    CONF_SHOW_EQUALIZER,
     CONF_SOLAR_BUFFER,
     CONF_SOLAR_START_DELAY,
     CONF_SOLAR_STOP_DELAY,
@@ -81,6 +82,7 @@ from .const import (
     MODE_SOLAR,
     MODE_SOLAR_SMART,
     MODES,
+    NO_EQUALIZER,
     PHASE_ENTITY_KEYS,
     SIGNAL_UPDATE,
     SMART_CHARGING_BOOST,
@@ -247,7 +249,9 @@ class EaseeSmartManager:
         self._last_car_refresh: datetime | None = None
         self._car_started_at: datetime | None = None
         self.charger_device_id: str = entry.data[CONF_CHARGER_DEVICE]
-        self.equalizer_device_id: str | None = entry.data.get(CONF_EQUALIZER_DEVICE)
+        # Options win over setup data, so an Equalizer can be added or removed later.
+        eq = {**entry.data, **entry.options}.get(CONF_EQUALIZER_DEVICE)
+        self.equalizer_device_id: str | None = None if eq in (None, "", NO_EQUALIZER) else eq
         devices = dr.async_get(hass)
         self.charger_device = devices.async_get(self.charger_device_id)
         self.equalizer_device = (
@@ -1057,6 +1061,28 @@ class EaseeSmartManager:
         }
 
     # ------------------------------------------------------------ card payload
+    @property
+    def show_equalizer(self) -> bool:
+        """Show the Equalizer in the cards: auto = when one is linked."""
+        choice = self._opt(CONF_SHOW_EQUALIZER) or "auto"
+        if choice == "hide":
+            return False
+        if choice == "show":
+            return True
+        return bool(self.equalizer_entities)
+
+    def _equalizer_info(self) -> dict[str, Any] | None:
+        if not self.equalizer_device:
+            return {"show": False} if not self.show_equalizer else {"show": True, "linked": False}
+        d = self.equalizer_device
+        return {
+            "show": self.show_equalizer,
+            "linked": True,
+            "name": getattr(d, "name_by_user", None) or getattr(d, "name", None) or "Equalizer",
+            "model": getattr(d, "model", None),
+            "sw_version": getattr(d, "sw_version", None),
+        }
+
     def _car_payload(self) -> dict[str, Any] | None:
         car = self.active_car()
         if car is None:
@@ -1110,6 +1136,7 @@ class EaseeSmartManager:
             "max_current": self.max_current,
             "sources": self.charger_entities,
             "equalizer": self.equalizer_entities,
+            "equalizer_info": self._equalizer_info(),
             "entities": self.own_entities,
             "entry_id": self.entry.entry_id,
             "price": snap.price,

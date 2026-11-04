@@ -107,11 +107,24 @@
         "title": "Easee Smart-instellingen",
         "menu_options": {
           "charger": "Laadpaal",
+          "equalizer": "Equalizer",
           "grid": "Hoofdaansluiting",
           "energy": "Prijzen en kosten",
           "cars": "Auto's",
           "advanced": "Geavanceerd",
           "dashboard": "Dashboard aanmaken"
+        }
+      },
+      "equalizer": {
+        "title": "Easee Equalizer",
+        "description": "Heb je een Easee Equalizer? Kies hem hier; als er nog niets is ingevuld, staat de Equalizer die de Easee-integratie kent al klaar. Gevonden: {found}.",
+        "data": {
+          "equalizer_device": "Equalizer",
+          "show_equalizer": "Tonen in de kaarten"
+        },
+        "data_description": {
+          "equalizer_device": "Kies — als je er geen hebt. Met een Equalizer gebruikt laden op zon zijn metingen in plaats van een meter.",
+          "show_equalizer": "Automatisch laat hem zien zodra er een Equalizer gekoppeld is."
         }
       },
       "dashboard": {
@@ -251,6 +264,13 @@
         "smart": "Slim (goedkoopste uren)",
         "solar": "Zonne-overschot",
         "solar_smart": "Zon + slim"
+      }
+    },
+    "show_equalizer": {
+      "options": {
+        "auto": "Automatisch",
+        "show": "Tonen",
+        "hide": "Verbergen"
       }
     },
     "language": {

@@ -254,11 +254,28 @@ def build(lang):
         "title": t(T("Easee Smart Charging settings","Easee Smart-instellingen","Easee Smart-Einstellungen")),
         "menu_options": {
          "charger": t(T("Charger","Laadpaal","Wallbox")),
+         "equalizer": t(T("Equalizer","Equalizer","Equalizer")),
          "grid": t(T("Main connection","Hoofdaansluiting","Hausanschluss")),
          "energy": t(T("Prices and costs","Prijzen en kosten","Preise und Kosten")),
          "cars": t(T("Cars","Auto's","Autos")),
          "advanced": t(T("Advanced","Geavanceerd","Erweitert")),
          "dashboard": t(T("Create dashboard","Dashboard aanmaken","Dashboard erstellen")),
+        },
+       },
+       "equalizer": {
+        "title": t(T("Easee Equalizer","Easee Equalizer","Easee Equalizer")),
+        "description": t(T("Do you have an Easee Equalizer? Pick it here; when nothing is filled in yet, the Equalizer the Easee integration knows is picked for you. Found: {found}.",
+                           "Heb je een Easee Equalizer? Kies hem hier; als er nog niets is ingevuld, staat de Equalizer die de Easee-integratie kent al klaar. Gevonden: {found}.",
+                           "Hast du einen Easee Equalizer? Wähle ihn hier; ist noch nichts ausgefüllt, ist der Equalizer der Easee-Integration schon vorausgewählt. Gefunden: {found}.")),
+        "data": {
+         "equalizer_device": t(T("Equalizer","Equalizer","Equalizer")),
+         "show_equalizer": t(T("Show in the cards","Tonen in de kaarten","In den Karten anzeigen")),
+        },
+        "data_description": {
+         "equalizer_device": t(T("Choose — if you don't have one. With an Equalizer, solar charging uses its measurements instead of a meter.",
+                                 "Kies — als je er geen hebt. Met een Equalizer gebruikt laden op zon zijn metingen in plaats van een meter.",
+                                 "Wähle —, wenn du keinen hast. Mit Equalizer nutzt Solarladen dessen Messwerte statt eines Zählers.")),
+         "show_equalizer": t(T("Automatic shows it as soon as an Equalizer is linked.","Automatisch laat hem zien zodra er een Equalizer gekoppeld is.","Automatisch zeigt ihn, sobald ein Equalizer verbunden ist.")),
         },
        },
        "dashboard": {
@@ -286,6 +303,7 @@ def build(lang):
      "selector": {
       "phases": {"options": {"1": t(T("1 phase","1 fase","1 Phase")), "3": t(T("3 phases","3 fasen","3 Phasen"))}},
       "charge_mode": {"options": {k: t(v) for k, v in MODES.items()}},
+      "show_equalizer": {"options": {"auto": t(T("Automatic","Automatisch","Automatisch")), "show": t(T("Show","Tonen","Anzeigen")), "hide": t(T("Hide","Verbergen","Ausblenden"))}},
       "language": {"options": {"auto": t(T("Automatic (Home Assistant)","Automatisch (Home Assistant)","Automatisch (Home Assistant)")), "nl": "Nederlands", "en": "English", "de": "Deutsch"}},
      },
      "entity": {

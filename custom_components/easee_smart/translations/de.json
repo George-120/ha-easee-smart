@@ -107,11 +107,24 @@
         "title": "Easee Smart-Einstellungen",
         "menu_options": {
           "charger": "Wallbox",
+          "equalizer": "Equalizer",
           "grid": "Hausanschluss",
           "energy": "Preise und Kosten",
           "cars": "Autos",
           "advanced": "Erweitert",
           "dashboard": "Dashboard erstellen"
+        }
+      },
+      "equalizer": {
+        "title": "Easee Equalizer",
+        "description": "Hast du einen Easee Equalizer? Wähle ihn hier; ist noch nichts ausgefüllt, ist der Equalizer der Easee-Integration schon vorausgewählt. Gefunden: {found}.",
+        "data": {
+          "equalizer_device": "Equalizer",
+          "show_equalizer": "In den Karten anzeigen"
+        },
+        "data_description": {
+          "equalizer_device": "Wähle —, wenn du keinen hast. Mit Equalizer nutzt Solarladen dessen Messwerte statt eines Zählers.",
+          "show_equalizer": "Automatisch zeigt ihn, sobald ein Equalizer verbunden ist."
         }
       },
       "dashboard": {
@@ -251,6 +264,13 @@
         "smart": "Smart (günstigste Stunden)",
         "solar": "Solarüberschuss",
         "solar_smart": "Solar + Smart"
+      }
+    },
+    "show_equalizer": {
+      "options": {
+        "auto": "Automatisch",
+        "show": "Anzeigen",
+        "hide": "Ausblenden"
       }
     },
     "language": {

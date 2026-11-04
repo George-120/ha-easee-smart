@@ -1,10 +1,11 @@
 /* Easee Smart Charging card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.6.0";
+  const VERSION = "1.7.0";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
     : "/easee_smart/charger.webp";
+  const EQ_IMG = CHARGER_IMG.replace(/charger\.webp(\?.*)?$/, "equalizer.webp");
 
   const I18N = {
     en: {
@@ -34,7 +35,7 @@
       headroom: "headroom", surplus: "Solar surplus", phase: "Phase", noGrid: "No Equalizer or main connection set. Add your meter under Configure → Main connection.",
       month: "This month", prev: "Previous months", reimb: "Reimbursement", sessions: "Recent sessions",
       export: "Export last month (CSV)", exported: "Report written", today: "Today", none: "No sessions yet.",
-      kwh: "kWh", avg: "avg.", amps: "Charge current", planned: "Planned charging", preview: "Preview: this is how Smart would plan it. Choose Smart (or Solar + smart) to use it.", solarStart: "starts from", solarNone: "No surplus right now", solarAvail: "Solar available", refresh: "Refresh car data", priceNow: "Power now", carsTitle: "Cars", noCars: "No cars linked yet. Add them under Configure → Cars.", pluggedIn: "Plugged in", notPlugged: "Not plugged in", ere: "ERE", year: "This year", total: "Total", range: "range",
+      kwh: "kWh", avg: "avg.", amps: "Charge current", planned: "Planned charging", preview: "Preview: this is how Smart would plan it. Choose Smart (or Solar + smart) to use it.", solarStart: "starts from", solarNone: "No surplus right now", solarAvail: "Solar available", eqTitle: "Equalizer", eqOnline: "Online", eqOffline: "Offline", eqLoad: "load", eqLoadT: "Load", eqLimit: "Max. continuous", eqFirmware: "Firmware", eqTemp: "Temperature", eqNone: "No Equalizer linked. Link it under Configure → Equalizer.", eqTotals: "Meter readings", eqPhases: "Phases", refresh: "Refresh car data", priceNow: "Power now", carsTitle: "Cars", noCars: "No cars linked yet. Add them under Configure → Cars.", pluggedIn: "Plugged in", notPlugged: "Not plugged in", ere: "ERE", year: "This year", total: "Total", range: "range",
     },
     nl: {
       tabs: { charge: "Laden", plan: "Planning", grid: "Equalizer", meter: "Aansluiting", history: "Historie" },
@@ -63,7 +64,7 @@
       headroom: "ruimte", surplus: "Zonne-overschot", phase: "Fase", noGrid: "Geen Equalizer of hoofdaansluiting ingesteld. Voeg je meter toe via Configureren → Hoofdaansluiting.",
       month: "Deze maand", prev: "Vorige maanden", reimb: "Vergoeding", sessions: "Recente sessies",
       export: "Vorige maand exporteren (CSV)", exported: "Rapport opgeslagen", today: "Vandaag", none: "Nog geen sessies.",
-      kwh: "kWh", avg: "gem.", amps: "Laadstroom", planned: "Gepland laden", preview: "Voorbeeld: zo plant Slim laden het. Kies Slim (of Zon + slim) om dit te gebruiken.", solarStart: "start vanaf", solarNone: "Nu geen overschot", solarAvail: "Zon beschikbaar", refresh: "Gegevens auto verversen", priceNow: "Stroom nu", carsTitle: "Auto's", noCars: "Nog geen auto's gekoppeld. Voeg ze toe via Configureren → Auto's.", pluggedIn: "Aangesloten", notPlugged: "Niet aangesloten", ere: "ERE", year: "Dit jaar", total: "Totaal", range: "actieradius",
+      kwh: "kWh", avg: "gem.", amps: "Laadstroom", planned: "Gepland laden", preview: "Voorbeeld: zo plant Slim laden het. Kies Slim (of Zon + slim) om dit te gebruiken.", solarStart: "start vanaf", solarNone: "Nu geen overschot", solarAvail: "Zon beschikbaar", eqTitle: "Equalizer", eqOnline: "Online", eqOffline: "Offline", eqLoad: "belast", eqLoadT: "Belasting", eqLimit: "Max. continu", eqFirmware: "Firmware", eqTemp: "Temperatuur", eqNone: "Geen Equalizer gekoppeld. Koppel hem via Configureren → Equalizer.", eqTotals: "Meterstanden", eqPhases: "Fasen", refresh: "Gegevens auto verversen", priceNow: "Stroom nu", carsTitle: "Auto's", noCars: "Nog geen auto's gekoppeld. Voeg ze toe via Configureren → Auto's.", pluggedIn: "Aangesloten", notPlugged: "Niet aangesloten", ere: "ERE", year: "Dit jaar", total: "Totaal", range: "actieradius",
     },
     de: {
       tabs: { charge: "Laden", plan: "Planung", grid: "Equalizer", meter: "Anschluss", history: "Verlauf" },
@@ -92,7 +93,7 @@
       headroom: "Reserve", surplus: "Solarüberschuss", phase: "Phase", noGrid: "Kein Equalizer oder Hausanschluss eingerichtet. Zähler unter Konfigurieren → Hausanschluss hinzufügen.",
       month: "Dieser Monat", prev: "Vormonate", reimb: "Erstattung", sessions: "Letzte Ladevorgänge",
       export: "Letzten Monat exportieren (CSV)", exported: "Bericht gespeichert", today: "Heute", none: "Noch keine Ladevorgänge.",
-      kwh: "kWh", avg: "Ø", amps: "Ladestrom", planned: "Geplantes Laden", preview: "Vorschau: so würde Smart planen. Wähle Smart (oder Solar + Smart), um es zu nutzen.", solarStart: "startet ab", solarNone: "Gerade kein Überschuss", solarAvail: "Solar verfügbar", refresh: "Autodaten aktualisieren", priceNow: "Strom jetzt", carsTitle: "Autos", noCars: "Noch keine Autos verbunden. Unter Konfigurieren → Autos hinzufügen.", pluggedIn: "Angeschlossen", notPlugged: "Nicht angeschlossen", ere: "ERE", year: "Dieses Jahr", total: "Gesamt", range: "Reichweite",
+      kwh: "kWh", avg: "Ø", amps: "Ladestrom", planned: "Geplantes Laden", preview: "Vorschau: so würde Smart planen. Wähle Smart (oder Solar + Smart), um es zu nutzen.", solarStart: "startet ab", solarNone: "Gerade kein Überschuss", solarAvail: "Solar verfügbar", eqTitle: "Equalizer", eqOnline: "Online", eqOffline: "Offline", eqLoad: "Last", eqLoadT: "Auslastung", eqLimit: "Max. Dauerstrom", eqFirmware: "Firmware", eqTemp: "Temperatur", eqNone: "Kein Equalizer verbunden. Unter Konfigurieren → Equalizer verbinden.", eqTotals: "Zählerstände", eqPhases: "Phasen", refresh: "Autodaten aktualisieren", priceNow: "Strom jetzt", carsTitle: "Autos", noCars: "Noch keine Autos verbunden. Unter Konfigurieren → Autos hinzufügen.", pluggedIn: "Angeschlossen", notPlugged: "Nicht angeschlossen", ere: "ERE", year: "Dieses Jahr", total: "Gesamt", range: "Reichweite",
     },
   };
 
@@ -284,6 +285,7 @@
             </div>
           </section>
           ${this._carRow(a, t)}
+          ${this._eqRow(a, t)}
 
           <div class="modes" role="radiogroup">
             ${["normal", "smart", "solar", "solar_smart"]
@@ -324,6 +326,7 @@
         case "plan": return this._section(title || t.tabs.plan) + this._tabPlan(a, t);
         case "grid": return this._section(title || (a.equalizer && Object.keys(a.equalizer).length ? t.tabs.grid : t.tabs.meter)) + this._tabGrid(a, t);
         case "costs": return this._section(title || t.tabs.history) + this._tabHistory(a, t);
+        case "equalizer": return this._section(title) + this._viewEqualizer(a, t);
         default: return "";
       }
     }
@@ -418,6 +421,84 @@
             <div class="socbar"><i style="width:${pct}%"></i><em style="left:${Math.min(100, target)}%"></em></div>
           </div>
           ${car.can_refresh ? `<button class="iconbtn" data-act="refresh" title="${t.refresh}" aria-label="${t.refresh}"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>` : ""}
+        </div>`;
+    }
+
+    _eqShown(a) {
+      return !!(a.equalizer_info && a.equalizer_info.show);
+    }
+
+    _eqOnline(a) {
+      const st = this._state((a.equalizer || {}).online);
+      return st ? st.state === "on" : null;
+    }
+
+    _eqRow(a, t) {
+      if (!this._eqShown(a)) return "";
+      const info = a.equalizer_info || {};
+      const grid = a.grid_power_kw;
+      const online = this._eqOnline(a);
+      const fuse = a.main_fuse;
+      const bars = (a.phase_currents || []).map((c) => {
+        const pct = fuse && c !== null && c !== undefined ? Math.min(100, (c / fuse) * 100) : 0;
+        return `<i class="${pct > 90 ? "hot" : pct > 70 ? "warm" : ""}" style="height:${Math.max(8, pct).toFixed(0)}%"></i>`;
+      }).join("");
+      const flow = grid === null || grid === undefined ? "–"
+        : `${grid < 0 ? t.exporting : t.importing} ${this._num(Math.abs(grid), 2)} kW`;
+      return `
+        <button class="eqrow" data-act="tab" data-tab="grid" title="${esc(info.name || t.eqTitle)}">
+          <img class="eqimg" src="${EQ_IMG}" alt="" loading="lazy">
+          <div class="eqinfo">
+            <div class="eqhead"><b>${esc(info.name || t.eqTitle)}</b>${online === null ? "" : `<span class="online ${online ? "on" : "off"}"></span>`}</div>
+            <span>${info.linked === false ? t.eqNone : `${flow}${a.phase_load_pct !== null && a.phase_load_pct !== undefined ? ` · ${this._num(a.phase_load_pct, 0)}% ${t.eqLoad}` : ""}`}</span>
+          </div>
+          ${bars ? `<div class="eqbars" aria-hidden="true">${bars}</div>` : ""}
+        </button>`;
+    }
+
+    _viewEqualizer(a, t) {
+      const info = a.equalizer_info || {};
+      const eq = a.equalizer || {};
+      if (!info.linked) return `<p class="note">${t.eqNone}</p>`;
+      const online = this._eqOnline(a);
+      const grid = a.grid_power_kw;
+      const exporting = grid !== null && grid !== undefined && grid < 0;
+      const fuse = a.main_fuse;
+      const phases = (a.phase_currents || []).map((c, i) => {
+        const pct = fuse && c !== null && c !== undefined ? Math.min(100, (c / fuse) * 100) : 0;
+        const warn = pct > 90 ? "hot" : pct > 70 ? "warm" : "";
+        return `<div class="phase">
+            <span>L${i + 1}</span>
+            <div class="track"><i class="${warn}" style="width:${pct.toFixed(0)}%"></i></div>
+            <b>${this._num(c, 1)} A</b>
+            <small>${this._num(a.phase_voltages && a.phase_voltages[i], 0)} V</small>
+          </div>`;
+      }).join("");
+      const imp = this._val(eq.import_energy), exp = this._val(eq.export_energy);
+      const limit = this._val(eq.max_continuous_limit);
+      const temp = this._val(eq.temp_max);
+      return `
+        <div class="eqhero">
+          <img src="${EQ_IMG}" alt="">
+          <div class="eqmeta">
+            <b>${esc(info.name || t.eqTitle)}</b>
+            <span>${esc(info.model || "Equalizer")}${info.sw_version ? ` · ${t.eqFirmware} ${esc(info.sw_version)}` : ""}</span>
+            ${online === null ? "" : `<span class="state ${online ? "ok" : "bad"}"><i class="dot"></i>${online ? t.eqOnline : t.eqOffline}</span>`}
+            <div class="eqkw ${exporting ? "out" : "in"}">${grid === null || grid === undefined ? "–" : this._num(Math.abs(grid), 2)}<small> kW</small></div>
+            <span class="eqdir">${grid === null || grid === undefined ? "" : exporting ? t.exporting : t.importing}</span>
+          </div>
+        </div>
+        <div class="grid3">
+          <div class="tile"><span>${t.surplus}</span><b>${this._num(Math.max(0, Number(a.surplus_kw) || 0), 2)} kW</b><small>${t.now}</small></div>
+          <div class="tile"><span>${t.fuse}</span><b>${this._num(fuse, 0)} A</b><small>${a.phase_headroom !== null && a.phase_headroom !== undefined ? `${this._num(a.phase_headroom, 1)} A ${t.headroom}` : "&nbsp;"}</small></div>
+          <div class="tile"><span>${t.eqLoadT}</span><b>${this._num(a.phase_load_pct, 0)}%</b><small>${t.eqPhases}</small></div>
+        </div>
+        ${(a.phase_currents || []).some((c) => c !== null && c !== undefined) ? `<div class="phases eqphases">${phases}</div>` : ""}
+        <div class="sectitle eqsub">${t.eqTotals}</div>
+        <div class="grid3">
+          <div class="tile"><span>${t.importing}</span><b>${this._num(imp, 0)}</b><small>${t.kwh}</small></div>
+          <div class="tile"><span>${t.exporting}</span><b>${this._num(exp, 0)}</b><small>${t.kwh}</small></div>
+          <div class="tile"><span>${limit !== null ? t.eqLimit : t.eqTemp}</span><b>${limit !== null ? this._num(limit, 0) + " A" : this._num(temp, 0) + " °C"}</b><small>${limit !== null && temp !== null ? `${this._num(temp, 0)} °C` : "Equalizer"}</small></div>
         </div>`;
     }
 
@@ -778,6 +859,31 @@
     .facts dt { font-size:.72rem; color:var(--muted); }
     .facts dd { margin:0; font-size:.98rem; font-variant-numeric:tabular-nums; }
 
+    .eqrow { width:100%; display:flex; align-items:center; gap:12px; background:var(--panel); border:0; border-radius:12px; padding:10px 12px; margin:0 0 12px; color:var(--text); font:inherit; text-align:left; cursor:pointer; }
+    .eqimg { width:40px; height:48px; object-fit:contain; flex:none; filter:drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
+    .eqinfo { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+    .eqinfo > span { font-size:.8rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .eqhead { display:flex; align-items:center; gap:8px; font-size:.86rem; }
+    .eqhead b { font-weight:600; }
+    .eqhead .online { position:static; }
+    .eqbars { display:flex; align-items:flex-end; gap:3px; height:28px; flex:none; }
+    .eqbars i { width:6px; border-radius:2px; background:var(--accent); display:block; }
+    .eqbars i.warm { background:#F5A623; } .eqbars i.hot { background:#FF5A5F; }
+    .eqhero { display:flex; align-items:center; gap:16px; margin-bottom:12px; }
+    .eqhero img { width:110px; height:132px; object-fit:contain; flex:none; filter:drop-shadow(0 6px 14px rgba(0,0,0,.45)); }
+    .eqmeta { display:flex; flex-direction:column; gap:4px; min-width:0; }
+    .eqmeta b { font-size:1.05rem; font-weight:600; }
+    .eqmeta > span { font-size:.8rem; color:var(--muted); }
+    .eqmeta .state { display:inline-flex; align-items:center; gap:6px; }
+    .eqmeta .state .dot { width:8px; height:8px; border-radius:50%; background:var(--muted); display:inline-block; }
+    .eqmeta .state.ok .dot { background:#3DDC84; } .eqmeta .state.bad .dot { background:#FF5A5F; }
+    .eqkw { font-size:2.4rem; font-weight:300; line-height:1; margin-top:6px; }
+    .eqkw small { font-size:1rem; color:var(--muted); }
+    .eqkw.out { color:#3DDC84; }
+    .eqdir { font-size:.8rem; color:var(--muted); }
+    .eqphases { margin:14px 0 6px; }
+    .sectitle.eqsub { margin-top:8px; }
+    ha-card.light .eqhero img, ha-card.light .eqimg { filter:drop-shadow(0 4px 10px rgba(20,24,30,.25)); }
     .car { display:flex; align-items:center; gap:12px; background:var(--panel); border-radius:12px; padding:10px 12px; margin:0 0 12px; }
     .carimg { width:64px; height:40px; object-fit:contain; flex:none; border-radius:6px; }
     .carimg.placeholder { display:flex; align-items:center; justify-content:center; color:var(--muted); }
@@ -926,6 +1032,7 @@
     ["plan", "Planning", "Departure time, target and price chart."],
     ["grid", "Aansluiting / Grid", "Grid power, phases and main fuse."],
     ["costs", "Kosten / Costs", "Costs, ERE, sessions and report."],
+    ["equalizer", "Equalizer", "Easee Equalizer: grid power, phases, fuse and meter readings."],
   ];
   // Some setups load a scoped custom-element registry polyfill *after* this script.
   // That polyfill forgets earlier definitions, so Lovelace reports "Custom element doesn't exist".
