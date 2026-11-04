@@ -19,7 +19,17 @@
         "data": {
           "model": "Wallbox-Modell",
           "phases": "Anschluss",
-          "max_current": "Maximaler Ladestrom"
+          "max_current": "Maximaler Ladestrom",
+          "phase_switching": "Automatische 1/3-Phasen-Umschaltung beim Solarladen",
+          "session_mode": "Lademodus bei neuer Ladesitzung",
+          "no_prices_action": "Wenn keine Preise verfügbar sind (Smart)"
+        },
+        "data_description": {
+          "phases": "Wie die Wallbox angeschlossen ist. Mit 3 Phasen kann sie auch einphasig laden.",
+          "max_current": "Pro Phase. Easee-Wallboxen laden ab 6 A: 1,4 kW einphasig, 4,1 kW dreiphasig.",
+          "phase_switching": "Bei wenig Sonne schaltet die Wallbox auf 1 Phase (ab 1,4 kW), bei genug Sonne zurück auf 3 Phasen (ab 4,1 kW). Normal, Smart und Boost laden immer dreiphasig.",
+          "session_mode": "Bei jedem Anstecken springt der Lademodus auf diese Einstellung. 'Letzten Modus behalten' ändert nichts.",
+          "no_prices_action": "Die Preise für morgen kommen gegen 13:00. Ohne Preise kann Smart sofort laden (das Auto bleibt nie leer) oder warten, bis Preise da sind."
         }
       },
       "grid": {
@@ -46,6 +56,7 @@
         "description": "Preise werden automatisch abgerufen. Trage den Aufschlag deines Vertrags ein, damit die Kosten stimmen.",
         "data": {
           "bidding_zone": "Preiszone (Day-Ahead / EPEX)",
+          "price_resolution": "Preis pro",
           "price_markup": "Aufschlag Lieferant",
           "energy_tax": "Energiesteuer (ohne MwSt.)",
           "vat_percent": "MwSt.",
@@ -55,6 +66,7 @@
         },
         "data_description": {
           "bidding_zone": "Day-Ahead-Börsenpreise (EPEX SPOT) werden automatisch je Viertelstunde für heute und morgen abgerufen. Kein Konto nötig.",
+          "price_resolution": "Viertelstunde ist am genauesten (Börsenpreise je 15 Minuten). Stunde nutzt den Mittelwert der vier Viertelstunden.",
           "price_markup": "Pro kWh, ohne MwSt., aus deinem dynamischen Vertrag.",
           "energy_tax": "Pro kWh, ohne MwSt. Preis = (Börse + Aufschlag + Steuer) × (1 + MwSt.).",
           "reimbursement_per_kwh": "Wird für den Monatsbericht des Heimladens genutzt.",
@@ -105,14 +117,15 @@
     "step": {
       "init": {
         "title": "Easee Smart-Einstellungen",
+        "description": "**Lademodi**\n- **Normal**: lädt sofort mit voller Leistung, egal zu welchem Preis.\n- **Smart**: lädt in den günstigsten Stunden, damit das Auto zur Abfahrt voll ist.\n- **Solar**: lädt nur mit Solarüberschuss (automatisch 1- oder 3-phasig), sonst wartet sie.\n- **Solar + Smart**: nutzt zuerst Solarüberschuss; was noch fehlt, wird in den günstigsten Stunden geladen.\n\nGeh die Abschnitte unten einmal durch; jeder erklärt seine Einstellungen.",
         "menu_options": {
-          "charger": "Wallbox",
-          "equalizer": "Equalizer",
-          "grid": "Hausanschluss",
-          "energy": "Preise und Kosten",
-          "cars": "Autos",
-          "advanced": "Erweitert",
-          "dashboard": "Dashboard erstellen"
+          "charger": "Wallbox: Phasen, Strom und Standardmodus",
+          "equalizer": "Easee Equalizer",
+          "grid": "Hausanschluss: Smart Meter fürs Solarladen",
+          "energy": "Preise, ERE und Kosten",
+          "cars": "Autos: hinzufügen, ändern oder entfernen",
+          "advanced": "Erweitert: Solar-Timing, Puffer, Sprache",
+          "dashboard": "Fertiges Dashboard erstellen"
         }
       },
       "equalizer": {
@@ -136,7 +149,17 @@
         "data": {
           "model": "Wallbox-Modell",
           "phases": "Anschluss",
-          "max_current": "Maximaler Ladestrom"
+          "max_current": "Maximaler Ladestrom",
+          "phase_switching": "Automatische 1/3-Phasen-Umschaltung beim Solarladen",
+          "session_mode": "Lademodus bei neuer Ladesitzung",
+          "no_prices_action": "Wenn keine Preise verfügbar sind (Smart)"
+        },
+        "data_description": {
+          "phases": "Wie die Wallbox angeschlossen ist. Mit 3 Phasen kann sie auch einphasig laden.",
+          "max_current": "Pro Phase. Easee-Wallboxen laden ab 6 A: 1,4 kW einphasig, 4,1 kW dreiphasig.",
+          "phase_switching": "Bei wenig Sonne schaltet die Wallbox auf 1 Phase (ab 1,4 kW), bei genug Sonne zurück auf 3 Phasen (ab 4,1 kW). Normal, Smart und Boost laden immer dreiphasig.",
+          "session_mode": "Bei jedem Anstecken springt der Lademodus auf diese Einstellung. 'Letzten Modus behalten' ändert nichts.",
+          "no_prices_action": "Die Preise für morgen kommen gegen 13:00. Ohne Preise kann Smart sofort laden (das Auto bleibt nie leer) oder warten, bis Preise da sind."
         }
       },
       "grid": {
@@ -163,6 +186,7 @@
         "description": "Preise werden automatisch abgerufen. Trage den Aufschlag deines Vertrags ein, damit die Kosten stimmen.",
         "data": {
           "bidding_zone": "Preiszone (Day-Ahead / EPEX)",
+          "price_resolution": "Preis pro",
           "price_markup": "Aufschlag Lieferant",
           "energy_tax": "Energiesteuer (ohne MwSt.)",
           "vat_percent": "MwSt.",
@@ -172,6 +196,7 @@
         },
         "data_description": {
           "bidding_zone": "Day-Ahead-Börsenpreise (EPEX SPOT) werden automatisch je Viertelstunde für heute und morgen abgerufen. Kein Konto nötig.",
+          "price_resolution": "Viertelstunde ist am genauesten (Börsenpreise je 15 Minuten). Stunde nutzt den Mittelwert der vier Viertelstunden.",
           "price_markup": "Pro kWh, ohne MwSt., aus deinem dynamischen Vertrag.",
           "energy_tax": "Pro kWh, ohne MwSt. Preis = (Börse + Aufschlag + Steuer) × (1 + MwSt.).",
           "reimbursement_per_kwh": "Wird für den Monatsbericht des Heimladens genutzt.",
@@ -264,6 +289,27 @@
         "smart": "Smart (günstigste Stunden)",
         "solar": "Solarüberschuss",
         "solar_smart": "Solar + Smart"
+      }
+    },
+    "session_mode": {
+      "options": {
+        "keep": "Letzten Modus behalten",
+        "normal": "Normal",
+        "smart": "Smart (günstigste Stunden)",
+        "solar": "Solarüberschuss",
+        "solar_smart": "Solar + Smart"
+      }
+    },
+    "no_prices_action": {
+      "options": {
+        "charge": "Sofort laden",
+        "wait": "Auf Preise warten"
+      }
+    },
+    "price_resolution": {
+      "options": {
+        "quarter": "Viertelstunde (15 Min.)",
+        "hour": "Stunde"
       }
     },
     "show_equalizer": {

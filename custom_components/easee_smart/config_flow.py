@@ -60,9 +60,13 @@ from .const import (
     CONF_MAX_CURRENT,
     CONF_MIN_CURRENT,
     CONF_MODEL,
+    CONF_NO_PRICES,
     CONF_NUDGE,
+    CONF_PHASE_SWITCHING,
     CONF_PHASES,
+    CONF_PRICE_RESOLUTION,
     CONF_REIMBURSEMENT,
+    CONF_SESSION_MODE,
     CONF_SHOW_EQUALIZER,
     CONF_SOLAR_BUFFER,
     CONF_SOLAR_START_DELAY,
@@ -81,10 +85,16 @@ from .const import (
     MAIN_FUSE_SIZES,
     MIN_CHARGE_CURRENT,
     MODEL_MAX_CURRENT,
+    MODES,
     NO_EQUALIZER,
+    NO_PRICES_CHARGE,
+    NO_PRICES_WAIT,
     PHASE_ENTITY_KEYS,
     REQUIRED_CHARGER_KEYS,
     REQUIRED_EQUALIZER_KEYS,
+    RESOLUTION_HOUR,
+    RESOLUTION_QUARTER,
+    SESSION_MODE_KEEP,
     SHOW_EQUALIZER_OPTIONS,
     SOLAR_START_DELAY_S,
     SOLAR_STOP_DELAY_S,
@@ -158,6 +168,9 @@ def _energy_schema(hass: HomeAssistant, defaults: dict[str, Any]) -> dict:
             selector.SelectSelectorConfig(options=BIDDING_ZONES, mode=selector.SelectSelectorMode.DROPDOWN)
         ),
     }
+    schema[vol.Optional(CONF_PRICE_RESOLUTION, default=defaults.get(CONF_PRICE_RESOLUTION) or RESOLUTION_QUARTER)] = selector.SelectSelector(
+        selector.SelectSelectorConfig(options=[RESOLUTION_QUARTER, RESOLUTION_HOUR], translation_key="price_resolution")
+    )
     schema.update(dict([money(CONF_MARKUP, 0.0), money(CONF_ENERGY_TAX, zd["energy_tax"])]))
     vat = defaults.get(CONF_VAT)
     schema[vol.Optional(CONF_VAT, default=vat if vat is not None else zd["vat"])] = selector.NumberSelector(
@@ -320,6 +333,14 @@ def _charger_schema(defaults: dict[str, Any]) -> dict:
                 min=6, max=32, step=1, unit_of_measurement="A",
                 mode=selector.NumberSelectorMode.SLIDER,
             )
+        ),
+        # Easee chargers switch between 1 and 3 phases: solar charging on 1 phase from 6 A (≈1.4 kW)
+        vol.Optional(CONF_PHASE_SWITCHING, default=defaults.get(CONF_PHASE_SWITCHING, True)): selector.BooleanSelector(),
+        vol.Optional(CONF_SESSION_MODE, default=defaults.get(CONF_SESSION_MODE) or SESSION_MODE_KEEP): selector.SelectSelector(
+            selector.SelectSelectorConfig(options=[SESSION_MODE_KEEP, *MODES], translation_key="session_mode", mode=selector.SelectSelectorMode.DROPDOWN)
+        ),
+        vol.Optional(CONF_NO_PRICES, default=defaults.get(CONF_NO_PRICES) or NO_PRICES_CHARGE): selector.SelectSelector(
+            selector.SelectSelectorConfig(options=[NO_PRICES_CHARGE, NO_PRICES_WAIT], translation_key="no_prices_action")
         ),
     }
 

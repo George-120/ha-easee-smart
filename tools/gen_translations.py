@@ -88,6 +88,7 @@ def build(lang):
     t = lambda x: x[lang]
     cfg_fields_energy = {
      "bidding_zone": T("Price zone (day-ahead / APX)","Prijszone (day-ahead / APX)","Preiszone (Day-Ahead / EPEX)"),
+     "price_resolution": T("Price per","Prijs per","Preis pro"),
      "price_markup": T("Supplier markup","Opslag leverancier","Aufschlag Lieferant"),
      "energy_tax": T("Energy tax (excl. VAT)","Energiebelasting (excl. btw)","Energiesteuer (ohne MwSt.)"),
      "vat_percent": T("VAT","Btw","MwSt."),
@@ -99,6 +100,9 @@ def build(lang):
      "bidding_zone": T("Day-ahead market prices (EPEX SPOT, formerly APX) are fetched automatically for this zone, per quarter hour, for today and tomorrow. No account needed.",
                        "De day-ahead beursprijzen (EPEX SPOT, voorheen APX) worden automatisch per kwartier opgehaald voor vandaag en morgen. Geen account nodig.",
                        "Day-Ahead-Börsenpreise (EPEX SPOT) werden automatisch je Viertelstunde für heute und morgen abgerufen. Kein Konto nötig."),
+     "price_resolution": T("Quarter hour is the most precise (market prices are per 15 minutes). Hour uses the average of the four quarters, like most hourly contracts.",
+                           "Kwartier is het nauwkeurigst (de beurs rekent per 15 minuten). Uur neemt het gemiddelde van de vier kwartieren, zoals bij de meeste uurcontracten.",
+                           "Viertelstunde ist am genauesten (Börsenpreise je 15 Minuten). Stunde nutzt den Mittelwert der vier Viertelstunden."),
      "price_markup": T("Per kWh, excl. VAT, from your dynamic contract.","Per kWh, excl. btw, uit je dynamische contract.","Pro kWh, ohne MwSt., aus deinem dynamischen Vertrag."),
      "energy_tax": T("Per kWh, excl. VAT. The consumer price is (market + markup + tax) × (1 + VAT).",
                      "Per kWh, excl. btw. De prijs wordt (beurs + opslag + belasting) × (1 + btw).",
@@ -110,6 +114,22 @@ def build(lang):
      "model": T("Charger model","Laadpaalmodel","Wallbox-Modell"),
      "phases": T("Connection","Aansluiting","Anschluss"),
      "max_current": T("Maximum charge current","Maximale laadstroom","Maximaler Ladestrom"),
+     "phase_switching": T("Automatic 1/3-phase switching for solar charging","Automatisch wisselen tussen 1 en 3 fasen bij zonneladen","Automatische 1/3-Phasen-Umschaltung beim Solarladen"),
+     "session_mode": T("Charge mode for a new session","Laadmodus bij een nieuwe sessie","Lademodus bei neuer Ladesitzung"),
+     "no_prices_action": T("When no prices are available (Smart)","Als er geen prijzen zijn (Slim)","Wenn keine Preise verfügbar sind (Smart)"),
+    }
+    cfg_desc_charger = {
+     "phases": T("How your charger is connected. With 3 phases the charger can still charge on 1 phase.","Hoe je laadpaal is aangesloten. Bij 3 fasen kan de laadpaal ook op 1 fase laden.","Wie die Wallbox angeschlossen ist. Mit 3 Phasen kann sie auch einphasig laden."),
+     "max_current": T("Per phase. Easee chargers charge from 6 A: 1.4 kW on 1 phase, 4.1 kW on 3 phases.","Per fase. Easee-laadpalen laden vanaf 6 A: 1,4 kW op 1 fase, 4,1 kW op 3 fasen.","Pro Phase. Easee-Wallboxen laden ab 6 A: 1,4 kW einphasig, 4,1 kW dreiphasig."),
+     "phase_switching": T("With little sun the charger switches to 1 phase (from 1.4 kW); with enough sun back to 3 phases (from 4.1 kW). Normal, Smart and Boost always use 3 phases.",
+                          "Bij weinig zon schakelt de laadpaal naar 1 fase (vanaf 1,4 kW), bij genoeg zon terug naar 3 fasen (vanaf 4,1 kW). Normaal, Slim en Boost laden altijd op 3 fasen.",
+                          "Bei wenig Sonne schaltet die Wallbox auf 1 Phase (ab 1,4 kW), bei genug Sonne zurück auf 3 Phasen (ab 4,1 kW). Normal, Smart und Boost laden immer dreiphasig."),
+     "session_mode": T("Each time a car is plugged in, the charge mode switches to this. 'Keep last mode' changes nothing.",
+                       "Elke keer dat er een auto wordt aangesloten, springt de laadmodus naar deze stand. 'Laatste stand houden' verandert niets.",
+                       "Bei jedem Anstecken springt der Lademodus auf diese Einstellung. 'Letzten Modus behalten' ändert nichts."),
+     "no_prices_action": T("Prices for tomorrow come around 13:00. Without prices Smart can charge right away (the car is never left empty) or wait until prices arrive.",
+                           "De prijzen voor morgen komen rond 13:00. Zonder prijzen kan Slim meteen laden (je auto staat nooit leeg) of wachten tot de prijzen er zijn.",
+                           "Die Preise für morgen kommen gegen 13:00. Ohne Preise kann Smart sofort laden (das Auto bleibt nie leer) oder warten, bis Preise da sind."),
     }
     grid_fields = {
      "grid_import_entity": T("Grid import power (from grid)","Afname van het net (vermogen)","Netzbezug (Leistung)"),
@@ -145,6 +165,7 @@ def build(lang):
     charger_opts = {
      "title": t(T("Charger","Laadpaal","Wallbox")),
      "data": {k: t(v) for k, v in cfg_fields_charger.items()},
+     "data_description": {k: t(v) for k, v in cfg_desc_charger.items()},
     }
     car_detail_fields = {
      "name": T("Name","Naam","Name"),
@@ -234,6 +255,7 @@ def build(lang):
         "title": t(T("{name}","{name}","{name}")),
         "description": t(T("Detected model: **{detected}**. Check the settings below.","Herkend model: **{detected}**. Controleer de instellingen hieronder.","Erkanntes Modell: **{detected}**. Prüfe die Einstellungen.")),
         "data": {k: t(v) for k, v in cfg_fields_charger.items()},
+        "data_description": {k: t(v) for k, v in cfg_desc_charger.items()},
        },
        "grid": grid_step,
        "energy": energy_step,
@@ -252,14 +274,18 @@ def build(lang):
       "step": {
        "init": {
         "title": t(T("Easee Smart Charging settings","Easee Smart-instellingen","Easee Smart-Einstellungen")),
+        "description": t(T(
+            "**Charge modes**\n- **Normal**: charges right away at full power, whatever the price.\n- **Smart**: charges in the cheapest hours so the car is ready at your departure time.\n- **Solar**: charges only on solar surplus (1 or 3 phases automatically), otherwise waits.\n- **Solar + smart**: uses solar surplus first; what is still needed is charged in the cheapest hours, so the car is ready on time.\n\nWork through the sections below once; each one explains its settings.",
+            "**Laadmodi**\n- **Normaal**: laadt meteen op vol vermogen, wat de prijs ook is.\n- **Slim**: laadt in de goedkoopste uren, zodat de auto op je vertrektijd vol is.\n- **Zon**: laadt alleen met zonne-overschot (automatisch op 1 of 3 fasen), anders wacht hij.\n- **Zon + slim**: gebruikt eerst zonne-overschot; wat dan nog nodig is, laadt hij in de goedkoopste uren, zodat de auto op tijd vol is.\n\nLoop de onderdelen hieronder één keer door; bij elk onderdeel staat uitgelegd wat het doet.",
+            "**Lademodi**\n- **Normal**: lädt sofort mit voller Leistung, egal zu welchem Preis.\n- **Smart**: lädt in den günstigsten Stunden, damit das Auto zur Abfahrt voll ist.\n- **Solar**: lädt nur mit Solarüberschuss (automatisch 1- oder 3-phasig), sonst wartet sie.\n- **Solar + Smart**: nutzt zuerst Solarüberschuss; was noch fehlt, wird in den günstigsten Stunden geladen.\n\nGeh die Abschnitte unten einmal durch; jeder erklärt seine Einstellungen.")),
         "menu_options": {
-         "charger": t(T("Charger","Laadpaal","Wallbox")),
-         "equalizer": t(T("Equalizer","Equalizer","Equalizer")),
-         "grid": t(T("Main connection","Hoofdaansluiting","Hausanschluss")),
-         "energy": t(T("Prices and costs","Prijzen en kosten","Preise und Kosten")),
-         "cars": t(T("Cars","Auto's","Autos")),
-         "advanced": t(T("Advanced","Geavanceerd","Erweitert")),
-         "dashboard": t(T("Create dashboard","Dashboard aanmaken","Dashboard erstellen")),
+         "charger": t(T("Charger: phases, current and default mode","Laadpaal: fasen, stroom en standaardmodus","Wallbox: Phasen, Strom und Standardmodus")),
+         "equalizer": t(T("Easee Equalizer","Easee Equalizer","Easee Equalizer")),
+         "grid": t(T("Main connection: smart meter for solar charging","Hoofdaansluiting: slimme meter voor zonneladen","Hausanschluss: Smart Meter fürs Solarladen")),
+         "energy": t(T("Prices, ERE and costs","Prijzen, ERE en kosten","Preise, ERE und Kosten")),
+         "cars": t(T("Cars: add, change or remove","Auto's: toevoegen, wijzigen of verwijderen","Autos: hinzufügen, ändern oder entfernen")),
+         "advanced": t(T("Advanced: solar timing, buffer, language","Geavanceerd: zon-timing, buffer, taal","Erweitert: Solar-Timing, Puffer, Sprache")),
+         "dashboard": t(T("Create the ready-made dashboard","Kant-en-klaar dashboard aanmaken","Fertiges Dashboard erstellen")),
         },
        },
        "equalizer": {
@@ -303,6 +329,9 @@ def build(lang):
      "selector": {
       "phases": {"options": {"1": t(T("1 phase","1 fase","1 Phase")), "3": t(T("3 phases","3 fasen","3 Phasen"))}},
       "charge_mode": {"options": {k: t(v) for k, v in MODES.items()}},
+      "session_mode": {"options": {"keep": t(T("Keep last mode","Laatste stand houden","Letzten Modus behalten")), **{k: t(v) for k, v in MODES.items()}}},
+      "no_prices_action": {"options": {"charge": t(T("Charge right away","Meteen laden","Sofort laden")), "wait": t(T("Wait for prices","Wachten op prijzen","Auf Preise warten"))}},
+      "price_resolution": {"options": {"quarter": t(T("Quarter hour (15 min)","Kwartier (15 min)","Viertelstunde (15 Min.)")), "hour": t(T("Hour","Uur","Stunde"))}},
       "show_equalizer": {"options": {"auto": t(T("Automatic","Automatisch","Automatisch")), "show": t(T("Show","Tonen","Anzeigen")), "hide": t(T("Hide","Verbergen","Ausblenden"))}},
       "language": {"options": {"auto": t(T("Automatic (Home Assistant)","Automatisch (Home Assistant)","Automatisch (Home Assistant)")), "nl": "Nederlands", "en": "English", "de": "Deutsch"}},
      },

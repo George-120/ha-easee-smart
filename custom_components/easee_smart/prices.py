@@ -89,6 +89,20 @@ def to_slots(points: list[tuple[datetime, float]], markup: float, energy_tax: fl
     return slots
 
 
+def to_hourly(slots: list[PriceSlot]) -> list[PriceSlot]:
+    """Average quarter-hour slots into whole hours (time-weighted)."""
+    hours: dict[datetime, list[PriceSlot]] = {}
+    for slot in slots:
+        key = slot.start.replace(minute=0, second=0, microsecond=0)
+        hours.setdefault(key, []).append(slot)
+    out = []
+    for start in sorted(hours):
+        group = hours[start]
+        total = sum(s.hours for s in group) or 1
+        out.append(PriceSlot(start, start + timedelta(hours=1), round(sum(s.price * s.hours for s in group) / total, 5)))
+    return out
+
+
 class DayAheadPrices:
     """Fetches and caches day-ahead prices for one bidding zone."""
 

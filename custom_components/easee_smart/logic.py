@@ -314,3 +314,49 @@ class SolarRegulator:
 
 def month_key(day: date) -> str:
     return f"{day.year:04d}-{day.month:02d}"
+
+
+@dataclass
+class PhaseSwitcher:
+    """Choose 1 or 3 phases for solar charging.
+
+    1 phase needs 6 A x 230 V ≈ 1.4 kW, 3 phases need 6 A x 3 x 230 V ≈ 4.1 kW. With less
+    surplus than the 3-phase minimum we charge on 1 phase; with enough for 3 phases (plus a
+    small margin) we go back to 3. A change has to hold for `confirm_s` and switches are at
+    least `min_interval_s` apart, to spare the charger's relays and the car.
+    """
+
+    min_current: int = 6
+    confirm_s: float = 300
+    min_interval_s: float = 900
+    margin_kw: float = 0.3
+    phases: int = 3
+    _since: datetime | None = None
+    _last_switch: datetime | None = None
+
+    def reset(self, phases: int = 3) -> None:
+        self.phases = phases
+        self._since = None
+
+    def thresholds(self, voltage: float) -> tuple[float, float]:
+        """(1-phase minimum, 3-phase minimum) in kW."""
+        return power_for_amps(self.min_current, 1, voltage), power_for_amps(self.min_current, 3, voltage)
+
+    def update(self, now: datetime, available_kw: float, voltage: float) -> int:
+        """available_kw: surplus incl. what the charger uses now. Returns the phases to use."""
+        _p1, p3 = self.thresholds(voltage)
+        if self.phases == 3:
+            target = 1 if available_kw < p3 else 3
+        else:
+            target = 3 if available_kw >= p3 + self.margin_kw else 1
+        if target == self.phases:
+            self._since = None
+            return self.phases
+        if self._last_switch and (now - self._last_switch).total_seconds() < self.min_interval_s:
+            return self.phases
+        self._since = self._since or now
+        if (now - self._since).total_seconds() >= self.confirm_s:
+            self.phases = target
+            self._since = None
+            self._last_switch = now
+        return self.phases

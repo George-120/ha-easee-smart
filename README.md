@@ -102,6 +102,9 @@ Acties: `easee_smart.export_report` (geeft de CSV terug als antwoord; er wordt n
 
 ### Goed om te weten
 
+- **Laadmodi.** *Normaal* laadt meteen op vol vermogen. *Slim* laadt in de goedkoopste uren, zodat de auto op je vertrektijd vol is. *Zon* laadt alleen met zonne-overschot. *Zon + slim* gebruikt eerst zonne-overschot en laadt wat dan nog nodig is in de goedkoopste uren. De kaarten laten altijd zien in welke stand hij staat, op hoeveel fasen, en kleuren de prijsgrafiek per modus.
+- **1 of 3 fasen.** Easee-laadpalen laden vanaf 6 A: 1,4 kW op 1 fase, 4,1 kW op 3 fasen. Bij zonneladen wisselt de integratie automatisch: weinig zon → 1 fase, genoeg zon → terug naar 3 fasen (met wachttijd, om de laadpaal te sparen). Uit te zetten onder *Configureren → Laadpaal*.
+- **Modus bij een nieuwe sessie** en **gedrag zonder prijzen** stel je in onder *Configureren → Laadpaal*. **Kwartier- of uurprijzen** (standaard kwartier) onder *Prijzen, ERE en kosten*.
 - **Easee Equalizer.** Onder *Configureren → Equalizer* kies je je Equalizer (staat al klaar als de Easee-integratie er één kent) en of de kaarten hem tonen: *Automatisch* (zodra er een gekoppeld is), *Tonen* of *Verbergen*. De hoofdkaart laat hem dan zien onder je auto, en er is een losse Equalizer-kaart met alle gegevens.
 - Zet in de Easee-app de eigen *slim laden* van Easee uit als je deze integratie de planning laat doen, anders sturen twee systemen tegelijk.
 - Sommige auto's vallen in slaap tijdens een lange pauze. De integratie stuurt na drie minuten zonder stroom automatisch een *hervat*-commando.
@@ -166,6 +169,9 @@ Creating it again only refreshes the dashboard this integration made itself.
 
 ### Good to know
 
+- **Charge modes.** *Normal* charges right away at full power. *Smart* charges in the cheapest hours so the car is ready at your departure time. *Solar* charges only on solar surplus. *Solar + smart* uses solar surplus first and charges what is still needed in the cheapest hours. The cards always show the active mode and number of phases, and colour the price chart per mode.
+- **1 or 3 phases.** Easee chargers charge from 6 A: 1.4 kW on 1 phase, 4.1 kW on 3 phases. For solar charging the integration switches automatically: little sun → 1 phase, enough sun → back to 3 phases (with a delay to spare the charger). Can be turned off under *Configure → Charger*.
+- **Mode for a new session** and **what to do without prices** are under *Configure → Charger*. **Quarter-hour or hourly prices** (default quarter hour) under *Prices, ERE and costs*.
 - **Easee Equalizer.** Under *Configure → Equalizer* you pick your Equalizer (pre-selected when the Easee integration knows one) and whether the cards show it: *Automatic* (as soon as one is linked), *Show* or *Hide*. The main card then shows it under your car, and there is a separate Equalizer card (`easee-smart-equalizer-card`) with all its data.
 - **Monthly report.** The CSV is downloaded from the Costs card, or returned by the action `easee_smart.export_report`. Nothing is stored in `/config/www`, because that folder can be reached without logging in.
 - Turn off Easee's own *smart charging* in the Easee app when you let this integration plan, otherwise two systems control the charger at once.
@@ -229,6 +235,9 @@ Erneut erstellen aktualisiert nur das Dashboard, das diese Integration selbst an
 
 ### Gut zu wissen
 
+- **Lademodi.** *Normal* lädt sofort mit voller Leistung. *Smart* lädt in den günstigsten Stunden, damit das Auto zur Abfahrt voll ist. *Solar* lädt nur mit Solarüberschuss. *Solar + Smart* nutzt zuerst Solarüberschuss und lädt den Rest in den günstigsten Stunden. Die Karten zeigen immer den aktiven Modus und die Phasenzahl und färben die Preisgrafik je Modus.
+- **1 oder 3 Phasen.** Easee-Wallboxen laden ab 6 A: 1,4 kW einphasig, 4,1 kW dreiphasig. Beim Solarladen schaltet die Integration automatisch um: wenig Sonne → 1 Phase, genug Sonne → zurück auf 3 Phasen (mit Verzögerung, um die Wallbox zu schonen). Abschaltbar unter *Konfigurieren → Wallbox*.
+- **Modus bei neuer Ladesitzung** und **Verhalten ohne Preise** unter *Konfigurieren → Wallbox*. **Viertelstunden- oder Stundenpreise** (Standard Viertelstunde) unter *Preise, ERE und Kosten*.
 - **Easee Equalizer.** Unter *Konfigurieren → Equalizer* wählst du deinen Equalizer (vorausgewählt, wenn die Easee-Integration einen kennt) und ob die Karten ihn zeigen: *Automatisch* (sobald einer verbunden ist), *Anzeigen* oder *Ausblenden*. Die Hauptkarte zeigt ihn dann unter deinem Auto, und es gibt eine eigene Equalizer-Karte (`easee-smart-equalizer-card`) mit allen Daten.
 - **Monatsbericht.** Die CSV lädst du über die Kosten-Karte herunter, oder du bekommst sie als Antwort der Aktion `easee_smart.export_report`. Nichts wird in `/config/www` gespeichert, denn dieser Ordner ist ohne Anmeldung erreichbar.
 - Schalte das eigene *Smart Charging* von Easee in der Easee-App aus, wenn diese Integration plant, sonst steuern zwei Systeme gleichzeitig.

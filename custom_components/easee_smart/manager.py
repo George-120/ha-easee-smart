@@ -51,9 +51,13 @@ from .const import (
     CONF_MAX_CURRENT,
     CONF_MIN_CURRENT,
     CONF_MODEL,
+    CONF_NO_PRICES,
     CONF_NUDGE,
+    CONF_PHASE_SWITCHING,
     CONF_PHASES,
+    CONF_PRICE_RESOLUTION,
     CONF_REIMBURSEMENT,
+    CONF_SESSION_MODE,
     CONF_SHOW_EQUALIZER,
     CONF_SOLAR_BUFFER,
     CONF_SOLAR_START_DELAY,
@@ -83,7 +87,14 @@ from .const import (
     MODE_SOLAR_SMART,
     MODES,
     NO_EQUALIZER,
+    NO_PRICES_WAIT,
     PHASE_ENTITY_KEYS,
+    PHASE_MODE_1,
+    PHASE_MODE_3,
+    PHASE_MODE_AUTO,
+    PHASE_RESTART_DELAY_S,
+    RESOLUTION_HOUR,
+    SESSION_MODE_KEEP,
     SIGNAL_UPDATE,
     SMART_CHARGING_BOOST,
     SMART_CHARGING_CHEAP,
@@ -104,6 +115,7 @@ from .const import (
 )
 from .logic import (
     ChargePlan,
+    PhaseSwitcher,
     PriceSlot,
     SolarRegulator,
     month_key,
@@ -112,7 +124,7 @@ from .logic import (
     power_for_amps,
     price_at,
 )
-from .prices import DayAheadPrices, default_zone, to_slots, zone_defaults
+from .prices import DayAheadPrices, default_zone, to_hourly, to_slots, zone_defaults
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -239,6 +251,9 @@ class EaseeSmartManager:
             start_delay=SOLAR_START_DELAY_S,
             stop_delay=SOLAR_STOP_DELAY_S,
         )
+        self.phase_switch = PhaseSwitcher()
+        self.active_phases: int | None = None  # what we set on the charger (None = untouched)
+        self._phase_original: str | None = None  # the charger's own phase mode before we changed it
         self._unsubs: list[CALLBACK_TYPE] = []
         self._controlling = False
         self._last_sent: int | None = None
@@ -309,7 +324,10 @@ class EaseeSmartManager:
         )
 
     def _rebuild_prices(self) -> None:
-        self.snapshot.prices = to_slots(self.day_ahead.points, *self._price_parts())
+        slots = to_slots(self.day_ahead.points, *self._price_parts())
+        if self._opt(CONF_PRICE_RESOLUTION) == RESOLUTION_HOUR:
+            slots = to_hourly(slots)
+        self.snapshot.prices = slots
 
     @property
     def grid_entity(self) -> str | None:
@@ -442,6 +460,10 @@ class EaseeSmartManager:
         self.days = data.get("days", {})
         self.totals = data.get("totals", {"energy": 0.0, "cost": 0.0})
         self.last_lifetime = data.get("last_lifetime")
+        self._phase_original = data.get("phase_original")
+        self.active_phases = data.get("active_phases")
+        if self.active_phases in (1, 3):
+            self.phase_switch.reset(self.active_phases)
         self._resolve()
 
     def _resolve(self) -> None:
@@ -497,6 +519,8 @@ class EaseeSmartManager:
             "days": self.days,
             "totals": self.totals,
             "last_lifetime": self.last_lifetime,
+            "phase_original": self._phase_original,
+            "active_phases": self.active_phases,
         }
 
     def _save(self) -> None:
@@ -706,6 +730,11 @@ class EaseeSmartManager:
     def _start_session(self) -> None:
         self.session = SessionTracker(start=dt_util.now().isoformat())
         self.solar.reset()
+        # "Mode for a new session": the user picks it in the options (keep = leave as is).
+        chosen = self._opt(CONF_SESSION_MODE) or SESSION_MODE_KEEP
+        if chosen in MODES and chosen != self.settings.mode:
+            self.settings.mode = chosen
+            self._last_change_at = None
         self._save()
 
     def _end_session(self) -> None:
@@ -792,6 +821,7 @@ class EaseeSmartManager:
             snap.target_current = None
             if self._controlling:
                 await self._async_restore_normal()
+            await self._async_restore_phases()
             return
 
         if snap.status == "unknown" or not snap.connected:
@@ -799,6 +829,7 @@ class EaseeSmartManager:
             snap.plan = None
             snap.target_current = None
             self.solar.reset()
+            await self._async_restore_phases()
             return
 
         # "completed" while we hold the charger at 0 A is our own pause, not a full battery.
@@ -809,11 +840,12 @@ class EaseeSmartManager:
             return
 
         want = 0
+        want_smart = 0
+        solar_phases = self.phases
         state = SMART_IDLE
         if self.settings.boost:
             want, state = self.max_current, SMART_CHARGING_BOOST
         else:
-            want_smart = 0
             want_solar = 0
             needed = snap.energy_needed or 0.0
             if mode in (MODE_SMART, MODE_SOLAR_SMART):
@@ -821,7 +853,11 @@ class EaseeSmartManager:
                     snap.plan = None
                     state = SMART_TARGET_REACHED
                 elif not snap.prices:
-                    want_smart, state = self.max_current, SMART_NO_PRICES
+                    # No day-ahead prices: charge now (default, the car is never left empty) or wait.
+                    if self._opt(CONF_NO_PRICES) == NO_PRICES_WAIT:
+                        state = SMART_NO_PRICES
+                    else:
+                        want_smart, state = self.max_current, SMART_NO_PRICES
                 else:
                     departure = next_departure(now, _parse_time(self.settings.departure))
                     plan = plan_cheapest(
@@ -840,8 +876,11 @@ class EaseeSmartManager:
                         state = SMART_WAITING_CHEAP
             if mode in (MODE_SOLAR, MODE_SOLAR_SMART):
                 if snap.surplus_kw is not None:
+                    if self.phase_switching:
+                        available = snap.surplus_kw - self.solar_buffer_kw + max(snap.power_kw or 0.0, 0.0)
+                        solar_phases = self.phase_switch.update(now, available, self.voltage)
                     want_solar = self.solar.update(
-                        now, snap.surplus_kw - self.solar_buffer_kw, snap.power_kw or 0.0, self.phases, self.voltage
+                        now, snap.surplus_kw - self.solar_buffer_kw, snap.power_kw or 0.0, solar_phases, self.voltage
                     )
                 if mode == MODE_SOLAR:
                     state = SMART_CHARGING_SOLAR if want_solar > 0 else SMART_WAITING_SOLAR
@@ -849,10 +888,94 @@ class EaseeSmartManager:
                     state = SMART_CHARGING_SOLAR
             want = max(want_smart, want_solar)
 
+        # Solar on little sun → 1 phase; anything that needs full power (boost, cheap hours) → 3.
+        solar_only = mode in (MODE_SOLAR, MODE_SOLAR_SMART) and not self.settings.boost and want_smart == 0
+        await self._async_ensure_phases(solar_phases if solar_only else 3)
+
         snap.smart_state = state
         snap.target_current = want
         await self._async_apply(want, now)
         async_dispatcher_send(self.hass, SIGNAL_UPDATE.format(self.entry.entry_id))
+
+    # ------------------------------------------------------------ phase switching
+    @property
+    def phase_switching(self) -> bool:
+        """Automatic 1/3-phase switching for solar charging (3-phase installs, on by default)."""
+        return (
+            self.phases == 3
+            and bool(self._opt(CONF_PHASE_SWITCHING, True))
+            and self._phase_mode_from_charger() != PHASE_MODE_1
+            and self.hass.services.has_service(EASEE_DOMAIN, "set_charger_phase_mode")
+        )
+
+    def _phase_mode_from_charger(self) -> str | None:
+        """The charger's own phase setting, read from the Easee integration."""
+        if self._phase_original:
+            return self._phase_original
+        state = self._state(self.charger_entities.get("phase_mode"))
+        if state is None:
+            return None
+        text = str(state.state).lower()
+        if "auto" in text or text == "2":
+            return PHASE_MODE_AUTO
+        if "single" in text or "1" in text or "one" in text:
+            return PHASE_MODE_1
+        if "three" in text or "3" in text:
+            return PHASE_MODE_3
+        return None
+
+    @property
+    def shown_phases(self) -> int:
+        """Phases the charger uses now as far as we know (for the cards)."""
+        return self.active_phases or self.phases
+
+    async def _async_ensure_phases(self, target: int) -> None:
+        if not self.phase_switching:
+            return
+        if self.active_phases is None and target == 3:
+            return  # never touched the charger: nothing to do
+        if self.active_phases == target:
+            return
+        if self._phase_original is None:
+            self._phase_original = self._phase_mode_from_charger() or PHASE_MODE_AUTO
+        mode = PHASE_MODE_1 if target == 1 else (
+            self._phase_original if self._phase_original != PHASE_MODE_1 else PHASE_MODE_3
+        )
+        if await self._async_set_phase_mode(mode, restart=self.snapshot.connected):
+            self.active_phases = target
+            self.phase_switch.reset(target)
+            self._save()
+
+    async def _async_restore_phases(self) -> None:
+        """Give the charger its own phase setting back when we stop solar charging."""
+        if self.active_phases is None or self._phase_original is None:
+            return
+        if self.active_phases != 3 and await self._async_set_phase_mode(self._phase_original, restart=False):
+            pass
+        self.active_phases = None
+        self._phase_original = None
+        self.phase_switch.reset(3)
+        self._save()
+
+    async def _async_set_phase_mode(self, mode: str, restart: bool) -> bool:
+        """Easee applies a new phase mode at the start of a session, so pause and resume."""
+        try:
+            if restart:
+                await self.async_charger_command("pause")
+            await self.hass.services.async_call(
+                EASEE_DOMAIN,
+                "set_charger_phase_mode",
+                {CONF_DEVICE_ID: self.charger_device_id, "phase_mode": mode},
+                blocking=True,
+            )
+            if restart:
+                await asyncio.sleep(PHASE_RESTART_DELAY_S)
+                await self.async_charger_command("resume")
+        except Exception as err:  # noqa: BLE001 - never let control crash the loop
+            _LOGGER.warning("Could not set charger phase mode to %s: %s", mode, err)
+            return False
+        _LOGGER.info("Charger phase mode set to %s", mode)
+        return True
 
     def _preview_plan(self, snap: Snapshot, now: datetime) -> ChargePlan | None:
         """What smart charging would plan right now (shown even in normal mode or unplugged)."""
@@ -874,7 +997,8 @@ class EaseeSmartManager:
     @property
     def solar_start_kw(self) -> float:
         """Surplus needed before solar charging starts (min. current + buffer)."""
-        return round(power_for_amps(self.min_current, self.phases, self.voltage) + self.solar_buffer_kw, 2)
+        phases = 1 if self.phase_switching else self.phases
+        return round(power_for_amps(self.min_current, phases, self.voltage) + self.solar_buffer_kw, 2)
 
     async def _async_apply(self, want: int, now: datetime) -> None:
         changed = want != self._last_sent
@@ -1134,6 +1258,9 @@ class EaseeSmartManager:
             "currency": self.hass.config.currency,
             "language": self._opt(CONF_LANGUAGE) or "auto",
             "phases": self.phases,
+            "active_phases": self.shown_phases,
+            "phase_switching": self.phase_switching,
+            "no_prices_action": self._opt(CONF_NO_PRICES) or "charge",
             "max_current": self.max_current,
             "sources": self.charger_entities,
             "equalizer": self.equalizer_entities,
@@ -1144,6 +1271,7 @@ class EaseeSmartManager:
             "price": snap.price,
             "market_price": self.market_price(),
             "zone": self.zone,
+            "price_resolution": self._opt(CONF_PRICE_RESOLUTION) or "quarter",
             "price_parts": dict(zip(("markup", "energy_tax", "vat"), self._price_parts(), strict=True)),
             "prices": [
                 {"start": s.start.isoformat(), "end": s.end.isoformat(), "price": s.price}

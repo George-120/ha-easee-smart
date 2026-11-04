@@ -19,7 +19,17 @@
         "data": {
           "model": "Laadpaalmodel",
           "phases": "Aansluiting",
-          "max_current": "Maximale laadstroom"
+          "max_current": "Maximale laadstroom",
+          "phase_switching": "Automatisch wisselen tussen 1 en 3 fasen bij zonneladen",
+          "session_mode": "Laadmodus bij een nieuwe sessie",
+          "no_prices_action": "Als er geen prijzen zijn (Slim)"
+        },
+        "data_description": {
+          "phases": "Hoe je laadpaal is aangesloten. Bij 3 fasen kan de laadpaal ook op 1 fase laden.",
+          "max_current": "Per fase. Easee-laadpalen laden vanaf 6 A: 1,4 kW op 1 fase, 4,1 kW op 3 fasen.",
+          "phase_switching": "Bij weinig zon schakelt de laadpaal naar 1 fase (vanaf 1,4 kW), bij genoeg zon terug naar 3 fasen (vanaf 4,1 kW). Normaal, Slim en Boost laden altijd op 3 fasen.",
+          "session_mode": "Elke keer dat er een auto wordt aangesloten, springt de laadmodus naar deze stand. 'Laatste stand houden' verandert niets.",
+          "no_prices_action": "De prijzen voor morgen komen rond 13:00. Zonder prijzen kan Slim meteen laden (je auto staat nooit leeg) of wachten tot de prijzen er zijn."
         }
       },
       "grid": {
@@ -46,6 +56,7 @@
         "description": "De prijzen worden automatisch opgehaald. Vul de opslag van je contract in, dan kloppen de kosten met je rekening.",
         "data": {
           "bidding_zone": "Prijszone (day-ahead / APX)",
+          "price_resolution": "Prijs per",
           "price_markup": "Opslag leverancier",
           "energy_tax": "Energiebelasting (excl. btw)",
           "vat_percent": "Btw",
@@ -55,6 +66,7 @@
         },
         "data_description": {
           "bidding_zone": "De day-ahead beursprijzen (EPEX SPOT, voorheen APX) worden automatisch per kwartier opgehaald voor vandaag en morgen. Geen account nodig.",
+          "price_resolution": "Kwartier is het nauwkeurigst (de beurs rekent per 15 minuten). Uur neemt het gemiddelde van de vier kwartieren, zoals bij de meeste uurcontracten.",
           "price_markup": "Per kWh, excl. btw, uit je dynamische contract.",
           "energy_tax": "Per kWh, excl. btw. De prijs wordt (beurs + opslag + belasting) × (1 + btw).",
           "reimbursement_per_kwh": "Wordt gebruikt voor het maandrapport van thuisladen.",
@@ -105,14 +117,15 @@
     "step": {
       "init": {
         "title": "Easee Smart-instellingen",
+        "description": "**Laadmodi**\n- **Normaal**: laadt meteen op vol vermogen, wat de prijs ook is.\n- **Slim**: laadt in de goedkoopste uren, zodat de auto op je vertrektijd vol is.\n- **Zon**: laadt alleen met zonne-overschot (automatisch op 1 of 3 fasen), anders wacht hij.\n- **Zon + slim**: gebruikt eerst zonne-overschot; wat dan nog nodig is, laadt hij in de goedkoopste uren, zodat de auto op tijd vol is.\n\nLoop de onderdelen hieronder één keer door; bij elk onderdeel staat uitgelegd wat het doet.",
         "menu_options": {
-          "charger": "Laadpaal",
-          "equalizer": "Equalizer",
-          "grid": "Hoofdaansluiting",
-          "energy": "Prijzen en kosten",
-          "cars": "Auto's",
-          "advanced": "Geavanceerd",
-          "dashboard": "Dashboard aanmaken"
+          "charger": "Laadpaal: fasen, stroom en standaardmodus",
+          "equalizer": "Easee Equalizer",
+          "grid": "Hoofdaansluiting: slimme meter voor zonneladen",
+          "energy": "Prijzen, ERE en kosten",
+          "cars": "Auto's: toevoegen, wijzigen of verwijderen",
+          "advanced": "Geavanceerd: zon-timing, buffer, taal",
+          "dashboard": "Kant-en-klaar dashboard aanmaken"
         }
       },
       "equalizer": {
@@ -136,7 +149,17 @@
         "data": {
           "model": "Laadpaalmodel",
           "phases": "Aansluiting",
-          "max_current": "Maximale laadstroom"
+          "max_current": "Maximale laadstroom",
+          "phase_switching": "Automatisch wisselen tussen 1 en 3 fasen bij zonneladen",
+          "session_mode": "Laadmodus bij een nieuwe sessie",
+          "no_prices_action": "Als er geen prijzen zijn (Slim)"
+        },
+        "data_description": {
+          "phases": "Hoe je laadpaal is aangesloten. Bij 3 fasen kan de laadpaal ook op 1 fase laden.",
+          "max_current": "Per fase. Easee-laadpalen laden vanaf 6 A: 1,4 kW op 1 fase, 4,1 kW op 3 fasen.",
+          "phase_switching": "Bij weinig zon schakelt de laadpaal naar 1 fase (vanaf 1,4 kW), bij genoeg zon terug naar 3 fasen (vanaf 4,1 kW). Normaal, Slim en Boost laden altijd op 3 fasen.",
+          "session_mode": "Elke keer dat er een auto wordt aangesloten, springt de laadmodus naar deze stand. 'Laatste stand houden' verandert niets.",
+          "no_prices_action": "De prijzen voor morgen komen rond 13:00. Zonder prijzen kan Slim meteen laden (je auto staat nooit leeg) of wachten tot de prijzen er zijn."
         }
       },
       "grid": {
@@ -163,6 +186,7 @@
         "description": "De prijzen worden automatisch opgehaald. Vul de opslag van je contract in, dan kloppen de kosten met je rekening.",
         "data": {
           "bidding_zone": "Prijszone (day-ahead / APX)",
+          "price_resolution": "Prijs per",
           "price_markup": "Opslag leverancier",
           "energy_tax": "Energiebelasting (excl. btw)",
           "vat_percent": "Btw",
@@ -172,6 +196,7 @@
         },
         "data_description": {
           "bidding_zone": "De day-ahead beursprijzen (EPEX SPOT, voorheen APX) worden automatisch per kwartier opgehaald voor vandaag en morgen. Geen account nodig.",
+          "price_resolution": "Kwartier is het nauwkeurigst (de beurs rekent per 15 minuten). Uur neemt het gemiddelde van de vier kwartieren, zoals bij de meeste uurcontracten.",
           "price_markup": "Per kWh, excl. btw, uit je dynamische contract.",
           "energy_tax": "Per kWh, excl. btw. De prijs wordt (beurs + opslag + belasting) × (1 + btw).",
           "reimbursement_per_kwh": "Wordt gebruikt voor het maandrapport van thuisladen.",
@@ -264,6 +289,27 @@
         "smart": "Slim (goedkoopste uren)",
         "solar": "Zonne-overschot",
         "solar_smart": "Zon + slim"
+      }
+    },
+    "session_mode": {
+      "options": {
+        "keep": "Laatste stand houden",
+        "normal": "Normaal",
+        "smart": "Slim (goedkoopste uren)",
+        "solar": "Zonne-overschot",
+        "solar_smart": "Zon + slim"
+      }
+    },
+    "no_prices_action": {
+      "options": {
+        "charge": "Meteen laden",
+        "wait": "Wachten op prijzen"
+      }
+    },
+    "price_resolution": {
+      "options": {
+        "quarter": "Kwartier (15 min)",
+        "hour": "Uur"
       }
     },
     "show_equalizer": {

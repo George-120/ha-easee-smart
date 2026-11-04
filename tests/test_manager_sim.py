@@ -586,3 +586,80 @@ def test_equalizer_show_setting_and_options_override(tmp_path):
         m.entry.options["show_equalizer"] = "show"
         assert m.card_payload()["equalizer_info"] == {"show": True, "linked": False}
     asyncio.run(run())
+
+
+def test_phase_switcher_logic():
+    install_stubs()
+    sys.modules.pop("easee_smart.logic", None)
+    logic = importlib.import_module("easee_smart.logic")
+    p = logic.PhaseSwitcher(confirm_s=300, min_interval_s=900)
+    p1, p3 = p.thresholds(230)
+    assert round(p1, 2) == 1.38 and round(p3, 2) == 4.14
+    t = datetime(2026, 6, 1, 12, 0, tzinfo=TZ)
+    assert p.update(t, 2.0, 230) == 3                      # not yet: has to hold for 5 minutes
+    assert p.update(t + timedelta(minutes=5), 2.0, 230) == 1
+    assert p.update(t + timedelta(minutes=10), 5.0, 230) == 1   # too soon after the last switch
+    assert p.update(t + timedelta(minutes=21), 5.0, 230) == 1   # starts the 5-minute confirm
+    assert p.update(t + timedelta(minutes=26), 5.0, 230) == 3
+    assert p.update(t + timedelta(minutes=50), 4.3, 230) == 3   # 4.3 kW still fits 3 phases
+
+
+def test_solar_switches_to_one_phase_and_back(tmp_path):
+    async def run():
+        hass, m = make(tmp_path, equalizer=False, extra={"grid_power_entity": "sensor.p1"})
+        sys.modules["easee_smart.manager"].PHASE_RESTART_DELAY_S = 0
+        await m.async_setup()
+        setstate(hass, "sensor.c_status", "awaiting_start")
+        setstate(hass, "sensor.c_power", 0)
+        setstate(hass, "sensor.p1", -2.2)  # 2.2 kW export: too little for 3 phases, enough for 1
+        m._recompute()
+        await m.async_set_setting("mode", "solar")
+        for _ in range(4):
+            CLOCK["now"] += timedelta(minutes=2)
+            m._recompute()
+            await m._async_control()
+        modes = [c[2]["phase_mode"] for c in hass.services.calls if c[1] == "set_charger_phase_mode"]
+        assert modes == ["1_phase"]
+        assert m.active_phases == 1 and m.card_payload()["active_phases"] == 1
+        assert ("easee", "action_command", {"device_id": "dev1", "action_command": "pause"}) in hass.services.calls
+        assert m.snapshot.smart_state == "charging_solar" and last_limit(hass) == 9   # 2.2 kW / 230 V
+        # back to normal: the charger gets its own phase setting back
+        await m.async_set_setting("mode", "normal")
+        modes = [c[2]["phase_mode"] for c in hass.services.calls if c[1] == "set_charger_phase_mode"]
+        assert modes == ["1_phase", "auto_phase"] and m.active_phases is None
+        CLOCK["now"] = datetime(2026, 11, 3, 20, 0, tzinfo=TZ)
+    asyncio.run(run())
+
+
+def test_session_default_mode_and_no_prices_wait(tmp_path):
+    async def run():
+        hass, m = make(tmp_path, options={"session_mode": "smart", "no_prices_action": "wait"})
+        await m.async_setup()
+        assert m.settings.mode == "normal"
+        m._start_session()
+        assert m.settings.mode == "smart"                     # new session → the chosen default mode
+        setstate(hass, "sensor.c_status", "awaiting_start")
+        setstate(hass, "sensor.c_power", 0)
+        await m.async_set_setting("target_energy", 20)
+        assert m.snapshot.smart_state == "no_prices" and last_limit(hass) == 0   # waits instead of charging
+        m.entry.options["no_prices_action"] = "charge"
+        await m._async_control()
+        assert last_limit(hass) == 16
+        m.entry.options["session_mode"] = "keep"
+        m.settings.mode = "solar"
+        m._start_session()
+        assert m.settings.mode == "solar"
+    asyncio.run(run())
+
+
+def test_hourly_prices():
+    install_stubs()
+    sys.modules.pop("easee_smart.prices", None)
+    prices_mod = importlib.import_module("easee_smart.prices")
+    logic = importlib.import_module("easee_smart.logic")
+    base = datetime(2026, 11, 4, 0, 0, tzinfo=TZ)
+    quarters = [logic.PriceSlot(base + timedelta(minutes=15 * i), base + timedelta(minutes=15 * (i + 1)), p)
+                for i, p in enumerate([0.20, 0.24, 0.28, 0.32, 0.10, 0.10, 0.10, 0.10])]
+    hours = prices_mod.to_hourly(quarters)
+    assert [round(h.price, 2) for h in hours] == [0.26, 0.10]
+    assert hours[0].end - hours[0].start == timedelta(hours=1)
