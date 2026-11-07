@@ -131,6 +131,7 @@ from .logic import (
     PriceSlot,
     SolarRegulator,
     charge_schedule,
+    hours_between,
     month_key,
     next_departure,
     plan_cheapest,
@@ -272,6 +273,9 @@ class EaseeSmartManager:
         self.solar_forecast = None  # SolarForecast when "own" forecast is chosen
         self.house_profile: dict[int, float] = {}  # local hour -> learned house use (kW)
         self.car_peaks: dict[str, list[float]] = {}  # car name -> peak charging power of recent sessions
+        self._save_pending = False
+        self._rerun = False
+        self._phase_retry_after: datetime | None = None
         self._departure_moved = False
         self._sticky_departure: tuple[str, datetime, bool] | None = None
         self._house_sampled_at: datetime | None = None
@@ -489,7 +493,8 @@ class EaseeSmartManager:
         )
         sess = data.get("session", {})
         self.session = SessionTracker(
-            start=sess.get("start"), energy=sess.get("energy", 0.0), cost=sess.get("cost", 0.0)
+            start=sess.get("start"), energy=sess.get("energy", 0.0), cost=sess.get("cost", 0.0),
+            peak_kw=float(sess.get("peak_kw") or 0.0),
         )
         self.sessions = data.get("sessions", [])
         self.days = data.get("days", {})
@@ -498,6 +503,11 @@ class EaseeSmartManager:
         self._phase_original = data.get("phase_original")
         self.house_profile = {int(k): float(v) for k, v in (data.get("house_profile") or {}).items()}
         self.car_peaks = {str(k): [float(x) for x in v][-5:] for k, v in (data.get("car_peaks") or {}).items() if isinstance(v, list)}
+        sticky = data.get("sticky_departure")
+        if isinstance(sticky, list) and len(sticky) == 3 and self.session.start:
+            when = dt_util.parse_datetime(str(sticky[1]))
+            if when is not None:
+                self._sticky_departure = (str(sticky[0]), when, bool(sticky[2]))
         self.history = {
             k: [float(x) for x in v][:3] + [0.0] * (3 - len(v))
             for k, v in (data.get("history") or {}).items()
@@ -558,8 +568,10 @@ class EaseeSmartManager:
         for unsub in self._unsubs:
             unsub()
         self._unsubs.clear()
-        if self._controlling:
-            await self._async_restore_normal()
+        async with self._lock:
+            if self._controlling:
+                await self._async_restore_normal()
+            await self._async_restore_phases()
         await self.store.async_save(self._data_to_store())
 
     # ----------------------------------------------------------------- storage
@@ -576,10 +588,22 @@ class EaseeSmartManager:
             "car_peaks": self.car_peaks,
             "history": self.history,
             "active_phases": self.active_phases,
+            "sticky_departure": [self._sticky_departure[0], self._sticky_departure[1].isoformat(), self._sticky_departure[2]]
+            if self._sticky_departure else None,
         }
 
     def _save(self) -> None:
-        self.store.async_delay_save(self._data_to_store, 10)
+        # async_delay_save re-arms its timer on every call; with a fast meter it would never fire.
+        # Arm it once and let it run.
+        if self._save_pending:
+            return
+        self._save_pending = True
+
+        def _data() -> dict[str, Any]:
+            self._save_pending = False
+            return self._data_to_store()
+
+        self.store.async_delay_save(_data, 10)
 
     # ------------------------------------------------------------- state reads
     def _state(self, entity_id: str | None):
@@ -674,7 +698,8 @@ class EaseeSmartManager:
         snap.status = status_state.state if status_state else "unknown"
         snap.connected = snap.status in CONNECTED_STATUSES
         snap.power_kw = self.charger_value("power")
-        if self.session.start and snap.power_kw and (self._last_sent is None or self._last_sent >= self.max_current):
+        if (self.session.start and snap.power_kw and (self._last_sent is None or self._last_sent >= self.max_current)
+                and (self.active_phases or self.phases) == self.phases):
             self.session.peak_kw = max(self.session.peak_kw, round(snap.power_kw, 2))
         snap.session_energy = self.charger_value("session_energy")
         snap.lifetime_energy = self.charger_value("lifetime_energy")
@@ -777,13 +802,13 @@ class EaseeSmartManager:
         new = event.data.get("new_state")
         old_status = old.state if old else None
         new_status = new.state if new else None
-        was = old_status in CONNECTED_STATUSES
         now_connected = new_status in CONNECTED_STATUSES
-        if now_connected and not was and old_status not in (None, STATE_UNAVAILABLE, STATE_UNKNOWN):
-            self._start_session()
-        elif not now_connected and was and new_status == STATUS_DISCONNECTED:
+        # Offline / unavailable / unknown say nothing about the cable: a blip must not end or restart a session.
+        if new_status == STATUS_DISCONNECTED and self.session.start:
             self._end_session()
-        elif now_connected and not self.session.start:
+        elif now_connected and (not self.session.start or old_status == STATUS_DISCONNECTED):
+            if self.session.start:
+                self._end_session()  # a disconnect we missed
             self._start_session()
 
     def _start_session(self) -> None:
@@ -797,6 +822,7 @@ class EaseeSmartManager:
         self._save()
 
     def _end_session(self) -> None:
+        self._sticky_departure = None
         if self.session.start:
             energy = self.snapshot.session_energy
             if energy is None or energy < self.session.energy:
@@ -868,9 +894,14 @@ class EaseeSmartManager:
 
     async def _async_control(self) -> None:
         if self._lock.locked():
-            return  # a control pass is already running; the next tick follows soon
+            self._rerun = True  # a pass is running (e.g. a phase change): run once more right after it
+            return
         async with self._lock:
-            await self._async_control_locked()
+            for _ in range(3):
+                self._rerun = False
+                await self._async_control_locked()
+                if not self._rerun:
+                    break
         # the plan is made here: push it to the entities and the card now, not on the next tick
         async_dispatcher_send(self.hass, SIGNAL_UPDATE.format(self.entry.entry_id))
 
@@ -939,8 +970,9 @@ class EaseeSmartManager:
                     if self.phase_switching:
                         available = snap.surplus_kw - self.solar_buffer_kw + max(snap.power_kw or 0.0, 0.0)
                         solar_phases = self.phase_switch.update(now, available, self.voltage)
+                    # the current is worked out for the phases the charger really uses now, not the wish
                     want_solar = self.solar.update(
-                        now, snap.surplus_kw - self.solar_buffer_kw, snap.power_kw or 0.0, solar_phases, self.voltage
+                        now, snap.surplus_kw - self.solar_buffer_kw, snap.power_kw or 0.0, self.shown_phases, self.voltage
                     )
                 if mode == MODE_SOLAR:
                     state = SMART_CHARGING_SOLAR if want_solar > 0 else SMART_WAITING_SOLAR
@@ -1165,6 +1197,9 @@ class EaseeSmartManager:
             return  # never touched the charger: nothing to do
         if self.active_phases == target:
             return
+        now = dt_util.utcnow()
+        if self._phase_retry_after and now < self._phase_retry_after:
+            return
         if self._phase_original is None:
             self._phase_original = self._phase_mode_from_charger() or PHASE_MODE_AUTO
         mode = PHASE_MODE_1 if target == 1 else (
@@ -1173,14 +1208,19 @@ class EaseeSmartManager:
         if await self._async_set_phase_mode(mode, restart=self.snapshot.connected):
             self.active_phases = target
             self.phase_switch.reset(target)
+            self._phase_retry_after = None
             self._save()
+        else:
+            # keep what the charger really does and do not hammer the cloud
+            self.phase_switch.reset(self.shown_phases)
+            self._phase_retry_after = now + timedelta(seconds=self.phase_switch.min_interval_s)
 
     async def _async_restore_phases(self) -> None:
         """Give the charger its own phase setting back when we stop solar charging."""
         if self.active_phases is None or self._phase_original is None:
             return
-        if self.active_phases != 3 and await self._async_set_phase_mode(self._phase_original, restart=False):
-            pass
+        if self.active_phases != 3 and not await self._async_set_phase_mode(self._phase_original, restart=False):
+            return  # try again on a later pass; keep what we know
         self.active_phases = None
         self._phase_original = None
         self.phase_switch.reset(3)
@@ -1188,21 +1228,28 @@ class EaseeSmartManager:
 
     async def _async_set_phase_mode(self, mode: str, restart: bool) -> bool:
         """Easee applies a new phase mode at the start of a session, so pause and resume."""
+        paused = False
         try:
             if restart:
                 await self.async_charger_command("pause")
+                paused = True
             await self.hass.services.async_call(
                 EASEE_DOMAIN,
                 "set_charger_phase_mode",
                 {CONF_DEVICE_ID: self.charger_device_id, "phase_mode": mode},
                 blocking=True,
             )
-            if restart:
+            if paused:
                 await asyncio.sleep(PHASE_RESTART_DELAY_S)
-                await self.async_charger_command("resume")
         except Exception as err:  # noqa: BLE001 - never let control crash the loop
             _LOGGER.warning("Could not set charger phase mode to %s: %s", mode, err)
             return False
+        finally:
+            if paused:
+                try:
+                    await self.async_charger_command("resume")
+                except Exception as err:  # noqa: BLE001
+                    _LOGGER.warning("Could not resume the charger after a phase change: %s", err)
         _LOGGER.info("Charger phase mode set to %s", mode)
         return True
 
@@ -1240,18 +1287,24 @@ class EaseeSmartManager:
         # During a session the choice made at the start sticks, so a long charge is never pushed a day back.
         key = self.settings.departure
         sticky = self._sticky_departure
-        if self.snapshot.connected and sticky and sticky[0] == key and now < sticky[1]:
+        if self.session.start and sticky and sticky[0] == key and now < sticky[1]:
             self._departure_moved = sticky[2]
             return sticky[1]
         dep = next_departure(now, _parse_time(self.settings.departure))
         needed = self.snapshot.energy_needed or 0.0
         power = self.charge_power_kw
         moved = False
-        if needed > 0 and power > 0 and dep - now < timedelta(hours=needed / power) and dep - now < timedelta(hours=12):
+        # Only a "ready at" that is just ahead (< 3 h) moves; further away it keeps the real time and
+        # charges what fits (the card then warns what does not).
+        ahead = hours_between(now, dep)
+        if needed > 0 and power > 0 and ahead < needed / power and ahead < 3:
             dep += timedelta(days=1)
             moved = True
         self._departure_moved = moved
-        self._sticky_departure = (key, dep, moved) if self.snapshot.connected else None
+        if self.session.start:
+            if not sticky or sticky[0] != key or now >= sticky[1]:
+                self._sticky_departure = (key, dep, moved)
+                self._save()
         return dep
 
     def _plan_grid(self, snap: Snapshot, now: datetime, departure: datetime, grid_kwh: float, mode: str) -> ChargePlan:
@@ -1316,8 +1369,11 @@ class EaseeSmartManager:
             self._stalled_since = self._stalled_since or now
             if (now - self._stalled_since).total_seconds() > 180:
                 self._stalled_since = now
-                await self.async_charger_command("resume")
-                await self.async_force_car_start()
+                try:
+                    await self.async_charger_command("resume")
+                    await self.async_force_car_start()
+                except Exception as err:  # noqa: BLE001 - a cloud hiccup must not stop the control pass
+                    _LOGGER.debug("Could not nudge the charger: %s", err)
         else:
             self._stalled_since = None
 
@@ -1621,7 +1677,7 @@ class EaseeSmartManager:
                 "export": self.grid_export_entity,
                 "net": self.grid_entity,
             },
-            "has_soc": bool(self.cars),
+            "has_soc": bool(self.active_car() and self.active_car().soc_entity),
         }
 
 

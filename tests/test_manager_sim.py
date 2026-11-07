@@ -866,3 +866,60 @@ def test_smart_schedule_shows_sun_share_in_grid_slots():
     grid = sum(r[1] for r in rows)
     sun = sum(r[2] for r in rows)
     assert round(grid + sun, 2) == 8.0 and rows[0][2] == 0.5 and rows[0][1] == 2.25 and rows[3] == (slots[3].start, 0.0, 0.0)
+
+
+def test_dst_slot_hours_are_real_hours():
+    logic = importlib.import_module("easee_smart.logic")
+    from zoneinfo import ZoneInfo
+    ams = ZoneInfo("Europe/Amsterdam")
+    a = datetime(2027, 3, 28, 1, 45, tzinfo=ams)
+    b = datetime(2027, 3, 28, 3, 0, tzinfo=ams)
+    assert logic.PriceSlot(a, b, 0.1).hours == 0.25
+
+
+def test_status_blip_keeps_the_session_and_unplug_ends_it(tmp_path):
+    async def run():
+        hass, m = make(tmp_path, equalizer=False)
+        await m.async_setup()
+
+        class S:
+            def __init__(self, s):
+                self.state = s
+
+        def ev(old, new):
+            return types.SimpleNamespace(data={"old_state": S(old) if old else None, "new_state": S(new)})
+        m._handle_status_change(ev("disconnected", "awaiting_start"))
+        start = m.session.start
+        m.session.energy = 5.0
+        m._handle_status_change(ev("charging", "offline"))
+        m._handle_status_change(ev("offline", "charging"))
+        assert m.session.start == start and m.session.energy == 5.0
+        m._handle_status_change(ev("charging", "unavailable"))
+        m._handle_status_change(ev("unavailable", "disconnected"))
+        assert m.session.start is None and len(m.sessions) == 1
+    asyncio.run(run())
+
+
+def test_failed_phase_switch_resumes_and_backs_off(tmp_path):
+    async def run():
+        hass, m = make(tmp_path, equalizer=False)
+        await m.async_setup()
+        mm = sys.modules["easee_smart.manager"]
+        mm.PHASE_RESTART_DELAY_S = 0
+        orig = hass.services.async_call
+
+        async def failing(d, s, data, blocking=False):
+            await orig(d, s, data, blocking)
+            if s == "set_charger_phase_mode":
+                raise RuntimeError("429")
+        hass.services.async_call = failing
+        setstate(hass, "sensor.c_status", "charging")
+        m._recompute()
+        m.active_phases = 3
+        await m._async_ensure_phases(1)
+        cmds = [c[2].get("action_command") for c in hass.services.calls if c[1] == "action_command"]
+        assert cmds == ["pause", "resume"] and m.active_phases == 3 and m.phase_switch.phases == 3
+        hass.services.calls.clear()
+        await m._async_ensure_phases(1)  # backing off: no new attempt right away
+        assert not hass.services.calls
+    asyncio.run(run())

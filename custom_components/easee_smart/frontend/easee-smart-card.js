@@ -1,6 +1,6 @@
 /* Easee Smart Charging card — app-style view of an Easee charger, served by the easee_smart integration. */
 (() => {
-  const VERSION = "1.11.11";
+  const VERSION = "1.12.0";
   // Photo of the charger, served next to this script by the integration.
   const CHARGER_IMG = document.currentScript && document.currentScript.src
     ? new URL("charger.webp", document.currentScript.src).href
@@ -349,8 +349,82 @@
         case "grid": return this._section(title || (a.equalizer && Object.keys(a.equalizer).length ? t.tabs.grid : t.tabs.meter)) + this._tabGrid(a, t);
         case "costs": return this._section(title || t.tabs.history) + this._tabHistory(a, t);
         case "equalizer": return this._section(title) + this._viewEqualizer(a, t);
+        case "status": return this._section(title) + this._viewStatus(c);
         default: return "";
       }
+    }
+
+    _viewStatus({ a, t, status, smart, power }) {
+      const L = {
+        nl: { plan: "Laadplan", batt: "Accu", to: "laden tot", left: "nog", ready: "Klaar om", next: "Volgende start", now: "Nu", powerNow: "Laadvermogen", cost: "Verwacht", mix: "Zon / net", range: "Bereik", session: "Deze sessie", none: "Geen auto", phases: "fasen", phase: "fase", done: "geladen" },
+        en: { plan: "Charge plan", batt: "Battery", to: "charge to", left: "still", ready: "Ready at", next: "Next start", now: "Now", powerNow: "Charging power", cost: "Expected", mix: "Sun / grid", range: "Range", session: "This session", none: "No car", phases: "phases", phase: "phase", done: "charged" },
+        de: { plan: "Ladeplan", batt: "Akku", to: "laden bis", left: "noch", ready: "Fertig um", next: "Nächster Start", now: "Jetzt", powerNow: "Ladeleistung", cost: "Erwartet", mix: "Sonne / Netz", range: "Reichweite", session: "Diese Sitzung", none: "Kein Auto", phases: "Phasen", phase: "Phase", done: "geladen" },
+      }[(this._lang || "en").slice(0, 2)] || null;
+      const l = L || { plan: "Charge plan", batt: "Battery", to: "charge to", left: "still", ready: "Ready at", next: "Next start", now: "Now", powerNow: "Charging power", cost: "Expected", mix: "Sun / grid", range: "Range", session: "This session", none: "No car", phases: "phases", phase: "phase", done: "charged" };
+      const car = a.car || null;
+      const soc = car && car.soc !== null && car.soc !== undefined ? Number(car.soc) : null;
+      const target = car && car.target ? Number(car.target) : a.target_soc || 100;
+      const connected = CONNECTED.has(status);
+      const done = connected ? Math.max(0, Number(a.session && a.session.energy) || 0) : 0;
+      const need = Math.max(0, Number(a.energy_needed) || 0);
+      const planP = done + need > 0 ? done / (done + need) : 0;
+      const charging = status === "charging";
+      const tone = smart && smart.startsWith("charging") ? (smart === "charging_solar" ? "sun" : "go")
+        : smart === "target_reached" ? "go" : smart === "waiting_solar" ? "sun"
+        : smart === "waiting_cheap" || smart === "no_prices" ? "wait" : "off";
+      const R1 = 88, R2 = 70, C1 = 2 * Math.PI * R1, C2 = 2 * Math.PI * R2;
+      const arc = (r, c, frac, cls, extra = "") => `<circle class="${cls}" cx="100" cy="100" r="${r}" stroke-dasharray="${(Math.max(0, Math.min(1, frac)) * c).toFixed(1)} ${c.toFixed(1)}" ${extra}/>`;
+      const tick = (frac) => {
+        const ang = frac * 2 * Math.PI - Math.PI / 2;
+        const x1 = 100 + (R2 - 9) * Math.cos(ang), y1 = 100 + (R2 - 9) * Math.sin(ang);
+        const x2 = 100 + (R2 + 9) * Math.cos(ang), y2 = 100 + (R2 + 9) * Math.sin(ang);
+        return `<line class="tick" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+      };
+      const ring = `
+        <svg class="rings ${charging ? "live" : ""}" viewBox="0 0 200 200" role="img" aria-label="${esc(l.plan)} ${Math.round(planP * 100)}%, ${esc(l.batt)} ${soc === null ? "–" : Math.round(soc) + "%"}">
+          <defs>
+            <linearGradient id="esg-plan" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="#8F7CF7"/>
+            </linearGradient>
+          </defs>
+          <circle class="track" cx="100" cy="100" r="${R1}"/>
+          <circle class="track" cx="100" cy="100" r="${R2}"/>
+          ${arc(R1, C1, planP, "plan", 'stroke="url(#esg-plan)"')}
+          ${soc !== null ? arc(R2, C2, soc / 100, "batt") + tick(Math.min(1, target / 100)) : ""}
+        </svg>`;
+      const big = soc !== null ? `${this._num(soc, 0)}<small>%</small>` : `${this._num(done, 1)}<small>kWh</small>`;
+      const sub = car ? `${esc(car.name)} · ${l.to} ${a.manual_kwh ? this._num(a.target_energy, 0) + " kWh" : this._num(target, 0) + "%"}` : l.none;
+      const when = (iso) => (iso ? `${this._day(iso)} ${this._time(iso)}` : "—");
+      const sch = (a.schedule || []).filter((x) => new Date(x.start).getTime() + 900e3 > Date.now());
+      const sunK = sch.reduce((n, x) => n + (x.sun || 0), 0), gridK = sch.reduce((n, x) => n + (x.grid || 0), 0);
+      const nextStart = charging ? l.now : a.next_start && new Date(a.next_start) > new Date() ? when(a.next_start) : "—";
+      const ph = a.active_phases || a.phases;
+      const kwNow = charging && power !== null ? this._num(power, 1) : this._num(0, 1);
+      const tiles = [
+        [l.ready, when(a.complete_by || a.departure_at), ""],
+        [l.next, nextStart, ""],
+        [l.powerNow, `${kwNow} kW`, a.charge_power_kw ? `max ${this._num(a.charge_power_kw, 1)} kW · ${ph} ${ph === 1 ? l.phase : l.phases}` : ""],
+        [l.cost, a.plan_cost !== null && a.plan_cost !== undefined && need > 0 ? this._money(a.plan_cost, a.currency) : "—", connected ? `${l.session}: ${this._num(done, 1)} kWh` : ""],
+        [l.mix, sch.length ? `${this._num(sunK, 1)} / ${this._num(gridK, 1)} kWh` : "—", ""],
+        [l.range, car && car.range_km !== null && car.range_km !== undefined ? `${this._num(car.range_km, 0)} km` : "—", car && car.capacity ? `${this._num(car.capacity, 0)} kWh ${l.batt.toLowerCase()}` : ""],
+      ];
+      return `
+        <div class="stv">
+          <div class="sthead">
+            <span class="stpill ${tone}"><i></i>${esc(t.smart[smart] || t.status[status] || status)}</span>
+            ${ph ? `<span class="stbadge">${ph} ${ph === 1 ? l.phase : l.phases}</span>` : ""}
+          </div>
+          <div class="string">
+            ${ring}
+            <div class="stcenter">
+              <div class="stbig">${big}</div>
+              <div class="stsub">${sub}</div>
+              <div class="stchip">${need > 0.05 ? `${l.left} ${this._num(need, 1)} kWh` : `${this._num(done, 1)} kWh ${l.done}`}</div>
+            </div>
+          </div>
+          <div class="stlegend"><span><i class="lp"></i>${l.plan} ${Math.round(planP * 100)}%</span>${soc !== null ? `<span><i class="lb"></i>${l.batt} ${esc(car.name)}</span>` : ""}</div>
+          <div class="sttiles">${tiles.map(([k, v, sm]) => `<div class="tile"><span>${k}</span><b>${v}</b>${sm ? `<small>${sm}</small>` : ""}</div>`).join("")}</div>
+        </div>`;
     }
 
     _viewCharger({ a, t, status, smart, led, power, name }) {
@@ -1132,6 +1206,37 @@
     .zero { stroke:var(--line); stroke-width:1; }
     .nowline { stroke:#fff; stroke-width:1.5; stroke-dasharray:3 3; opacity:.7; }
     .chart .plot { position:relative; }
+    .stv { display:flex; flex-direction:column; gap:14px; }
+    .sthead { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    .stpill { display:inline-flex; align-items:center; gap:8px; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:6px 12px; border-radius:999px; font-weight:600; font-size:.88rem; background:rgba(140,149,162,.14); color:var(--muted); }
+    .stpill i { flex:none; width:8px; height:8px; border-radius:50%; background:currentColor; }
+    .stpill.go { color:#3DDC84; background:rgba(61,220,132,.13); } .stpill.go i { animation:stpulse 1.6s ease-in-out infinite; }
+    .stpill.wait { color:#F5A142; background:rgba(245,161,66,.14); }
+    .stpill.sun { color:var(--sun); background:rgba(245,197,66,.14); }
+    .stbadge { flex:none; white-space:nowrap; font-size:.75rem; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:4px 10px; }
+    .string { position:relative; width:min(260px, 78cqi); aspect-ratio:1; margin:0 auto; }
+    .rings { width:100%; height:100%; transform:rotate(-90deg); }
+    .rings circle { fill:none; stroke-linecap:round; }
+    .rings .track { stroke:var(--panel); stroke-width:11; }
+    .rings .plan { stroke-width:11; transition:stroke-dasharray .8s ease; }
+    .rings .batt { stroke:#F0A020; stroke-width:11; transition:stroke-dasharray .8s ease; }
+    .rings .tick { stroke:var(--text); stroke-width:2.5; stroke-linecap:round; opacity:.8; }
+    .rings.live .plan { animation:stglow 2.4s ease-in-out infinite; }
+    .rings.live { filter:drop-shadow(0 0 6px rgba(90,169,255,.25)); }
+    .stcenter { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; text-align:center; padding:0 18%; }
+    .stbig { font-size:clamp(2.2rem, 13cqi, 3.4rem); font-weight:700; line-height:1; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+    .stbig small { font-size:.42em; font-weight:500; margin-left:3px; color:var(--muted); }
+    .stsub { font-size:.8rem; color:var(--muted); }
+    .stchip { margin-top:4px; font-size:.78rem; font-weight:600; background:var(--panel); border-radius:999px; padding:4px 11px; }
+    .stlegend { display:flex; justify-content:center; gap:18px; font-size:.78rem; color:var(--muted); }
+    .stlegend i { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; vertical-align:-1px; }
+    .stlegend .lp { background:linear-gradient(135deg, var(--accent), #8F7CF7); } .stlegend .lb { background:#F0A020; }
+    .sttiles .tile b { font-size:.95rem; }
+    .sttiles .tile small { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sttiles { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; }
+    @container (max-width: 520px) { .sttiles { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+    @keyframes stpulse { 0%,100% { opacity:1; } 50% { opacity:.35; } }
+    @keyframes stglow { 0%,100% { opacity:1; } 50% { opacity:.82; } }
     .ctlhead { display:flex; align-items:center; justify-content:space-between; gap:4px; white-space:nowrap; }
     .unitsw { display:inline-flex; border:1px solid var(--line, rgba(255,255,255,.14)); border-radius:999px; overflow:hidden; }
     .unitsw button { all:unset; cursor:pointer; font-size:10px; line-height:1; padding:3px 5px; color:var(--muted); }
@@ -1266,6 +1371,7 @@
     ["grid", "Aansluiting / Grid", "Grid power, phases and main fuse."],
     ["costs", "Kosten / Costs", "Costs, ERE, sessions and report."],
     ["equalizer", "Equalizer", "Easee Equalizer: grid power, phases, fuse and meter readings."],
+    ["status", "Status", "Status rings: charge plan and battery, with ready time, next start, power and costs."],
   ];
   // Some setups load a scoped custom-element registry polyfill *after* this script.
   // That polyfill forgets earlier definitions, so Lovelace reports "Custom element doesn't exist".

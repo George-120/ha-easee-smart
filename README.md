@@ -53,6 +53,12 @@ Je kiest de modus met de vier knoppen. De kaart laat altijd zien welke modus aan
 <td><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modus-solar-smart.png" alt="Zon + slim"><br><b>Zon + slim</b></td>
 </tr></table>
 
+### Statuskaart
+
+<img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/status.png" alt="Statuskaart" width="420">
+
+De statuskaart (`custom:easee-smart-status-card`) laat in één oogopslag zien wat er gebeurt: de buitenste ring is het laadplan van deze sessie, de binnenste ring het accuniveau met een streepje op je doel. Daaronder: klaar om, volgende start, laadvermogen nu (en maximaal), verwachte kosten, zon/net en bereik.
+
 ### Gisteren, vandaag en morgen
 
 ![Bladeren met de pijltjes](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/dagen.gif)
@@ -203,6 +209,12 @@ Pick the mode with the four buttons. The card always shows which mode is active 
 <td><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modus-solar-smart.png" alt="Solar + smart"><br><b>Solar + smart</b></td>
 </tr></table>
 
+### Status card
+
+<img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/status.png" alt="Status card" width="420">
+
+The status card (`custom:easee-smart-status-card`) shows what is going on at a glance: the outer ring is this session's charge plan, the inner ring the battery level with a mark at your target. Below: ready at, next start, power now (and max), expected cost, sun/grid and range.
+
 ### Yesterday, today and tomorrow
 
 ![Browsing with the arrows](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/dagen.gif)
@@ -312,6 +324,12 @@ Den Modus wählst du mit den vier Tasten. Die Karte zeigt immer den aktiven Modu
 <td><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modus-solar.png" alt="Solar"><br><b>Solar</b></td>
 <td><img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/modus-solar-smart.png" alt="Solar + Smart"><br><b>Solar + Smart</b></td>
 </tr></table>
+
+### Statuskarte
+
+<img src="https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/status.png" alt="Statuskarte" width="420">
+
+Die Statuskarte (`custom:easee-smart-status-card`) zeigt alles auf einen Blick: der äußere Ring ist der Ladeplan dieser Sitzung, der innere der Akkustand mit einer Markierung am Ziel. Darunter: fertig um, nächster Start, Leistung jetzt (und max.), erwartete Kosten, Sonne/Netz und Reichweite.
 
 ### Gestern, heute und morgen
 

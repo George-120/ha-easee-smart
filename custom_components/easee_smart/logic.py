@@ -49,7 +49,7 @@ class PriceSlot:
 
     @property
     def hours(self) -> float:
-        return (self.end - self.start).total_seconds() / 3600
+        return hours_between(self.start, self.end)
 
 
 def _parse_dt(value: Any, tz) -> datetime | None:
@@ -152,6 +152,13 @@ def price_at(slots: Iterable[PriceSlot], moment: datetime) -> float | None:
     return None
 
 
+def hours_between(start: datetime, end: datetime) -> float:
+    """Real elapsed hours, also across a DST change (same-zone subtraction is wall-clock time)."""
+    if start.tzinfo is not None and end.tzinfo is not None:
+        return (end.astimezone(UTC_TZ) - start.astimezone(UTC_TZ)).total_seconds() / 3600
+    return (end - start).total_seconds() / 3600
+
+
 def next_departure(now: datetime, departure: time) -> datetime:
     dep = datetime.combine(now.date(), departure, tzinfo=now.tzinfo)
     if dep <= now + timedelta(minutes=5):
@@ -199,7 +206,7 @@ def plan_cheapest(
         if end > start:
             window.append(PriceSlot(start, end, slot.price))
 
-    window_hours = max(0.0, (departure - now).total_seconds() / 3600)
+    window_hours = max(0.0, hours_between(now, departure))
     plan.window_kwh = round(window_hours * charge_power_kw, 2)
     plan.short_kwh = round(max(0.0, energy_needed_kwh - plan.window_kwh), 2)
 
@@ -428,7 +435,7 @@ def solar_energy_until(outlook: list[SolarSlot], now: datetime, until: datetime)
     for s in outlook:
         start, end = max(s.start, now), min(s.end, until)
         if end > start:
-            total += s.charge_kw * (end - start).total_seconds() / 3600
+            total += s.charge_kw * hours_between(start, end)
     return total
 
 
@@ -464,7 +471,7 @@ def charge_schedule(
         if until is not None and slot.start >= until and not grid_always:
             out.append((slot.start, 0.0, 0.0))
             continue
-        hours = (slot.end - max(slot.start, now)).total_seconds() / 3600
+        hours = max(0.0, hours_between(max(slot.start, now), slot.end))
         sun = 0.0
         if use_solar and solar_kw:
             sun = min(remaining, solar_kw.get(slot.start, 0.0) * hours)
