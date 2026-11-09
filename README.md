@@ -7,6 +7,10 @@ Slim laden, Equalizer-inzicht, laadkosten en een app-achtige dashboardkaart voor
 
 ![Easee Smart-kaart](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/preview.png)
 
+[![▶ Watch the video: Easee Smart Charging](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/video-thumbnail.jpg)](https://github.com/George-120/ha-easee-smart/raw/main/docs/easee-smart-charging.mp4)
+
+▶ **[Bekijk de video / Watch the video / Video ansehen](https://github.com/George-120/ha-easee-smart/raw/main/docs/easee-smart-charging.mp4)** (3:31)
+
 **Taal / Language / Sprache:** [Nederlands](#nederlands) · [English](#english) · [Deutsch](#deutsch)
 
 ## Nederlands
