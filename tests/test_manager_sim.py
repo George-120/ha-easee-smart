@@ -649,7 +649,7 @@ def test_solar_switches_to_one_phase_and_back(tmp_path):
 
 def test_session_default_mode_and_no_prices_wait(tmp_path):
     async def run():
-        hass, m = make(tmp_path, options={"session_mode": "smart", "no_prices_action": "wait"})
+        hass, m = make(tmp_path, options={"session_mode": "smart", "no_prices_action": "wait", "test_charge": False})
         await m.async_setup()
         assert m.settings.mode == "normal"
         m._start_session()
