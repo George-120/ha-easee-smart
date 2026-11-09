@@ -22,5 +22,5 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/George-120/ha-easee-smart/issues",
   "requirements": [],
-  "version": "1.12.1"
+  "version": "1.12.2"
 }

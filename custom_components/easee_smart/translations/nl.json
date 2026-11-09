@@ -110,7 +110,7 @@
       }
     },
     "abort": {
-      "easee_missing": "Installeer en configureer eerst de Easee-integratie (HACS: nordicopen/easee_hass).",
+      "easee_missing": "Installeer en configureer eerst de Easee-integratie (Marketplace: nordicopen/easee_hass).",
       "no_chargers": "Geen Easee-laadpalen gevonden in de Easee-integratie.",
       "already_configured": "Deze laadpaal is al ingesteld."
     }

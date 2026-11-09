@@ -2,7 +2,7 @@
 
 Slim laden, Equalizer-inzicht, laadkosten en een app-achtige dashboardkaart voor je Easee-laadpaal in Home Assistant — gebouwd bovenop de bestaande Easee-integratie. Geen tweede login, geen extra belasting van de Easee-cloud. Hoe werkt slim laden? Je stroom kost elk kwartier een andere prijs. De integratie kijkt naar de prijzen van vandaag en morgen, rekent uit hoeveel stroom je auto nog nodig heeft en laadt dan precies in de goedkoopste uren. Zo is je auto op tijd vol en betaal je zo weinig mogelijk.
 
-[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=George-120&repository=ha-easee-smart&category=integration)
+[![Open in de Marketplace](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=George-120&repository=ha-easee-smart&category=integration)
 [![Integratie toevoegen](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=easee_smart)
 
 ![Easee Smart-kaart](https://raw.githubusercontent.com/George-120/ha-easee-smart/main/docs/preview.png)
@@ -77,8 +77,8 @@ Met het knopje **% / kWh** kies je of hij laadt tot een accupercentage van je au
 
 ### Installatie
 
-1. Zorg dat de **Easee-integratie** draait ([nordicopen/easee_hass](https://github.com/nordicopen/easee_hass) via HACS).
-2. Installeer **Easee Smart Charging** via HACS (knop hierboven) en herstart Home Assistant.
+1. Zorg dat de **Easee-integratie** draait ([nordicopen/easee_hass](https://github.com/nordicopen/easee_hass), te vinden in de Marketplace).
+2. Installeer **Easee Smart Charging** via de **Marketplace** (Instellingen → Marketplace, of de knop hierboven). De installatie gaat meteen door naar het instellen.
 3. Ga naar *Instellingen → Apparaten & diensten → Integratie toevoegen → Easee Smart Charging* (of gebruik de tweede knop).
 4. Kies je laadpaal (en Equalizer), controleer het herkende model, check je hoofdaansluiting (als je geen Equalizer hebt) en vul eventueel de opslag van je energiecontract in. Klaar.
 
@@ -233,8 +233,8 @@ The **% / kWh** toggle chooses between charging up to a battery percentage of yo
 
 ### Installation
 
-1. Make sure the **Easee integration** is running ([nordicopen/easee_hass](https://github.com/nordicopen/easee_hass) via HACS).
-2. Install **Easee Smart Charging** via HACS (button at the top) and restart Home Assistant.
+1. Make sure the **Easee integration** is running ([nordicopen/easee_hass](https://github.com/nordicopen/easee_hass), available in the Marketplace).
+2. Install **Easee Smart Charging** from the **Marketplace** (Settings → Marketplace, or the button at the top). Installing takes you straight to the setup.
 3. Go to *Settings → Devices & services → Add integration → Easee Smart Charging* (or use the second button).
 4. Pick your charger (and Equalizer), check the detected model, check your main connection (when you have no Equalizer), optionally enter your energy contract's markup and link a car. Done.
 
@@ -349,8 +349,8 @@ Mit **% / kWh** wählst du, ob bis zu einem Akkustand oder eine feste kWh-Menge 
 
 ### Installation
 
-1. Stelle sicher, dass die **Easee-Integration** läuft ([nordicopen/easee_hass](https://github.com/nordicopen/easee_hass) über HACS).
-2. Installiere **Easee Smart Charging** über HACS (Taste oben) und starte Home Assistant neu.
+1. Stelle sicher, dass die **Easee-Integration** läuft ([nordicopen/easee_hass](https://github.com/nordicopen/easee_hass), im Marketplace).
+2. Installiere **Easee Smart Charging** über den **Marketplace** (Einstellungen → Marketplace oder die Taste oben). Die Installation führt direkt zur Einrichtung.
 3. Gehe zu *Einstellungen → Geräte & Dienste → Integration hinzufügen → Easee Smart Charging* (oder nutze die zweite Taste).
 4. Wähle deine Wallbox (und den Equalizer), prüfe das erkannte Modell und den Hausanschluss (ohne Equalizer), trage optional den Aufschlag deines Stromvertrags ein und verbinde ein Auto. Fertig.
 

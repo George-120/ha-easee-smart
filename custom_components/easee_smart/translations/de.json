@@ -110,7 +110,7 @@
       }
     },
     "abort": {
-      "easee_missing": "Installiere und richte zuerst die Easee-Integration ein (HACS: nordicopen/easee_hass).",
+      "easee_missing": "Installiere und richte zuerst die Easee-Integration ein (Marketplace: nordicopen/easee_hass).",
       "no_chargers": "Keine Easee-Wallboxen in der Easee-Integration gefunden.",
       "already_configured": "Diese Wallbox ist bereits eingerichtet."
     }

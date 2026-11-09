@@ -110,7 +110,7 @@
       }
     },
     "abort": {
-      "easee_missing": "Install and set up the Easee integration first (HACS: nordicopen/easee_hass).",
+      "easee_missing": "Install and set up the Easee integration first (Marketplace: nordicopen/easee_hass).",
       "no_chargers": "No Easee chargers found in the Easee integration.",
       "already_configured": "This charger is already set up."
     }
