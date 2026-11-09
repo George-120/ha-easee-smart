@@ -278,6 +278,7 @@
           "charge_efficiency": "Charging efficiency",
           "boost_reset_on_unplug": "Turn Boost off when the car is unplugged",
           "resume_nudge": "Wake the car when it does not start charging",
+          "test_charge": "Test charge at the start of each session",
           "car_refresh_minutes": "Refresh car data every (0 = off)",
           "language": "Language of card and report",
           "phase_confirm_minutes": "Phase switch: switch when it lasts",
@@ -289,6 +290,7 @@
           "min_current": "Most cars need at least 6 A. Some charge more efficiently from 8 or 10 A.",
           "charge_efficiency": "Energy lost while charging; used to calculate how much energy is still needed.",
           "resume_nudge": "After 3 minutes without charging: resume on the charger and the car's start entity.",
+          "test_charge": "Charges for 5 seconds at the minimum current when a car is plugged in, to check the plug and the car. No current? The car is woken up, and you get a notification if it still does not charge.",
           "car_refresh_minutes": "Only while a car is connected. Uses the car's refresh entity."
         }
       }
@@ -403,7 +405,9 @@
           "charging_boost": "Boost: charging now",
           "charging_fallback": "Charging (not enough price data)",
           "target_reached": "Target reached",
-          "no_prices": "Charging (prices not available)"
+          "no_prices": "Charging (prices not available)",
+          "test_charge": "Test charge (checking the plug)",
+          "test_failed": "Test charge failed: check the plug"
         }
       },
       "target_current": {

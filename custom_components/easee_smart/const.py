@@ -56,6 +56,9 @@ CONF_SOLAR_BUFFER: Final = "solar_buffer"
 CONF_EFFICIENCY: Final = "charge_efficiency"
 CONF_BOOST_RESET: Final = "boost_reset_on_unplug"
 CONF_NUDGE: Final = "resume_nudge"
+CONF_TEST_CHARGE: Final = "test_charge"
+TEST_CHARGE_SECONDS: Final = 5  # short charge at the minimum current at the start of a session
+TEST_CHARGE_TIMEOUT_S: Final = 120  # no current by then (after waking the car) -> report a problem
 CONF_CAR_REFRESH_MIN: Final = "car_refresh_minutes"
 CONF_ERE_ENABLED: Final = "ere_enabled"
 CONF_ERE_RATE: Final = "ere_rate"
@@ -251,6 +254,8 @@ SMART_CHARGING_BOOST: Final = "charging_boost"
 SMART_CHARGING_FALLBACK: Final = "charging_fallback"
 SMART_TARGET_REACHED: Final = "target_reached"
 SMART_NO_PRICES: Final = "no_prices"
+SMART_TEST_CHARGE: Final = "test_charge"
+SMART_TEST_FAILED: Final = "test_failed"
 SMART_STATES: Final = [
     SMART_IDLE,
     SMART_NOT_CONNECTED,
@@ -262,6 +267,8 @@ SMART_STATES: Final = [
     SMART_CHARGING_FALLBACK,
     SMART_TARGET_REACHED,
     SMART_NO_PRICES,
+    SMART_TEST_CHARGE,
+    SMART_TEST_FAILED,
 ]
 
 SIGNAL_UPDATE: Final = "easee_smart_update_{}"

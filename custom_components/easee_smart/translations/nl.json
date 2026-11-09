@@ -278,6 +278,7 @@
           "charge_efficiency": "Laadrendement",
           "boost_reset_on_unplug": "Boost uitzetten als de auto wordt losgekoppeld",
           "resume_nudge": "Auto wekken als hij niet begint met laden",
+          "test_charge": "Testladen bij elke nieuwe sessie",
           "car_refresh_minutes": "Gegevens auto verversen elke (0 = uit)",
           "language": "Taal van kaart en rapport",
           "phase_confirm_minutes": "Fasewissel: wisselen als het zo blijft",
@@ -289,6 +290,7 @@
           "min_current": "De meeste auto's hebben minimaal 6 A nodig. Sommige laden efficiënter vanaf 8 of 10 A.",
           "charge_efficiency": "Verlies tijdens het laden; wordt gebruikt om te berekenen hoeveel energie er nog nodig is.",
           "resume_nudge": "Na 3 minuten zonder laden: hervatten op de laadpaal en de start-entiteit van de auto.",
+          "test_charge": "Laadt 5 seconden op de minimale stroom als er een auto wordt aangesloten, om de stekker en de auto te controleren. Geen stroom? Dan wordt de auto gewekt, en krijg je een melding als hij dan nog niet laadt.",
           "car_refresh_minutes": "Alleen als er een auto aangesloten is. Gebruikt de verversen-entiteit van de auto."
         }
       }
@@ -403,7 +405,9 @@
           "charging_boost": "Boost: nu laden",
           "charging_fallback": "Laden (te weinig prijsdata)",
           "target_reached": "Doel bereikt",
-          "no_prices": "Laden (prijzen niet beschikbaar)"
+          "no_prices": "Laden (prijzen niet beschikbaar)",
+          "test_charge": "Testladen (stekker controleren)",
+          "test_failed": "Testladen mislukt: controleer de stekker"
         }
       },
       "target_current": {

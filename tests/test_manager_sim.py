@@ -100,10 +100,15 @@ def install_stubs():
          async_get=lambda h: EntityRegistry(REG))
     _mod("homeassistant.helpers.dispatcher", async_dispatcher_send=lambda *a: None)
     _mod("homeassistant.helpers.event", async_track_state_change_event=lambda *a: (lambda: None),
-         async_track_time_interval=lambda *a: (lambda: None))
+         async_track_time_interval=lambda *a: (lambda: None), async_call_later=lambda *a: (lambda: None))
     _mod("homeassistant.helpers.storage", Store=Store)
     _mod("homeassistant.exceptions", HomeAssistantError=Exception)
-    _mod("homeassistant.components")
+    comp = _mod("homeassistant.components")
+    comp.persistent_notification = _mod(
+        "homeassistant.components.persistent_notification",
+        async_create=lambda hass, message, title=None, notification_id=None: NOTES.__setitem__(notification_id, title),
+        async_dismiss=lambda hass, notification_id: NOTES.pop(notification_id, None),
+    )
     _mod("homeassistant.helpers.aiohttp_client", async_get_clientsession=lambda h: None)
     if "aiohttp" not in sys.modules:
         _mod("aiohttp", ClientError=Exception, ClientTimeout=lambda **k: None)
@@ -118,6 +123,9 @@ def install_stubs():
     pkg.__path__ = [str(Path(__file__).parents[1] / "custom_components" / "easee_smart")]
     sys.modules["easee_smart"] = pkg
     return devreg
+
+
+NOTES = {}
 
 
 def make(tmp, options=None, equalizer=True, extra=None):
@@ -922,4 +930,67 @@ def test_failed_phase_switch_resumes_and_backs_off(tmp_path):
         hass.services.calls.clear()
         await m._async_ensure_phases(1)  # backing off: no new attempt right away
         assert not hass.services.calls
+    asyncio.run(run())
+
+
+def test_test_charge_at_session_start(tmp_path):
+    async def run():
+        hass, m = make(tmp_path, equalizer=False)
+        await m.async_setup()
+
+        class S:
+            def __init__(self, s):
+                self.state = s
+
+        def ev(old, new):
+            return types.SimpleNamespace(data={"old_state": S(old) if old else None, "new_state": S(new)})
+
+        async def tick(seconds=0, status=None, power=None):
+            CLOCK["now"] = CLOCK["now"] + timedelta(seconds=seconds)
+            if status is not None:
+                setstate(hass, "sensor.c_status", status)
+            if power is not None:
+                setstate(hass, "sensor.c_power", power)
+            m._recompute()
+            await m._async_control()
+
+        setstate(hass, "sensor.c_session_energy", 0)
+        setstate(hass, "sensor.c_lifetime_energy", 1000)
+        prices(hass, m)
+        await m.async_set_setting("target_energy", 30)
+        await m.async_set_setting("mode", "smart")
+        # plug in while it is not cheap yet: a short test charge at the minimum current
+        m._handle_status_change(ev("disconnected", "awaiting_start"))
+        await tick(0, "awaiting_start", 0)
+        assert m.snapshot.smart_state == "test_charge"
+        assert last_limit(hass) == 6
+        # current flows: after 5 s the test is done and it waits for the cheap hours again
+        await tick(2, "charging", 4.1)
+        assert m.snapshot.smart_state == "test_charge"
+        await tick(6, "charging", 4.1)
+        assert m.snapshot.smart_state == "waiting_cheap"
+        assert last_limit(hass) == 0
+        assert m.session.tested
+        # switching modes later in the same session does not test again
+        await m.async_set_setting("mode", "solar_smart")
+        await m.async_set_setting("mode", "smart")
+        await tick(1, "awaiting_start", 0)
+        assert m.snapshot.smart_state == "waiting_cheap"
+
+        # a new session where the car does not take current: wake it, then report a problem
+        m._handle_status_change(ev("awaiting_start", "disconnected"))
+        m._handle_status_change(ev("disconnected", "awaiting_start"))
+        await tick(0, "awaiting_start", 0)
+        assert m.snapshot.smart_state == "test_charge"
+        await tick(31)
+        await asyncio.sleep(0)
+        assert any(c[1] == "action_command" and c[2]["action_command"] == "resume" for c in hass.services.calls)
+        await tick(95)
+        assert m.snapshot.smart_state == "test_failed"
+        assert last_limit(hass) == 0
+        assert NOTES
+        # the car starts after all: the warning goes away
+        await tick(1, "charging", 4.1)
+        assert not NOTES
+        CLOCK["now"] = datetime(2026, 11, 3, 20, 0, tzinfo=TZ)
     asyncio.run(run())

@@ -66,6 +66,7 @@ from .const import (
     CONF_MODEL,
     CONF_NO_PRICES,
     CONF_NUDGE,
+    CONF_TEST_CHARGE,
     CONF_PHASE_CONFIRM,
     CONF_PHASE_INTERVAL,
     CONF_PHASE_SWITCHING,
@@ -340,6 +341,7 @@ def _advanced_schema(defaults: dict[str, Any]) -> dict:
     )
     schema[vol.Optional(CONF_BOOST_RESET, default=defaults.get(CONF_BOOST_RESET, True))] = selector.BooleanSelector()
     schema[vol.Optional(CONF_NUDGE, default=defaults.get(CONF_NUDGE, True))] = selector.BooleanSelector()
+    schema[vol.Optional(CONF_TEST_CHARGE, default=defaults.get(CONF_TEST_CHARGE, True))] = selector.BooleanSelector()
     return schema
 
 

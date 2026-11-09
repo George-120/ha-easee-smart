@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, time, timedelta
 from typing import Any
 
+from homeassistant.components import persistent_notification
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     ATTR_UNIT_OF_MEASUREMENT,
@@ -22,6 +23,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
+    async_call_later,
     async_track_state_change_event,
     async_track_time_interval,
 )
@@ -53,10 +55,10 @@ from .const import (
     CONF_MODEL,
     CONF_NO_PRICES,
     CONF_NUDGE,
+    CONF_PHASES,
     CONF_PHASE_CONFIRM,
     CONF_PHASE_INTERVAL,
     CONF_PHASE_SWITCHING,
-    CONF_PHASES,
     CONF_PRICE_RESOLUTION,
     CONF_PV_FORECAST,
     CONF_PV_FORECAST_SENSOR,
@@ -68,6 +70,7 @@ from .const import (
     CONF_SOLAR_BUFFER,
     CONF_SOLAR_START_DELAY,
     CONF_SOLAR_STOP_DELAY,
+    CONF_TEST_CHARGE,
     CONF_VAT,
     CONF_VOLTAGE,
     CONNECTED_STATUSES,
@@ -78,22 +81,23 @@ from .const import (
     DEFAULT_EFFICIENCY,
     DEFAULT_MAIN_FUSE,
     DEFAULT_MAX_CURRENT,
+    DEFAULT_PHASES,
     DEFAULT_PHASE_CONFIRM_MIN,
     DEFAULT_PHASE_INTERVAL_MIN,
-    DEFAULT_PHASES,
     DEFAULT_TARGET_ENERGY,
     DEFAULT_TARGET_SOC,
     DEFAULT_VOLTAGE,
+    DOMAIN,
     EASEE_DOMAIN,
     EQUALIZER_KEYS,
     MAX_STORED_SESSIONS,
     MIN_CHARGE_CURRENT,
     MIN_SECONDS_BETWEEN_CHANGES,
+    MODES,
     MODE_NORMAL,
     MODE_SMART,
     MODE_SOLAR,
     MODE_SOLAR_SMART,
-    MODES,
     NO_EQUALIZER,
     NO_PRICES_WAIT,
     PHASE_ENTITY_KEYS,
@@ -112,9 +116,11 @@ from .const import (
     SMART_CHARGING_FALLBACK,
     SMART_CHARGING_SOLAR,
     SMART_IDLE,
-    SMART_NO_PRICES,
     SMART_NOT_CONNECTED,
+    SMART_NO_PRICES,
     SMART_TARGET_REACHED,
+    SMART_TEST_CHARGE,
+    SMART_TEST_FAILED,
     SMART_WAITING_CHEAP,
     SMART_WAITING_SOLAR,
     SOLAR_START_DELAY_S,
@@ -123,6 +129,8 @@ from .const import (
     STATUS_DISCONNECTED,
     STORAGE_KEY,
     STORAGE_VERSION,
+    TEST_CHARGE_SECONDS,
+    TEST_CHARGE_TIMEOUT_S,
     VERSION,
 )
 from .logic import (
@@ -220,6 +228,7 @@ class SessionTracker:
     energy: float = 0.0
     cost: float = 0.0
     peak_kw: float = 0.0  # highest power seen while the charger was allowed its full current
+    tested: bool = False  # the test charge for this session is done (or not needed)
 
 
 @dataclass
@@ -296,6 +305,12 @@ class EaseeSmartManager:
         self._car_started_at: datetime | None = None
         # per car: (soc, lifetime kWh, session kWh) at the moment the car last reported a new SoC
         self._soc_ref: dict[int, tuple[float, float | None, float | None]] = {}
+        # short test charge at the start of a session: None (not done), running, ok, failed
+        self._test_state: str | None = None
+        self._test_since: datetime | None = None
+        self._test_flow_since: datetime | None = None
+        self._test_woken = False
+        self._test_stop = False
         self.charger_device_id: str = entry.data[CONF_CHARGER_DEVICE]
         # Options win over setup data, so an Equalizer can be added or removed later.
         eq = {**entry.data, **entry.options}.get(CONF_EQUALIZER_DEVICE)
@@ -496,7 +511,7 @@ class EaseeSmartManager:
         sess = data.get("session", {})
         self.session = SessionTracker(
             start=sess.get("start"), energy=sess.get("energy", 0.0), cost=sess.get("cost", 0.0),
-            peak_kw=float(sess.get("peak_kw") or 0.0),
+            peak_kw=float(sess.get("peak_kw") or 0.0), tested=bool(sess.get("tested", True)),
         )
         self.sessions = data.get("sessions", [])
         self.days = data.get("days", {})
@@ -835,6 +850,8 @@ class EaseeSmartManager:
     def _start_session(self) -> None:
         self.session = SessionTracker(start=dt_util.now().isoformat())
         self.solar.reset()
+        self._test_state = None
+        self._test_woken = False
         # "Mode for a new session": the user picks it in the options (keep = leave as is).
         chosen = self._opt(CONF_SESSION_MODE) or SESSION_MODE_KEEP
         if chosen in MODES and chosen != self.settings.mode:
@@ -1001,13 +1018,16 @@ class EaseeSmartManager:
                     state = SMART_CHARGING_SOLAR
             want = max(want_smart, want_solar)
 
+        want, state = self._test_charge(snap, now, want, state)
+
         # Solar on little sun → 1 phase; anything that needs full power (boost, cheap hours) → 3.
         solar_only = mode in (MODE_SOLAR, MODE_SOLAR_SMART) and not self.settings.boost and want_smart == 0
         await self._async_ensure_phases(solar_phases if solar_only else 3)
 
         snap.smart_state = state
         snap.target_current = want
-        await self._async_apply(want, now)
+        force, self._test_stop = self._test_stop, False
+        await self._async_apply(want, now, force=force)
         async_dispatcher_send(self.hass, SIGNAL_UPDATE.format(self.entry.entry_id))
 
     # ------------------------------------------------------------ solar panels
@@ -1360,9 +1380,85 @@ class EaseeSmartManager:
         phases = 1 if self.phase_switching else self.phases
         return round(power_for_amps(self.min_current, phases, self.voltage) + self.solar_buffer_kw, 2)
 
-    async def _async_apply(self, want: int, now: datetime) -> None:
+    def _test_charge(self, snap: Snapshot, now: datetime, want: int, state: str) -> tuple[int, str]:
+        """Charge a few seconds at the start of a session to check the plug and the car.
+
+        Only when nothing would charge right now; if charging happens anyway, that is the test.
+        No current after a while: wake the car once, then report a problem.
+        """
+        if not self._opt(CONF_TEST_CHARGE, True) or self.settings.boost or self._test_state == "ok":
+            return want, state
+        flowing = snap.status == "charging" or (snap.power_kw or 0.0) >= 0.5
+        if self._test_state is None:
+            if not self.session.start or self.session.tested:
+                return want, state
+            if want > 0 or self.session.energy > 0.05:
+                if flowing or self.session.energy > 0.05:
+                    self._test_done("ok")
+                return want, state
+            self._test_state, self._test_since, self._test_flow_since = "running", now, None
+            _LOGGER.debug("Test charge started")
+        if self._test_state == "running":
+            if flowing:
+                if self._test_flow_since is None:
+                    self._test_flow_since = now
+                    # end the test right on time instead of on the next tick
+                    async_call_later(self.hass, TEST_CHARGE_SECONDS + 0.5, self._async_test_tick)
+                if (now - self._test_flow_since).total_seconds() >= TEST_CHARGE_SECONDS:
+                    self._test_done("ok")
+                    self._test_stop = want == 0
+                    _LOGGER.debug("Test charge ok")
+                    return want, state
+                return max(want, self.min_current), SMART_TEST_CHARGE
+            elapsed = (now - (self._test_since or now)).total_seconds()
+            if elapsed >= TEST_CHARGE_TIMEOUT_S:
+                self._test_done("failed")
+                self._test_stop = want == 0
+                self._notify_test_failed()
+                return want, SMART_TEST_FAILED if want == 0 else state
+            if elapsed >= 30 and not self._test_woken and self._opt(CONF_NUDGE, True):
+                self._test_woken = True
+                self.hass.async_create_task(self._async_wake_car())
+            return max(want, self.min_current), SMART_TEST_CHARGE
+        # failed: show it until the car charges after all or the cable is removed
+        if flowing:
+            self._test_done("ok")
+            persistent_notification.async_dismiss(self.hass, f"{DOMAIN}_test_{self.entry.entry_id}")
+            return want, state
+        return want, SMART_TEST_FAILED if want == 0 else state
+
+    def _test_done(self, result: str) -> None:
+        self._test_state = result
+        self.session.tested = True
+        self._save()
+
+    async def _async_test_tick(self, _now: datetime) -> None:
+        await self._async_control()
+
+    async def _async_wake_car(self) -> None:
+        try:
+            await self.async_charger_command("resume")
+            await self.async_force_car_start()
+        except Exception as err:  # noqa: BLE001 - a cloud hiccup must not stop the test
+            _LOGGER.debug("Could not wake the car: %s", err)
+
+    def _notify_test_failed(self) -> None:
+        car = self.active_car()
+        persistent_notification.async_create(
+            self.hass,
+            (
+                f"The test charge at the start of this session got no current"
+                f"{' from ' + car.name if car else ''}. "
+                "Check that the plug sits well in the car and the charger, and that no charge timer "
+                "or charge limit is active in the car."
+            ),
+            title="Easee Smart Charging: test charge failed",
+            notification_id=f"{DOMAIN}_test_{self.entry.entry_id}",
+        )
+
+    async def _async_apply(self, want: int, now: datetime, force: bool = False) -> None:
         changed = want != self._last_sent
-        urgent = self._last_sent in (None, 0) and want > 0
+        urgent = (self._last_sent in (None, 0) and want > 0) or force
         if not changed and self._last_sent_at and (now - self._last_sent_at).total_seconds() < CONTROL_REFRESH_S:
             await self._async_nudge(want, now)
             return

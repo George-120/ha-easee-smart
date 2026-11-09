@@ -278,6 +278,7 @@
           "charge_efficiency": "Ladewirkungsgrad",
           "boost_reset_on_unplug": "Boost ausschalten beim Abstecken",
           "resume_nudge": "Auto wecken, wenn es nicht lädt",
+          "test_charge": "Testladung zu Beginn jeder Sitzung",
           "car_refresh_minutes": "Autodaten aktualisieren alle (0 = aus)",
           "language": "Sprache von Karte und Bericht",
           "phase_confirm_minutes": "Phasenwechsel: wechseln, wenn es anhält",
@@ -289,6 +290,7 @@
           "min_current": "Die meisten Autos brauchen mindestens 6 A.",
           "charge_efficiency": "Ladeverluste; für die Berechnung der benötigten Energie.",
           "resume_nudge": "Nach 3 Minuten ohne Laden: Fortsetzen an der Wallbox und Start-Entität des Autos.",
+          "test_charge": "Lädt 5 Sekunden mit dem Mindeststrom, wenn ein Auto angeschlossen wird, um Stecker und Auto zu prüfen. Kein Strom? Dann wird das Auto geweckt, und du bekommst eine Meldung, wenn es trotzdem nicht lädt.",
           "car_refresh_minutes": "Nur wenn ein Auto angeschlossen ist."
         }
       }
@@ -403,7 +405,9 @@
           "charging_boost": "Boost: lädt jetzt",
           "charging_fallback": "Lädt (zu wenig Preisdaten)",
           "target_reached": "Ziel erreicht",
-          "no_prices": "Lädt (keine Preise verfügbar)"
+          "no_prices": "Lädt (keine Preise verfügbar)",
+          "test_charge": "Testladung (Stecker prüfen)",
+          "test_failed": "Testladung fehlgeschlagen: Stecker prüfen"
         }
       },
       "target_current": {
