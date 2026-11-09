@@ -294,6 +294,8 @@ class EaseeSmartManager:
         self._last_plugged: str | None = None
         self._last_car_refresh: datetime | None = None
         self._car_started_at: datetime | None = None
+        # per car: (soc, lifetime kWh, session kWh) at the moment the car last reported a new SoC
+        self._soc_ref: dict[int, tuple[float, float | None, float | None]] = {}
         self.charger_device_id: str = entry.data[CONF_CHARGER_DEVICE]
         # Options win over setup data, so an Equalizer can be added or removed later.
         eq = {**entry.data, **entry.options}.get(CONF_EQUALIZER_DEVICE)
@@ -759,10 +761,29 @@ class EaseeSmartManager:
         car = self.active_car()
         soc = self.car_soc(car)
         if car is not None and soc is not None and not self.settings.manual_kwh:
-            battery = max(0.0, (self.car_target(car) - soc) / 100 * car.capacity)
-            return round(battery / self.efficiency, 2)
+            battery = (self.car_target(car) - soc) / 100 * car.capacity
+            # Cars report their SoC slowly (sometimes once an hour): count what went in since that report,
+            # otherwise the plan keeps charging on an old percentage and overshoots the target.
+            battery -= self._delivered_since_soc(car, soc) * self.efficiency
+            return round(max(0.0, battery) / self.efficiency, 2)
         delivered = self.snapshot.session_energy if self.snapshot.connected else 0.0
         return round(max(0.0, self.settings.target_energy - (delivered or 0.0)), 2)
+
+    def _delivered_since_soc(self, car: Car, soc: float) -> float:
+        """kWh delivered by the charger since the car last reported a different SoC."""
+        connected = self.snapshot.connected
+        lifetime = self.charger_value("lifetime_energy")
+        session = self.snapshot.session_energy if connected else None
+        ref = self._soc_ref.get(car.index)
+        if ref is None or ref[0] != soc or not connected:
+            self._soc_ref[car.index] = (soc, lifetime, session)
+            return 0.0
+        deltas = [0.0]
+        if lifetime is not None and ref[1] is not None and lifetime >= ref[1]:
+            deltas.append(lifetime - ref[1])
+        if session is not None and ref[2] is not None and session >= ref[2]:
+            deltas.append(session - ref[2])
+        return min(max(deltas), car.capacity)
 
     # ------------------------------------------------------- energy & sessions
     def _account_energy(self) -> None:
