@@ -1053,13 +1053,15 @@ def test_vrm_sync_sends_the_plan(tmp_path):
         # same plan again: nothing is sent
         await m._async_vrm_sync()
         assert len(posts) == 1
-        # unplugged a while later: every hour goes back to VRM
+        assert len(ev) == 36  # Easee Smart leads: every hour of the horizon, VRM's own EV guess is never used
+        # unplugged a while later: nothing will charge, so 0 everywhere (not VRM's guess, not double)
         setstate(hass, "sensor.c_status", "disconnected")
         CLOCK["now"] = CLOCK["now"] + timedelta(minutes=6)
         m._recompute()
         await m._async_vrm_sync()
         assert len(posts) == 2
-        assert all(x["value"] == -1 for x in posts[1]["vrm_consum_evcs_fc_adj"])
-        assert m.vrm.sent == {}
+        assert all(x["value"] == 0 for x in posts[1]["vrm_consum_evcs_fc_adj"])
+        assert all(x["value"] == 1000 for x in posts[1]["vrm_consumption_fc_adj"])
+        assert all(ev == 0 for _t, ev in m.vrm.sent.values())
         CLOCK["now"] = datetime(2026, 11, 3, 20, 0, tzinfo=TZ)
     asyncio.run(run())

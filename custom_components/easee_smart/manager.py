@@ -964,25 +964,24 @@ class EaseeSmartManager:
         if self.vrm is not None:
             self.hass.async_create_task(self._async_vrm_sync())
 
-    def _vrm_wish(self, now: datetime) -> tuple[dict[int, int], set[int]]:
-        """What the car will take per hour (Wh), and the plugged-in hours where it takes nothing."""
-        from .vrm import VRM_HORIZON_H, first_hour, hour_ts, hourly_ev_wh
+    def _vrm_wish(self, now: datetime) -> tuple[dict[int, int], set[int]] | None:
+        """What the car will take per hour (Wh) and the hours where it takes nothing.
+
+        Easee Smart leads: every hour in the horizon gets our number (0 when nothing is planned or no
+        car is plugged in), so VRM's own guess for the charger is never used and never counted twice.
+        """
+        from .vrm import VRM_HORIZON_H, first_hour, hourly_ev_wh
 
         snap = self.snapshot
-        if snap.status == "unknown" or not snap.connected:
-            return {}, set()
-        mode = MODE_NORMAL if self.settings.boost else self.settings.mode
-        plan = snap.plan if mode in (MODE_SMART, MODE_SOLAR_SMART) else None
-        ev = hourly_ev_wh(self._schedule_payload(now, plan), now)
+        if snap.status == "unknown":
+            return None
+        ev: dict[int, int] = {}
+        if snap.connected:
+            mode = MODE_NORMAL if self.settings.boost else self.settings.mode
+            plan = snap.plan if mode in (MODE_SMART, MODE_SOLAR_SMART) else None
+            ev = hourly_ev_wh(self._schedule_payload(now, plan), now)
         first = first_hour(now)
-        last = first
-        if mode != MODE_NORMAL:
-            try:
-                last = hour_ts(self._departure(now))
-            except (TypeError, ValueError):
-                last = first
-        last = min(max([last, *ev]), first + (VRM_HORIZON_H - 1) * 3600)
-        zero = {h for h in range(first, last + 1, 3600) if h not in ev}
+        zero = {first + i * 3600 for i in range(VRM_HORIZON_H)} - set(ev)
         return ev, zero
 
     async def _async_vrm_sync(self) -> None:
@@ -990,10 +989,13 @@ class EaseeSmartManager:
             return
         now = dt_util.now()
         try:
-            ev, zero = self._vrm_wish(now)
+            wish = self._vrm_wish(now)
         except (TypeError, ValueError) as err:
             _LOGGER.debug("No VRM plan: %s", err)
             return
+        if wish is None:
+            return
+        ev, zero = wish
         if await self.vrm.async_sync(ev, zero, now):
             self._save()
             async_dispatcher_send(self.hass, SIGNAL_UPDATE.format(self.entry.entry_id))
