@@ -127,6 +127,7 @@
           "grid": "Main connection: smart meter for solar charging",
           "energy": "Prices, ERE and costs",
           "cars": "Cars: add, change or remove",
+          "victron": "Victron VRM: send the charge plan to Dynamic ESS",
           "advanced": "Advanced: solar timing, buffer, language",
           "dashboard": "Create the ready-made dashboard"
         }
@@ -293,12 +294,29 @@
           "test_charge": "Charges for 5 seconds at the minimum current when a car is plugged in, to check the plug and the car. No current? The car is woken up, and you get a notification if it still does not charge.",
           "car_refresh_minutes": "Only while a car is connected. Uses the car's refresh entity."
         }
+      },
+      "victron": {
+        "title": "Victron VRM (Dynamic ESS)",
+        "description": "Optional. Sends the charge plan to Victron VRM: per hour how many kWh the car will charge. VRM shows it in the consumption forecast and **Dynamic ESS** plans the home battery around it, so the battery does not empty itself into the car.\n\nCreate an access token in VRM: **Preferences → Integrations → Access tokens**. Paste it below (it is stored only in Home Assistant). Leave the installation ID empty when you have one installation.\n\nToken saved: {token_state} · Your installations: {sites}",
+        "data": {
+          "vrm_enabled": "Send the charge plan to VRM",
+          "vrm_token": "VRM access token",
+          "vrm_site_id": "VRM installation ID"
+        },
+        "data_description": {
+          "vrm_token": "Leave empty to keep the saved token.",
+          "vrm_site_id": "The number in the VRM link: vrm.victronenergy.com/installation/**123456**/…"
+        }
       }
     },
     "error": {
       "pv_power_required": "Choose the power sensor of your inverter for the own forecast.",
       "no_hourly_forecast": "This sensor has no hourly forecast (attribute 'hourly').",
-      "dashboard_failed": "The dashboard could not be created. Check the log for details."
+      "dashboard_failed": "The dashboard could not be created. Check the log for details.",
+      "vrm_token_required": "Fill in a VRM access token.",
+      "vrm_invalid_auth": "VRM does not accept this token.",
+      "vrm_cannot_connect": "Victron VRM could not be reached. Try again later.",
+      "vrm_pick_site": "Choose one of your installations: {sites}"
     },
     "abort": {
       "dashboard_created": "Done! Open **Easee Smart** in the sidebar ({url})."
@@ -490,6 +508,15 @@
       },
       "ere_total": {
         "name": "ERE total"
+      },
+      "vrm_plan": {
+        "name": "Victron VRM plan",
+        "state": {
+          "waiting": "Waiting",
+          "ok": "Sent",
+          "auth_error": "Token refused",
+          "error": "Error"
+        }
       }
     },
     "binary_sensor": {

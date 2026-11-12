@@ -127,6 +127,7 @@
           "grid": "Hausanschluss: Smart Meter fürs Solarladen",
           "energy": "Preise, ERE und Kosten",
           "cars": "Autos: hinzufügen, ändern oder entfernen",
+          "victron": "Victron VRM: Ladeplan an Dynamic ESS senden",
           "advanced": "Erweitert: Solar-Timing, Puffer, Sprache",
           "dashboard": "Fertiges Dashboard erstellen"
         }
@@ -293,12 +294,29 @@
           "test_charge": "Lädt 5 Sekunden mit dem Mindeststrom, wenn ein Auto angeschlossen wird, um Stecker und Auto zu prüfen. Kein Strom? Dann wird das Auto geweckt, und du bekommst eine Meldung, wenn es trotzdem nicht lädt.",
           "car_refresh_minutes": "Nur wenn ein Auto angeschlossen ist."
         }
+      },
+      "victron": {
+        "title": "Victron VRM (Dynamic ESS)",
+        "description": "Optional. Sendet den Ladeplan an Victron VRM: pro Stunde, wie viele kWh das Auto laden wird. VRM zeigt ihn in der Verbrauchsprognose und **Dynamic ESS** plant den Hausspeicher darum herum, damit sich der Speicher nicht ins Auto entlädt.\n\nErstelle in VRM ein Access Token: **Einstellungen → Integrationen → Access Tokens**. Füge es unten ein (es wird nur in Home Assistant gespeichert). Lass die Installations-ID leer, wenn du eine Installation hast.\n\nToken gespeichert: {token_state} · Deine Installationen: {sites}",
+        "data": {
+          "vrm_enabled": "Ladeplan an VRM senden",
+          "vrm_token": "VRM Access Token",
+          "vrm_site_id": "VRM Installations-ID"
+        },
+        "data_description": {
+          "vrm_token": "Leer lassen, um das gespeicherte Token zu behalten.",
+          "vrm_site_id": "Die Zahl im VRM-Link: vrm.victronenergy.com/installation/**123456**/…"
+        }
       }
     },
     "error": {
       "pv_power_required": "Wähle den Leistungssensor deines Wechselrichters für die eigene Prognose.",
       "no_hourly_forecast": "Dieser Sensor hat keine Stundenprognose (Attribut 'hourly').",
-      "dashboard_failed": "Das Dashboard konnte nicht erstellt werden. Details stehen im Protokoll."
+      "dashboard_failed": "Das Dashboard konnte nicht erstellt werden. Details stehen im Protokoll.",
+      "vrm_token_required": "Gib ein VRM Access Token ein.",
+      "vrm_invalid_auth": "VRM akzeptiert dieses Token nicht.",
+      "vrm_cannot_connect": "Victron VRM ist nicht erreichbar. Versuche es später erneut.",
+      "vrm_pick_site": "Wähle eine deiner Installationen: {sites}"
     },
     "abort": {
       "dashboard_created": "Fertig! Öffne **Easee Smart** in der Seitenleiste ({url})."
@@ -490,6 +508,15 @@
       },
       "ere_total": {
         "name": "ERE gesamt"
+      },
+      "vrm_plan": {
+        "name": "Victron VRM-Plan",
+        "state": {
+          "waiting": "Wartet",
+          "ok": "Gesendet",
+          "auth_error": "Token abgelehnt",
+          "error": "Fehler"
+        }
       }
     },
     "binary_sensor": {

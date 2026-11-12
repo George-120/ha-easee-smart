@@ -127,6 +127,7 @@
           "grid": "Hoofdaansluiting: slimme meter voor zonneladen",
           "energy": "Prijzen, ERE en kosten",
           "cars": "Auto's: toevoegen, wijzigen of verwijderen",
+          "victron": "Victron VRM: laadplan naar Dynamic ESS sturen",
           "advanced": "Geavanceerd: zon-timing, buffer, taal",
           "dashboard": "Kant-en-klaar dashboard aanmaken"
         }
@@ -293,12 +294,29 @@
           "test_charge": "Laadt 5 seconden op de minimale stroom als er een auto wordt aangesloten, om de stekker en de auto te controleren. Geen stroom? Dan wordt de auto gewekt, en krijg je een melding als hij dan nog niet laadt.",
           "car_refresh_minutes": "Alleen als er een auto aangesloten is. Gebruikt de verversen-entiteit van de auto."
         }
+      },
+      "victron": {
+        "title": "Victron VRM (Dynamic ESS)",
+        "description": "Optioneel. Stuurt het laadplan naar Victron VRM: per uur hoeveel kWh de auto gaat laden. VRM toont het in de verbruiksvoorspelling en **Dynamic ESS** plant de thuisbatterij erop, zodat de batterij zich niet in de auto leegt.\n\nMaak een access token in VRM: **Voorkeuren → Integraties → Access tokens**. Plak hem hieronder (hij wordt alleen in Home Assistant bewaard). Laat het installatie-ID leeg als je één installatie hebt.\n\nToken opgeslagen: {token_state} · Je installaties: {sites}",
+        "data": {
+          "vrm_enabled": "Laadplan naar VRM sturen",
+          "vrm_token": "VRM access token",
+          "vrm_site_id": "VRM installatie-ID"
+        },
+        "data_description": {
+          "vrm_token": "Leeg laten om de opgeslagen token te houden.",
+          "vrm_site_id": "Het nummer in de VRM-link: vrm.victronenergy.com/installation/**123456**/…"
+        }
       }
     },
     "error": {
       "pv_power_required": "Kies de vermogenssensor van je omvormer voor de eigen verwachting.",
       "no_hourly_forecast": "Deze sensor heeft geen verwachting per uur (attribuut 'hourly').",
-      "dashboard_failed": "Het dashboard kon niet worden aangemaakt. Kijk in het logboek voor details."
+      "dashboard_failed": "Het dashboard kon niet worden aangemaakt. Kijk in het logboek voor details.",
+      "vrm_token_required": "Vul een VRM access token in.",
+      "vrm_invalid_auth": "VRM accepteert deze token niet.",
+      "vrm_cannot_connect": "Victron VRM is niet bereikbaar. Probeer het later opnieuw.",
+      "vrm_pick_site": "Kies een van je installaties: {sites}"
     },
     "abort": {
       "dashboard_created": "Klaar! Open **Easee Smart** in de zijbalk ({url})."
@@ -490,6 +508,15 @@
       },
       "ere_total": {
         "name": "ERE totaal"
+      },
+      "vrm_plan": {
+        "name": "Victron VRM-plan",
+        "state": {
+          "waiting": "Wacht",
+          "ok": "Verstuurd",
+          "auth_error": "Token geweigerd",
+          "error": "Fout"
+        }
       }
     },
     "binary_sensor": {

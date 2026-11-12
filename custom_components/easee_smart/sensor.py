@@ -265,6 +265,18 @@ EQUALIZER: tuple[EaseeSmartSensorDescription, ...] = (
 )
 
 
+VRM: tuple[EaseeSmartSensorDescription, ...] = (
+    EaseeSmartSensorDescription(
+        key="vrm_plan",
+        device_class=SensorDeviceClass.ENUM,
+        options=["waiting", "ok", "auth_error", "error"],
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda m: m.vrm.status if m.vrm else None,
+        attr_fn=lambda m: m.vrm.attributes() if m.vrm else {},
+    ),
+)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: EaseeSmartConfigEntry,
@@ -280,6 +292,8 @@ async def async_setup_entry(
         descriptions += SURPLUS
     if manager.equalizer_entities or any(manager.phase_entities):
         descriptions += EQUALIZER
+    if manager.vrm is not None:
+        descriptions += VRM
     async_add_entities(EaseeSmartSensor(manager, d) for d in descriptions)
 
 

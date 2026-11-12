@@ -83,6 +83,9 @@ from .const import (
     CONF_SOLAR_STOP_DELAY,
     CONF_TEST_CHARGE,
     CONF_VAT,
+    CONF_VRM_ENABLED,
+    CONF_VRM_SITE,
+    CONF_VRM_TOKEN,
     DEFAULT_EFFICIENCY,
     DEFAULT_MAIN_FUSE,
     DEFAULT_MAX_CURRENT,
@@ -634,7 +637,7 @@ class EaseeSmartOptionsFlow(OptionsFlow):
         return self.async_create_entry(data=data)
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        menu = ["charger", "equalizer", "solar", "energy", "cars", "advanced", "dashboard"]
+        menu = ["charger", "equalizer", "solar", "energy", "cars", "victron", "advanced", "dashboard"]
         if self._current().get(CONF_EQUALIZER_DEVICE) in (None, "", NO_EQUALIZER):
             menu.insert(3, "grid")
         return self.async_show_menu(step_id="init", menu_options=menu)
@@ -656,6 +659,52 @@ class EaseeSmartOptionsFlow(OptionsFlow):
         current = {**self._current(), **(user_input or {})}
         suggested = None if current.get(CONF_PV_POWER) else await async_suggest_pv_power(self.hass)
         return self.async_show_form(step_id="solar", data_schema=vol.Schema(_solar_schema(self.hass, current, suggested)), errors=errors)
+
+    async def async_step_victron(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Send the charge plan to Victron VRM (Dynamic ESS anticipates the car)."""
+        from .vrm import VrmAuthError, VrmClient, VrmError
+
+        errors: dict[str, str] = {}
+        placeholders = {"sites": "—"}
+        current = self._current()
+        if user_input is not None:
+            enabled = bool(user_input.get(CONF_VRM_ENABLED))
+            token = (user_input.get(CONF_VRM_TOKEN) or current.get(CONF_VRM_TOKEN) or "").strip()
+            site = str(user_input.get(CONF_VRM_SITE) or "").strip()
+            if enabled:
+                if not token:
+                    errors[CONF_VRM_TOKEN] = "vrm_token_required"
+                else:
+                    try:
+                        sites = await VrmClient(self.hass, token).async_installations()
+                    except VrmAuthError:
+                        errors[CONF_VRM_TOKEN] = "vrm_invalid_auth"
+                    except VrmError:
+                        errors["base"] = "vrm_cannot_connect"
+                    else:
+                        ids = [str(r["idSite"]) for r in sites]
+                        placeholders["sites"] = ", ".join(f"{r.get('name', '?')} ({r['idSite']})" for r in sites) or "—"
+                        if not site and len(ids) == 1:
+                            site = ids[0]
+                        if not site or site not in ids:
+                            errors[CONF_VRM_SITE] = "vrm_pick_site"
+            if not errors:
+                data = {**self.config_entry.options, CONF_VRM_ENABLED: enabled,
+                        CONF_VRM_TOKEN: token or None, CONF_VRM_SITE: int(site) if site.isdigit() else None}
+                return self.async_create_entry(data=data)
+            current = {**current, **user_input, CONF_VRM_SITE: site}
+        schema = {
+            vol.Required(CONF_VRM_ENABLED, default=bool(current.get(CONF_VRM_ENABLED))): selector.BooleanSelector(),
+            vol.Optional(CONF_VRM_TOKEN): selector.TextSelector(
+                selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)
+            ),
+            vol.Optional(CONF_VRM_SITE, description={"suggested_value": str(current.get(CONF_VRM_SITE) or "") or None}):
+                selector.TextSelector(),
+        }
+        placeholders["token_state"] = "✓" if current.get(CONF_VRM_TOKEN) else "—"
+        return self.async_show_form(
+            step_id="victron", data_schema=vol.Schema(schema), errors=errors, description_placeholders=placeholders
+        )
 
     async def async_step_equalizer(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Link (or unlink) an Easee Equalizer and choose whether the cards show it."""

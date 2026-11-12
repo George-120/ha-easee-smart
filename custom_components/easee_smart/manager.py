@@ -73,6 +73,9 @@ from .const import (
     CONF_TEST_CHARGE,
     CONF_VAT,
     CONF_VOLTAGE,
+    CONF_VRM_ENABLED,
+    CONF_VRM_SITE,
+    CONF_VRM_TOKEN,
     CONNECTED_STATUSES,
     CONTROL_INTERVAL_S,
     CONTROL_REFRESH_S,
@@ -280,6 +283,7 @@ class EaseeSmartManager:
         )
         self.phase_switch = PhaseSwitcher()
         self.solar_forecast = None  # SolarForecast when "own" forecast is chosen
+        self.vrm = None  # VrmPlanSync when the plan is sent to Victron VRM
         self.house_profile: dict[int, float] = {}  # local hour -> learned house use (kW)
         self.car_peaks: dict[str, list[float]] = {}  # car name -> peak charging power of recent sessions
         self._save_pending = False
@@ -531,6 +535,19 @@ class EaseeSmartManager:
             if isinstance(v, list) and 2 <= len(v) <= 3
         }
         self.active_phases = data.get("active_phases")
+        if self._opt(CONF_VRM_ENABLED) and self._opt(CONF_VRM_TOKEN) and self._opt(CONF_VRM_SITE):
+            from .vrm import VrmPlanSync
+
+            try:
+                self.vrm = VrmPlanSync(self.hass, str(self._opt(CONF_VRM_TOKEN)), int(self._opt(CONF_VRM_SITE)))
+            except (TypeError, ValueError):
+                self.vrm = None
+            if self.vrm is not None and str(data.get("vrm_site")) == str(self.vrm.site):
+                self.vrm.sent = {
+                    int(k): (int(v[0]), int(v[1]))
+                    for k, v in (data.get("vrm_sent") or {}).items()
+                    if isinstance(v, list) and len(v) == 2
+                }
         if self.active_phases in (1, 3):
             self.phase_switch.reset(self.active_phases)
         self._resolve()
@@ -605,6 +622,8 @@ class EaseeSmartManager:
             "car_peaks": self.car_peaks,
             "history": self.history,
             "active_phases": self.active_phases,
+            "vrm_site": self.vrm.site if self.vrm else None,
+            "vrm_sent": {str(k): list(v) for k, v in self.vrm.sent.items()} if self.vrm else {},
             "sticky_departure": [self._sticky_departure[0], self._sticky_departure[1].isoformat(), self._sticky_departure[2]]
             if self._sticky_departure else None,
         }
@@ -942,6 +961,42 @@ class EaseeSmartManager:
                     break
         # the plan is made here: push it to the entities and the card now, not on the next tick
         async_dispatcher_send(self.hass, SIGNAL_UPDATE.format(self.entry.entry_id))
+        if self.vrm is not None:
+            self.hass.async_create_task(self._async_vrm_sync())
+
+    def _vrm_wish(self, now: datetime) -> tuple[dict[int, int], set[int]]:
+        """What the car will take per hour (Wh), and the plugged-in hours where it takes nothing."""
+        from .vrm import VRM_HORIZON_H, hour_ts, hourly_ev_wh
+
+        snap = self.snapshot
+        if snap.status == "unknown" or not snap.connected:
+            return {}, set()
+        mode = MODE_NORMAL if self.settings.boost else self.settings.mode
+        plan = snap.plan if mode in (MODE_SMART, MODE_SOLAR_SMART) else None
+        ev = hourly_ev_wh(self._schedule_payload(now, plan), now)
+        first = hour_ts(now)
+        last = first
+        if mode != MODE_NORMAL:
+            try:
+                last = hour_ts(self._departure(now))
+            except (TypeError, ValueError):
+                last = first
+        last = min(max([last, *ev]), first + (VRM_HORIZON_H - 1) * 3600)
+        zero = {h for h in range(first, last + 1, 3600) if h not in ev}
+        return ev, zero
+
+    async def _async_vrm_sync(self) -> None:
+        if self.vrm is None:
+            return
+        now = dt_util.now()
+        try:
+            ev, zero = self._vrm_wish(now)
+        except (TypeError, ValueError) as err:
+            _LOGGER.debug("No VRM plan: %s", err)
+            return
+        if await self.vrm.async_sync(ev, zero, now):
+            self._save()
+            async_dispatcher_send(self.hass, SIGNAL_UPDATE.format(self.entry.entry_id))
 
     async def _async_control_locked(self) -> None:
         snap = self.snapshot

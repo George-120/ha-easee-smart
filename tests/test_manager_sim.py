@@ -114,6 +114,7 @@ def install_stubs():
         _mod("aiohttp", ClientError=Exception, ClientTimeout=lambda **k: None)
     dt = _mod("homeassistant.util.dt", now=lambda: CLOCK["now"], utcnow=lambda: CLOCK["now"], as_local=lambda d: d.astimezone(TZ),
               parse_datetime=datetime.fromisoformat, as_utc=lambda d: d.astimezone(UTC),
+              utc_from_timestamp=lambda ts: datetime.fromtimestamp(ts, UTC),
               start_of_local_day=lambda: CLOCK["now"].astimezone(TZ).replace(hour=0, minute=0, second=0, microsecond=0))
     _mod("homeassistant.util", dt=dt)
     sys.modules["homeassistant"].helpers = sys.modules["homeassistant.helpers"]
@@ -992,5 +993,73 @@ def test_test_charge_at_session_start(tmp_path):
         # the car starts after all: the warning goes away
         await tick(1, "charging", 4.1)
         assert not NOTES
+        CLOCK["now"] = datetime(2026, 11, 3, 20, 0, tzinfo=TZ)
+    asyncio.run(run())
+
+
+def test_vrm_adjustment_never_stacks():
+    install_stubs()
+    vrm = importlib.import_module("easee_smart.vrm")
+    h = 1_800_000_000 // 3600 * 3600
+    # VRM forecast: house 800 Wh + its own EV guess 2000 Wh
+    payload, sent = vrm.build_adjustment({h: 11000}, {h + 3600}, {h: 2800, h + 3600: 900}, {h: 2000}, {}, h)
+    assert payload["vrm_consum_evcs_fc_adj"] == [{"timestamp": h, "value": 11000}, {"timestamp": h + 3600, "value": 0}]
+    assert payload["vrm_consumption_fc_adj"] == [{"timestamp": h, "value": 11800}, {"timestamp": h + 3600, "value": 900}]
+    # VRM now returns our own total (EV still its own guess): the base stays 800, nothing stacks
+    payload, sent = vrm.build_adjustment({h: 5000}, set(), {h: 11800}, {h: 2000}, sent, h)
+    assert {"timestamp": h, "value": 5800} in payload["vrm_consumption_fc_adj"]
+    # the hour that is no longer plugged in is given back to VRM
+    assert {"timestamp": h + 3600, "value": -1} in payload["vrm_consumption_fc_adj"]
+    assert {"timestamp": h + 3600, "value": -1} in payload["vrm_consum_evcs_fc_adj"]
+    # kWh answers are converted to Wh
+    total, ev = vrm.to_wh({h: 0.8}, {h: 0.2})
+    assert total[h] == 800 and ev[h] == 200
+    assert vrm.parse_series({"x": [[h * 1000, 5], [h * 1000 + 3600_000, None]]}, "x") == {h: 5.0}
+
+
+def test_vrm_sync_sends_the_plan(tmp_path):
+    async def run():
+        hass, m = make(tmp_path, options={"vrm_enabled": True, "vrm_token": "t", "vrm_site_id": 788610, "test_charge": False})
+        await m.async_setup()
+        assert m.vrm is not None and m.vrm.site == 788610
+        posts = []
+
+        class FakeClient:
+            async def async_forecast(self, site, start, end):
+                return {h: 1000.0 for h in range(start, end, 3600)}, {}
+
+            async def async_adjust(self, site, payload):
+                posts.append(payload)
+
+        m.vrm.client = FakeClient()
+        setstate(hass, "sensor.c_status", "awaiting_start")
+        setstate(hass, "sensor.c_session_energy", 0)
+        setstate(hass, "sensor.c_power", 0)
+        setstate(hass, "sensor.c_lifetime_energy", 1000)
+        prices(hass, m)
+        await m.async_set_setting("target_energy", 30)
+        await m.async_set_setting("mode", "smart")
+        await m._async_vrm_sync()
+        assert len(posts) == 1
+        ev = posts[0]["vrm_consum_evcs_fc_adj"]
+        planned = sum(x["value"] for x in ev)
+        assert 29000 <= planned <= 33000  # the 30 kWh (plus losses) in the cheap hours
+        charging = [x for x in ev if x["value"] > 0]
+        assert charging and all(x["value"] <= 11100 for x in charging)
+        assert any(x["value"] == 0 for x in ev)  # plugged in, waiting: no EV in the expensive hours
+        total = {x["timestamp"]: x["value"] for x in posts[0]["vrm_consumption_fc_adj"]}
+        assert all(total[x["timestamp"]] == 1000 + x["value"] for x in ev)
+        assert m.vrm.status == "ok" and m.vrm.attributes()["planned_kwh"] > 29
+        # same plan again: nothing is sent
+        await m._async_vrm_sync()
+        assert len(posts) == 1
+        # unplugged a while later: every hour goes back to VRM
+        setstate(hass, "sensor.c_status", "disconnected")
+        CLOCK["now"] = CLOCK["now"] + timedelta(minutes=6)
+        m._recompute()
+        await m._async_vrm_sync()
+        assert len(posts) == 2
+        assert all(x["value"] == -1 for x in posts[1]["vrm_consum_evcs_fc_adj"])
+        assert m.vrm.sent == {}
         CLOCK["now"] = datetime(2026, 11, 3, 20, 0, tzinfo=TZ)
     asyncio.run(run())
