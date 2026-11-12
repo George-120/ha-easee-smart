@@ -966,7 +966,7 @@ class EaseeSmartManager:
 
     def _vrm_wish(self, now: datetime) -> tuple[dict[int, int], set[int]]:
         """What the car will take per hour (Wh), and the plugged-in hours where it takes nothing."""
-        from .vrm import VRM_HORIZON_H, hour_ts, hourly_ev_wh
+        from .vrm import VRM_HORIZON_H, first_hour, hour_ts, hourly_ev_wh
 
         snap = self.snapshot
         if snap.status == "unknown" or not snap.connected:
@@ -974,7 +974,7 @@ class EaseeSmartManager:
         mode = MODE_NORMAL if self.settings.boost else self.settings.mode
         plan = snap.plan if mode in (MODE_SMART, MODE_SOLAR_SMART) else None
         ev = hourly_ev_wh(self._schedule_payload(now, plan), now)
-        first = hour_ts(now)
+        first = first_hour(now)
         last = first
         if mode != MODE_NORMAL:
             try:

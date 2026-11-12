@@ -46,9 +46,14 @@ def hour_ts(when: datetime) -> int:
     return int(when.timestamp()) // 3600 * 3600
 
 
+def first_hour(now: datetime) -> int:
+    """VRM refuses the running hour ("values in the past"): start at the next whole hour."""
+    return hour_ts(now) + 3600
+
+
 def hourly_ev_wh(rows: list[dict[str, Any]], now: datetime) -> dict[int, int]:
     """Charge schedule rows (kWh from grid and sun per price slot) → Wh per whole hour."""
-    first = hour_ts(now)
+    first = first_hour(now)
     out: dict[int, float] = {}
     for row in rows:
         start = dt_util.parse_datetime(str(row.get("start")))
@@ -229,7 +234,7 @@ class VrmPlanSync:
             return False
         self._busy = True
         try:
-            first = hour_ts(now)
+            first = first_hour(now)
             hours = set(ev_wh) | zero_hours | set(self.sent)
             end = max(hours) + 3600 if hours else first + 3600
             total_fc, ev_fc = await self.client.async_forecast(self.site, first, end)
@@ -256,7 +261,7 @@ class VrmPlanSync:
 
     async def async_clear(self, now: datetime) -> None:
         """Give every hour we overruled back to VRM (on unload / when switched off)."""
-        first = hour_ts(now)
+        first = first_hour(now)
         hours = [h for h in self.sent if h >= first]
         if not hours:
             return
